@@ -81,3 +81,30 @@ function saveVerification() {
   alert('Record updated to: ' + statusText);
   window.location.href = 'records.html';
 }
+
+// =========================================
+// CUSTOM MODAL CONTROLS
+// =========================================
+function showModal(modalId) {
+  const modal = document.getElementById(modalId);
+  if (modal) modal.style.display = 'flex';
+}
+
+function hideModal(modalId) {
+  const modal = document.getElementById(modalId);
+  if (modal) modal.style.display = 'none';
+}
+
+// Make the Export buttons use the modal instead of alerts
+document.addEventListener('DOMContentLoaded', () => {
+  document.querySelectorAll('.btn-export-action').forEach(btn => {
+    // Remove any previous click listeners by cloning the node
+    const newBtn = btn.cloneNode(true);
+    btn.parentNode.replaceChild(newBtn, btn);
+    
+    newBtn.addEventListener('click', (e) => {
+      e.preventDefault();
+      showModal('modal-export'); // We will create this modal below
+    });
+  });
+});
