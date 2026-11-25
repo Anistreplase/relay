@@ -118,7 +118,6 @@
             </tr>
           `;
         });
-        // Auto-select the first one
         selectHousehold(verifiedHouseholds[0].id, verifiedHouseholds[0].head);
       }
     });
@@ -130,10 +129,7 @@
 
     function submitRevalidation() {
       if (!selectedHouseholdId) return;
-      
-      // Change status back to Unverified
       localStorage.setItem(`record_${selectedHouseholdId}`, "Unverified");
-      
       alert("Household re-submitted for verification! It is now back in the Verification Queue.");
       window.location.href = 'records.html';
     }
