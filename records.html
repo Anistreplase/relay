@@ -17,9 +17,6 @@
     .filter-input:focus { outline: none; border-color: var(--maroon); }
     .search-input { flex-grow: 1; }
     .pagination { display: flex; justify-content: space-between; align-items: center; padding-top: 20px; border-top: 1px solid var(--border); font-size: 13px; color: var(--text-muted); }
-    .page-buttons { display: flex; gap: 8px; }
-    .page-btn { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 6px; border: 1px solid var(--border); background: var(--white); font-size: 13px; cursor: pointer; }
-    .page-btn.active { background: var(--maroon); color: var(--white); border-color: var(--maroon); }
     .verified-banner { background: #FEF3C7; border-left: 4px solid #F59E0B; padding: 16px; font-size: 13px; color: #92400E; border-radius: 0 6px 6px 0; margin-top: 24px; }
   </style>
 </head>
@@ -83,24 +80,31 @@
 
     <div class="page-body">
       <div class="tabs-container">
-        <div class="tab active">All records <span class="count">1,248</span></div>
-        <div class="tab">Verified <span class="count">1,086</span></div>
-        <div class="tab">Unverified <span class="count">94</span></div>
-        <div class="tab">Needs Correction <span class="count">52</span></div>
-        <div class="tab">Unable to Verify <span class="count">16</span></div>
+        <div class="tab active">All records</div>
+        <div class="tab">Verified</div>
+        <div class="tab">Unverified</div>
+        <div class="tab">Needs Correction</div>
+        <div class="tab">Unable to Verify</div>
       </div>
 
       <div class="filters-row">
-        <input type="text" class="filter-input search-input" placeholder="Search by household head, ID, or address...">
-        <select class="filter-input">
-          <option>All puroks</option><option>Purok 1</option><option>Purok 2</option><option>Purok 3</option><option>Purok 4</option><option>Purok 5</option>
+        <input type="text" id="search-input" class="filter-input search-input" placeholder="Search by household head, ID, or address..." onkeyup="filterTable()">
+        <select id="purok-filter" class="filter-input" onchange="filterTable()">
+          <option value="All">All puroks</option>
+          <option value="Purok 1">Purok 1</option>
+          <option value="Purok 2">Purok 2</option>
+          <option value="Purok 3">Purok 3</option>
+          <option value="Purok 4">Purok 4</option>
+          <option value="Purok 5">Purok 5</option>
         </select>
-        <select class="filter-input">
-          <option>Last updated</option><option>Date added</option><option>Household head A-Z</option>
+        <select id="sort-filter" class="filter-input" onchange="sortTable()">
+          <option value="last-updated">Last updated</option>
+          <option value="name-asc">Household head A-Z</option>
+          <option value="name-desc">Household head Z-A</option>
         </select>
       </div>
 
-      <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px; text-align: right;">1,248 households</div>
+      <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px; text-align: right;" id="row-count">1,248 households</div>
 
       <div class="card" style="padding: 0; overflow: hidden;">
         <div class="table-container">
@@ -111,46 +115,15 @@
                 <th>Purok</th><th>Members</th><th>Verification status</th><th>Last updated</th><th>Action</th>
               </tr>
             </thead>
-            <tbody>
-              <tr data-id="HH-SM-0248">
-                <td style="padding-left: 24px;">
-                  <strong>Santos household</strong><br>
-                  <span style="color:var(--text-muted); font-size:11px;">HH-SM-0248 · Ana Cruz</span>
-                </td>
-                <td>Purok 2</td><td>5</td>
-                <td class="status-cell"><span class="pill pill-unverified">Unverified</span></td>
-                <td>24 Oct 2026</td>
-                <td><button class="btn btn-secondary btn-verify-action" style="padding:6px 12px; font-size:12px;">View →</button></td>
-              </tr>
-
-              <tr data-id="HH-SM-0201">
-                <td style="padding-left: 24px;">
-                  <strong>Reyes household</strong><br>
-                  <span style="color:var(--text-muted); font-size:11px;">HH-SM-0201 · Lito Reyes</span>
-                </td>
-                <td>Purok 3</td><td>4</td>
-                <td class="status-cell"><span class="pill pill-verified">Verified</span></td>
-                <td>24 Oct 2026</td>
-                <td><button class="btn btn-secondary btn-verify-action" style="padding:6px 12px; font-size:12px;">View →</button></td>
-              </tr>
-
-              <tr data-id="HH-SM-0232" style="background: #FFFDF5;">
-                <td style="padding-left: 24px;">
-                  <strong>Diaz Cruz household</strong><br>
-                  <span style="color:var(--text-muted); font-size:11px;">HH-SM-0232 · Sofia Diaz Cruz</span>
-                </td>
-                <td>Purok 4</td><td>5</td>
-                <td class="status-cell"><span class="pill pill-needs">Needs Correction</span></td>
-                <td>23 Oct 2026</td>
-                <td><button class="btn btn-secondary btn-verify-action" style="padding:6px 12px; font-size:12px;">Edit</button></td>
-              </tr>
+            <tbody id="table-body">
+              <!-- Rows will be injected by JS -->
             </tbody>
           </table>
         </div>
         
         <div style="padding: 16px 24px; background: #F9FAFB;">
           <div class="pagination" style="border-top: none; padding-top: 0;">
-            <span>Showing 1-3 of 1,248 households</span>
+            <span id="showing-text">Showing 1-3 of 3 households</span>
             <div class="page-buttons">
               <button class="page-btn">←</button>
               <button class="page-btn active">1</button>
@@ -169,27 +142,102 @@
     </div>
   </main>
 
+  <script src="js/database.js"></script>
   <script>
-    document.addEventListener('DOMContentLoaded', () => {
-      const rows = document.querySelectorAll('tbody tr[data-id]');
-      rows.forEach(row => {
-        const recordId = row.getAttribute('data-id');
-        const savedStatus = localStorage.getItem(`record_${recordId}`);
-        const statusCell = row.querySelector('.status-cell');
-        
-        if (savedStatus && statusCell) {
-          if (savedStatus === 'Verified') {
-            statusCell.innerHTML = '<span class="pill pill-verified">Verified</span>';
-          } else if (savedStatus === 'Needs Correction') {
-            statusCell.innerHTML = '<span class="pill pill-needs">Needs Correction</span>';
-          } else if (savedStatus === 'Unable to Verify') {
-            statusCell.innerHTML = '<span class="pill pill-unable">Unable to Verify</span>';
-          } else {
-            statusCell.innerHTML = '<span class="pill pill-unverified">Unverified</span>';
-          }
-        }
+    let allHouseholds = [];
+
+    // 1. Load and combine static + custom households
+    function loadData() {
+      // Load static
+      for (const key in households) {
+        allHouseholds.push(households[key]);
+      }
+      
+      // Load custom from localStorage
+      const custom = JSON.parse(localStorage.getItem('custom_households')) || {};
+      for (const key in custom) {
+        allHouseholds.push(custom[key]);
+      }
+      
+      // Apply saved statuses
+      allHouseholds.forEach(hh => {
+        const savedStatus = localStorage.getItem(`record_${hh.id}`);
+        hh.status = savedStatus || "Unverified";
+        // Give them fake dates for sorting
+        hh.dateAdded = hh.id === "HH-SM-0248" ? "2026-10-24" : "2026-10-20";
       });
-    });
+
+      renderTable(allHouseholds);
+    }
+
+    // 2. Render the table
+    function renderTable(data) {
+      const tbody = document.getElementById('table-body');
+      tbody.innerHTML = '';
+      
+      if (data.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="6" style="text-align: center; padding: 20px;">No records found.</td></tr>';
+        document.getElementById('showing-text').textContent = `Showing 0 of 0 households`;
+        document.getElementById('row-count').textContent = `0 households`;
+        return;
+      }
+
+      data.forEach(hh => {
+        let pillClass = "pill-unverified";
+        if (hh.status === "Verified") pillClass = "pill-verified";
+        if (hh.status === "Needs Correction") pillClass = "pill-needs";
+        if (hh.status === "Unable to Verify") pillClass = "pill-unable";
+
+        tbody.innerHTML += `
+          <tr data-id="${hh.id}">
+            <td style="padding-left: 24px;">
+              <strong>${hh.head} household</strong><br>
+              <span style="color:var(--text-muted); font-size:11px;">${hh.id} · ${hh.head}</span>
+            </td>
+            <td>${hh.purok.split(',')[0]}</td>
+            <td>${hh.members.length}</td>
+            <td class="status-cell"><span class="pill ${pillClass}">${hh.status}</span></td>
+            <td>24 Oct 2026</td>
+            <td><button class="btn btn-secondary btn-verify-action" style="padding:6px 12px; font-size:12px;">View →</button></td>
+          </tr>
+        `;
+      });
+
+      document.getElementById('showing-text').textContent = `Showing 1-${data.length} of ${data.length} households`;
+      document.getElementById('row-count').textContent = `${data.length} households`;
+    }
+
+    // 3. Filter Logic
+    function filterTable() {
+      const query = document.getElementById('search-input').value.toLowerCase();
+      const purok = document.getElementById('purok-filter').value;
+      
+      let filtered = allHouseholds.filter(hh => {
+        const matchesSearch = hh.head.toLowerCase().includes(query) || hh.id.toLowerCase().includes(query) || hh.address.toLowerCase().includes(query);
+        const matchesPurok = purok === "All" || hh.purok.includes(purok);
+        return matchesSearch && matchesPurok;
+      });
+      
+      renderTable(filtered);
+    }
+
+    // 4. Sorting Logic
+    function sortTable() {
+      const sortBy = document.getElementById('sort-filter').value;
+      
+      let sorted = [...allHouseholds];
+      if (sortBy === 'name-asc') {
+        sorted.sort((a, b) => a.head.localeCompare(b.head));
+      } else if (sortBy === 'name-desc') {
+        sorted.sort((a, b) => b.head.localeCompare(a.head));
+      } else {
+        sorted.sort((a, b) => b.id.localeCompare(a.id));
+      }
+      
+      filterTable(); // re-apply search filters on the sorted list
+    }
+
+    document.addEventListener('DOMContentLoaded', loadData);
   </script>
   <script src="js/app.js"></script>
 </body>
