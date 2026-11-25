@@ -1,0 +1,306 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Relay - Dashboard</title>
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    /* Page-specific styles for Dashboard */
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .kpi-card {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 20px;
+    }
+
+    .kpi-card .kpi-label {
+      font-size: 12px;
+      color: var(--text-muted);
+      font-weight: 600;
+      margin-bottom: 8px;
+      display: flex;
+      justify-content: space-between;
+    }
+
+    .kpi-card .kpi-value {
+      font-size: 28px;
+      font-weight: 700;
+      color: var(--text-main);
+      margin-bottom: 4px;
+    }
+
+    .kpi-card .kpi-sub {
+      font-size: 11px;
+      color: var(--text-muted);
+    }
+
+    .dashboard-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 24px;
+    }
+
+    .chart-bar-container {
+      display: flex;
+      align-items: center;
+      gap: 12px;
+      margin-bottom: 12px;
+      font-size: 13px;
+    }
+    .chart-bar-container .label { width: 100px; color: var(--text-muted); }
+    .chart-bar-container .bar-track { flex-grow: 1; background: var(--cream); height: 8px; border-radius: 4px; overflow: hidden; }
+    .chart-bar-container .bar-fill { height: 100%; border-radius: 4px; }
+    .chart-bar-container .value { width: 40px; text-align: right; font-weight: 600; }
+
+    .alert-banner {
+      background: #FEF3C7;
+      border: 1px solid #FCD34D;
+      color: #92400E;
+      padding: 12px 16px;
+      border-radius: 6px;
+      font-size: 13px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+    }
+  </style>
+</head>
+<body>
+
+  <!-- SIDEBAR -->
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon">R</div>
+      Relay
+    </div>
+    <div class="sidebar-section-title">Response Workspace</div>
+    <nav class="sidebar-nav">
+      <a href="dashboard.html" class="active">
+        <span class="nav-icon">◈</span> Overview
+      </a>
+      <a href="records.html">
+        <span class="nav-icon">👥</span> Household records
+      </a>
+      <a href="verify.html">
+        <span class="nav-icon">✓</span> Verification queue
+      </a>
+      <a href="preparedness.html">
+        <span class="nav-icon">▤</span> Preparedness & offline
+      </a>
+      <a href="evacuation.html">
+        <span class="nav-icon">⏱</span> Evacuation tracking
+      </a>
+      <a href="revalidation.html">
+        <span class="nav-icon">↻</span> Revalidation
+      </a>
+      <a href="reports.html">
+        <span class="nav-icon">📄</span> Reports & exports
+      </a>
+    </nav>
+
+    <div class="sidebar-footer">
+      <div class="status-card">
+        <div class="status-title"><div class="status-dot"></div> System operational</div>
+        Last synced at 09:42<br>Household records up to date
+      </div>
+      <nav class="sidebar-nav" style="margin-top: 12px;">
+        <a href="settings.html"><span class="nav-icon">⚙</span> Settings</a>
+        <a href="help.html"><span class="nav-icon">?</span> Help & support</a>
+      </nav>
+    </div>
+  </aside>
+
+  <!-- MAIN CONTENT -->
+  <main class="main-content">
+    
+    <!-- TOP BAR -->
+    <header class="topbar">
+      <div class="topbar-left">
+        <div class="workspace-selector">
+          <select id="workspace-selector" style="border:none; background:transparent; font-weight:600; font-size:14px; cursor:pointer;">
+            <option>Barangay San Miguel</option>
+          </select>
+        </div>
+        <div class="search-bar">
+          <span>🔍</span> Search households, puroks, records...
+        </div>
+      </div>
+      <div class="topbar-right">
+        <span class="demo-badge">DEMO WORKSPACE</span>
+        <span>🔔</span>
+        <div class="user-profile">
+          <div class="user-info">
+            <div class="user-name">Barangay DRRM official</div>
+            <div class="user-role">Review & coordination</div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <!-- PAGE HEADER -->
+    <div class="page-header">
+      <div>
+        <h1>San Miguel dashboard</h1>
+        <p>Siglo City · Household readiness · 24 October 2026</p>
+      </div>
+      <div style="display: flex; gap: 12px;">
+        <button class="btn btn-secondary">Export summary</button>
+        <button class="btn btn-primary btn-add-action">Add household</button>
+      </div>
+    </div>
+
+    <!-- PAGE BODY -->
+    <div class="page-body">
+      
+      <!-- ALERT BANNER -->
+      <div class="alert-banner">
+        <span><strong>78 households are due for revalidation.</strong> Keep records current before the next response.</span>
+        <a href="revalidation.html" style="font-weight:600; color:#92400E; text-decoration:underline;">Open work queue →</a>
+      </div>
+
+      <!-- KPI GRID -->
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-label">Total households</div>
+          <div class="kpi-value">1,248</div>
+          <div class="kpi-sub">Across 5 puroks</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Verified records</div>
+          <div class="kpi-value">1,086</div>
+          <div class="kpi-sub">Available to authorized responders</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Awaiting review</div>
+          <div class="kpi-value">94</div>
+          <div class="kpi-sub">Sent for verification</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Needs correction</div>
+          <div class="kpi-value">52</div>
+          <div class="kpi-sub">18 unable to verify, 16 unable to verify</div>
+        </div>
+      </div>
+
+      <div class="dashboard-grid">
+        <!-- LEFT COLUMN -->
+        <div style="display: flex; flex-direction: column; gap: 24px;">
+          
+          <!-- WORK QUEUE -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">Verification work queue</div>
+              <a href="verify.html" style="font-size:12px; color:var(--maroon); font-weight:600;">View all →</a>
+            </div>
+            <div class="table-container">
+              <table>
+                <thead>
+                  <tr>
+                    <th>Household</th>
+                    <th>Status</th>
+                    <th>Flag</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody>
+                  <tr>
+                    <td><strong>Santos household</strong><br><span style="color:var(--text-muted); font-size:11px;">HH-SM-0248 · Purok 2</span></td>
+                    <td><span class="pill pill-unverified">Unverified</span></td>
+                    <td>Office confirmed</td>
+                    <td><a href="review.html" class="btn btn-secondary btn-verify-action" style="padding:6px 12px; font-size:12px;">Review</a></td>
+                  </tr>
+                  <tr>
+                    <td><strong>Reyes household</strong><br><span style="color:var(--text-muted); font-size:11px;">HH-SM-0201 · Purok 3</span></td>
+                    <td><span class="pill pill-unverified">Unverified</span></td>
+                    <td>Confirmation pending</td>
+                    <td><a href="review.html" class="btn btn-secondary btn-verify-action" style="padding:6px 12px; font-size:12px;">Review</a></td>
+                  </tr>
+                  <tr>
+                    <td><strong>Diaz Cruz household</strong><br><span style="color:var(--text-muted); font-size:11px;">HH-SM-0232 · Purok 4</span></td>
+                    <td><span class="pill pill-needs">Needs Correction</span></td>
+                    <td>Address correction</td>
+                    <td><a href="review.html" class="btn btn-secondary btn-verify-action" style="padding:6px 12px; font-size:12px;">Review</a></td>
+                  </tr>
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          <!-- CHART -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">Every record, accounted for</div>
+              <span style="font-size:11px; color:var(--text-muted);">Verification status · 1,248 households</span>
+            </div>
+            <div style="padding-top: 12px;">
+              <div class="chart-bar-container">
+                <div class="label">Verified</div>
+                <div class="bar-track"><div class="bar-fill" style="width: 87%; background: #10B981;"></div></div>
+                <div class="value">1,086</div>
+              </div>
+              <div class="chart-bar-container">
+                <div class="label">Unverified</div>
+                <div class="bar-track"><div class="bar-fill" style="width: 7.5%; background: #6B7280;"></div></div>
+                <div class="value">94</div>
+              </div>
+              <div class="chart-bar-container">
+                <div class="label">Needs Correction</div>
+                <div class="bar-track"><div class="bar-fill" style="width: 4%; background: #F59E0B;"></div></div>
+                <div class="value">52</div>
+              </div>
+              <div class="chart-bar-container">
+                <div class="label">Unable to Verify</div>
+                <div class="bar-track"><div class="bar-fill" style="width: 1.5%; background: #EF4444;"></div></div>
+                <div class="value">16</div>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- RIGHT COLUMN -->
+        <div style="display: flex; flex-direction: column; gap: 24px;">
+          
+          <!-- PREPAREDNESS -->
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">Preparedness & evacuation</div>
+              <span class="pill pill-verified" style="font-size:10px;">Forecast active</span>
+            </div>
+            <p style="font-size:12px; color:var(--text-muted); margin-bottom:16px;">Flood preparedness · Puroks 2, 3 & 5</p>
+            <div style="display:flex; gap:16px; margin-bottom:16px;">
+              <div><div style="font-size:20px; font-weight:700;">312</div><div style="font-size:11px; color:var(--text-muted);">Verified households</div></div>
+              <div><div style="font-size:20px; font-weight:700;">48</div><div style="font-size:11px; color:var(--text-muted);">Priority households</div></div>
+              <div><div style="font-size:20px; font-weight:700;">188</div><div style="font-size:11px; color:var(--text-muted);">Evacuated so far</div></div>
+            </div>
+            <div style="background:var(--cream); height:6px; border-radius:3px; margin-bottom:8px;"><div style="background:#10B981; height:100%; width:60%; border-radius:3px;"></div></div>
+            <div style="display:flex; justify-content:space-between; font-size:11px; color:var(--text-muted);"><span>188 of 312 households evacuated: 60%</span><a href="evacuation.html" style="color:var(--maroon); font-weight:600;">Open tracking →</a></div>
+          </div>
+
+          <!-- OFFLINE -->
+          <div class="card" style="background: #FEF3C7; border-color: #FCD34D;">
+            <div class="card-title" style="color:#92400E; margin-bottom:8px;">Ready beyond the connection</div>
+            <p style="font-size:12px; color:#92400E; margin-bottom:16px;">Download verified household records and area maps before deployment.</p>
+            <div style="display:flex; flex-direction:column; gap:6px; font-size:11px; color:#92400E; margin-bottom:16px;">
+              <div><strong>Verified records only</strong></div>
+              <div>City responders may access the latest officer data. Only the records are made visible.</div>
+            </div>
+            <button class="btn btn-yellow" style="width:100%;">Prepare offline package</button>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="js/app.js"></script>
+</body>
+</html>
