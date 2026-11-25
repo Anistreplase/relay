@@ -34,49 +34,25 @@
       <a href="reports.html"><span class="nav-icon">📄</span> Reports & exports</a>
     </nav>
     <div class="sidebar-footer">
-      <div class="status-card">
-        <div class="status-title"><div class="status-dot"></div> System operational</div>
-        Last synced at 09:42<br>Household records up to date
-      </div>
-      <nav class="sidebar-nav" style="margin-top: 12px;">
-        <a href="settings.html"><span class="nav-icon">⚙</span> Settings</a>
-        <a href="help.html"><span class="nav-icon">?</span> Help & support</a>
-      </nav>
+      <div class="status-card"><div class="status-title"><div class="status-dot"></div> System operational</div>Last synced at 09:42<br>Household records up to date</div>
+      <nav class="sidebar-nav" style="margin-top: 12px;"><a href="settings.html"><span class="nav-icon">⚙</span> Settings</a><a href="help.html"><span class="nav-icon">?</span> Help & support</a></nav>
     </div>
   </aside>
-
   <main class="main-content">
     <header class="topbar">
       <div class="topbar-left">
-        <div class="workspace-selector">
-          <select id="workspace-selector" style="border:none; background:transparent; font-weight:600; font-size:14px; cursor:pointer;">
-            <option>Barangay San Miguel</option>
-          </select>
-        </div>
+        <div class="workspace-selector"><select id="workspace-selector" style="border:none; background:transparent; font-weight:600; font-size:14px; cursor:pointer;"><option>Barangay San Miguel</option></select></div>
         <div class="search-bar"><span>🔍</span> Search households, puroks, records...</div>
       </div>
       <div class="topbar-right">
-        <span class="demo-badge">DEMO WORKSPACE</span>
-        <span>🔔</span>
-        <div class="user-profile">
-          <div class="user-info">
-            <div class="user-name">Loading...</div>
-            <div class="user-role">Loading...</div>
-          </div>
-        </div>
+        <span class="demo-badge">DEMO WORKSPACE</span><span>🔔</span>
+        <div class="user-profile"><div class="user-info"><div class="user-name">Loading...</div><div class="user-role">Loading...</div></div></div>
       </div>
     </header>
-
     <div class="page-header">
-      <div>
-        <h1>Preparedness & offline</h1>
-        <p>Prepare verified information and area maps before deployment.</p>
-      </div>
-      <div>
-        <a href="evacuation.html" class="btn btn-primary">View evacuation tracking →</a>
-      </div>
+      <div><h1>Preparedness & offline</h1><p>Prepare verified information and area maps before deployment.</p></div>
+      <div><a href="evacuation.html" class="btn btn-primary">View evacuation tracking →</a></div>
     </div>
-
     <div class="page-body">
       <div class="prep-grid">
         <div style="display: flex; flex-direction: column; gap: 24px;">
@@ -87,7 +63,6 @@
             </div>
             <div id="map" class="map-container"></div>
           </div>
-
           <div class="card" style="padding: 0; overflow: hidden;">
             <div class="card-header" style="padding: 20px 24px 16px 24px; border-bottom: none;">
               <div class="card-title">Priority household outreach</div>
@@ -95,15 +70,12 @@
             </div>
             <div class="table-container">
               <table class="priority-table">
-                <thead style="background: #F9FAFB;">
-                  <tr><th style="padding-left: 24px;">Order</th><th>Household</th><th>Assistance need</th><th>Evac Status</th></tr>
-                </thead>
+                <thead style="background: #F9FAFB;"><tr><th style="padding-left: 24px;">Order</th><th>Household</th><th>Assistance need</th><th>Evac Status</th></tr></thead>
                 <tbody id="priority-body"></tbody>
               </table>
             </div>
           </div>
         </div>
-
         <div style="display: flex; flex-direction: column; gap: 24px;">
           <div class="offline-card">
             <h3 style="font-size: 16px; margin-bottom: 8px; color: var(--maroon);">Prepare offline package</h3>
@@ -124,15 +96,12 @@
     </div>
   </main>
 
-  <!-- CUSTOM MODAL: OFFLINE PACKAGE -->
   <div id="modal-offline" class="modal-overlay">
     <div class="modal-box">
       <div class="modal-eyebrow">Interactive Preview</div>
       <div class="modal-title">Offline package preview</div>
       <div class="modal-desc">
-        <span id="modal-record-count">0</span> verified household records, 3 area maps, and <span id="modal-priority-count">0</span> priority households would be stored on this device for use in the field.
-        <br><br>
-        The update would wait on this device until a connection returns.
+        <span id="modal-record-count">0</span> verified household records, 3 area maps, and <span id="modal-priority-count">0</span> priority households would be stored on this device for use in the field.<br><br>The update would wait on this device until a connection returns.
       </div>
       <div class="modal-footer">
         <div class="modal-footer-text">Sample interaction · No real records are changed.</div>
@@ -151,7 +120,6 @@
       for (const key in households) all.push(households[key]);
       const custom = JSON.parse(localStorage.getItem('custom_households')) || {};
       for (const key in custom) all.push(custom[key]);
-      
       const verified = all.filter(hh => (localStorage.getItem(`record_${hh.id}`) || "Unverified") === 'Verified');
       const savedEvacs = JSON.parse(localStorage.getItem('evacuation_statuses')) || {};
 
@@ -159,8 +127,6 @@
       document.getElementById('priority-count').textContent = `${verified.length} households`;
       document.getElementById('record-count-text').textContent = `📄 ${verified.length} household records`;
       document.getElementById('priority-count-text').textContent = `📋 ${verified.length} priority households`;
-      
-      // Update Modal text
       document.getElementById('modal-record-count').textContent = verified.length;
       document.getElementById('modal-priority-count').textContent = verified.length;
 
@@ -174,22 +140,13 @@
           if (evacStatus === 'Assisted' || evacStatus === 'In Evacuation Center' || evacStatus === 'Pre-emptively Evacuated') pillClass = "status-evacuated";
           if (evacStatus === 'Unaccounted For') pillClass = "status-unaccounted";
           if (evacStatus === 'At Home') pillClass = "status-at-home";
-
-          priorityBody.innerHTML += `
-            <tr>
-              <td style="padding-left: 24px;">${String(index + 1).padStart(2, '0')}</td>
-              <td><strong>${hh.head} household</strong><br><span style="font-size: 11px; color: var(--text-muted);">${hh.id} · ${hh.purok.split(',')[0]}</span></td>
-              <td>${hh.members[0].needs !== 'None' ? hh.members[0].needs : 'None reported'}</td>
-              <td><span class="pill ${pillClass}">${evacStatus}</span></td>
-            </tr>
-          `;
+          priorityBody.innerHTML += `<tr><td style="padding-left: 24px;">${String(index + 1).padStart(2, '0')}</td><td><strong>${hh.head} household</strong><br><span style="font-size: 11px; color: var(--text-muted);">${hh.id} · ${hh.purok.split(',')[0]}</span></td><td>${hh.members[0].needs !== 'None' ? hh.members[0].needs : 'None reported'}</td><td><span class="pill ${pillClass}">${evacStatus}</span></td></tr>`;
         });
       }
 
       var map = L.map('map').setView([8.2280, 124.2452], 15);
       L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
       var redIcon = L.divIcon({ className: 'custom-marker', html: '<div style="background-color: #8B0000; width: 16px; height: 16px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.4);"></div>', iconSize: [16, 16], iconAnchor: [8, 8] });
-      
       if (verified.length === 0) {
         L.marker([8.2280, 124.2452], {icon: redIcon}).addTo(map).bindPopup('No verified households yet.');
       } else {
