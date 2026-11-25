@@ -119,7 +119,6 @@
       const purokInput = document.getElementById('new-purok');
 
       purokInput.classList.remove('error'); purokError.style.display = 'none';
-
       if (!purok) { purokInput.classList.add('error'); purokError.style.display = 'block'; }
       if (!head || !contact || !purok || !address) { alert("Please fill in all required fields."); return; }
 
@@ -131,7 +130,14 @@
       localStorage.setItem('custom_households', JSON.stringify(customHouseholds));
       localStorage.setItem(`record_${newId}`, "Unverified");
 
-      alert("Household saved as Unverified!\nRecord ID: " + newId);
+      if (!navigator.onLine) {
+        let queue = JSON.parse(localStorage.getItem('offline_queue')) || [];
+        queue.push({ action: 'ADD_HOUSEHOLD', id: newId, timestamp: Date.now() });
+        localStorage.setItem('offline_queue', JSON.stringify(queue));
+        alert("You are offline. Household saved locally and will sync when you reconnect.");
+      } else {
+        alert("Household saved as Unverified!\nRecord ID: " + newId);
+      }
       window.location.href = 'records.html';
     }
   </script>
