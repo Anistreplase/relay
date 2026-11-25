@@ -38,52 +38,27 @@
       <a href="reports.html"><span class="nav-icon">📄</span> Reports & exports</a>
     </nav>
     <div class="sidebar-footer">
-      <div class="status-card">
-        <div class="status-title"><div class="status-dot"></div> System operational</div>
-        Last synced at 09:42<br>Household records up to date
-      </div>
-      <nav class="sidebar-nav" style="margin-top: 12px;">
-        <a href="settings.html" class="active"><span class="nav-icon">⚙</span> Settings</a>
-        <a href="help.html"><span class="nav-icon">?</span> Help & support</a>
-      </nav>
+      <div class="status-card"><div class="status-title"><div class="status-dot"></div> System operational</div>Last synced at 09:42<br>Household records up to date</div>
+      <nav class="sidebar-nav" style="margin-top: 12px;"><a href="settings.html" class="active"><span class="nav-icon">⚙</span> Settings</a><a href="help.html"><span class="nav-icon">?</span> Help & support</a></nav>
     </div>
   </aside>
-
   <main class="main-content">
     <header class="topbar">
       <div class="topbar-left">
-        <div class="workspace-selector">
-          <select id="workspace-selector" style="border:none; background:transparent; font-weight:600; font-size:14px; cursor:pointer;">
-            <option>Barangay San Miguel</option>
-          </select>
-        </div>
+        <div class="workspace-selector"><select id="workspace-selector" style="border:none; background:transparent; font-weight:600; font-size:14px; cursor:pointer;"><option>Barangay San Miguel</option></select></div>
         <div class="search-bar"><span>🔍</span> Search households, puroks, records...</div>
       </div>
       <div class="topbar-right">
-        <span class="demo-badge">DEMO WORKSPACE</span>
-        <span>🔔</span>
-        <div class="user-profile">
-          <div class="user-info">
-            <div class="user-name">Loading...</div>
-            <div class="user-role">Loading...</div>
-          </div>
-        </div>
+        <span class="demo-badge">DEMO WORKSPACE</span><span>🔔</span>
+        <div class="user-profile"><div class="user-info"><div class="user-name">Loading...</div><div class="user-role">Loading...</div></div></div>
       </div>
     </header>
-
     <div class="page-header">
-      <div>
-        <h1>Settings</h1>
-        <p>Your account, workspace preferences, and session controls.</p>
-      </div>
-      <div>
-        <a href="dashboard.html" class="btn btn-secondary">Back to dashboard</a>
-      </div>
+      <div><h1>Settings</h1><p>Your account, workspace preferences, and session controls.</p></div>
+      <div><a href="dashboard.html" class="btn btn-secondary">Back to dashboard</a></div>
     </div>
-
     <div class="page-body">
       <div class="settings-grid">
-        
         <div>
           <div class="card">
             <div class="card-title">Account & workspace</div>
@@ -93,39 +68,27 @@
             <div class="detail-row"><div class="detail-label">Responsibilities</div><div class="detail-value" id="setting-responsibilities">Loading...</div></div>
             <div class="detail-row"><div class="detail-label">Location</div><div class="detail-value">Iligan City</div></div>
           </div>
-
           <div class="card">
             <div class="card-title">Notifications & reminders</div>
             <div class="card-subtitle" style="margin-bottom: 0;">Manage how you receive updates.</div>
             <div class="reminder-row">
-              <div>
-                <div style="font-size: 13px; font-weight: 600;">Revalidation reminders</div>
-                <div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">Periodic prompts for household records that are due.</div>
-              </div>
-              <label class="toggle-switch">
-                <input type="checkbox" checked>
-                <span class="slider"></span>
-              </label>
+              <div><div style="font-size: 13px; font-weight: 600;">Revalidation reminders</div><div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">Periodic prompts for household records that are due.</div></div>
+              <label class="toggle-switch"><input type="checkbox" checked><span class="slider"></span></label>
             </div>
           </div>
-
           <div class="card">
             <div class="card-title">Session</div>
             <div class="card-subtitle">Log out of this workspace.</div>
             <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px;">Return to the login screen on this device. Check that pending field updates are synchronized before ending a live session.</p>
-            
-            <!-- The Log Out button now calls our custom modal -->
             <button class="btn btn-primary" onclick="showModal('modal-logout')" style="padding: 10px 24px;">Log out</button>
           </div>
         </div>
-
         <div>
           <div class="card" style="background: #FFFDF5; border-color: #FCD34D;">
             <div class="card-title" style="color: #92400E;">Your information, protected</div>
             <p style="font-size: 13px; color: #92400E; margin: 12px 0; font-weight: 600;">Access follows your assigned role.</p>
             <p style="font-size: 12px; color: #92400E; line-height: 1.5;">Household information is available only within the permissions granted to your account.</p>
           </div>
-
           <div class="card">
             <div class="card-title">Before leaving this device</div>
             <p style="font-size: 12px; color: var(--text-muted); margin: 12px 0; line-height: 1.5;">Review pending offline changes before logging out. Return to evacuation tracking to check any unsynchronized updates.</p>
@@ -133,19 +96,15 @@
             <div style="font-size: 11px; color: var(--text-muted); text-align: center;">This is a navigation prototype. No real account credentials or household records are stored here.</div>
           </div>
         </div>
-
       </div>
     </div>
   </main>
 
-  <!-- CUSTOM MODAL: LOGOUT -->
   <div id="modal-logout" class="modal-overlay">
     <div class="modal-box">
       <div class="modal-eyebrow">Interactive Preview</div>
       <div class="modal-title">Sign out of Relay?</div>
-      <div class="modal-desc">
-        You are about to end your session. Make sure any field updates made while offline have synced before leaving this device.
-      </div>
+      <div class="modal-desc">You are about to end your session. Make sure any field updates made while offline have synced before leaving this device.</div>
       <div class="modal-footer">
         <div class="modal-footer-text">Sample interaction. No real data is changed.</div>
         <div class="modal-actions">
@@ -161,19 +120,10 @@
       const role = localStorage.getItem('relay-role') || 'Barangay Official';
       const roleEl = document.getElementById('setting-role');
       const respEl = document.getElementById('setting-responsibilities');
-
-      if (role === 'Admin') {
-        roleEl.textContent = 'System Administrator';
-        respEl.textContent = 'Full system access & management';
-      } else if (role === 'Purok Officer') {
-        roleEl.textContent = 'Purok Officer';
-        respEl.textContent = 'Data collection & updates';
-      } else {
-        roleEl.textContent = 'Barangay DRRM Official';
-        respEl.textContent = 'Review & coordination';
-      }
+      if (role === 'Admin') { roleEl.textContent = 'System Administrator'; respEl.textContent = 'Full system access & management'; }
+      else if (role === 'Purok Officer') { roleEl.textContent = 'Purok Officer'; respEl.textContent = 'Data collection & updates'; }
+      else { roleEl.textContent = 'Barangay DRRM Official'; respEl.textContent = 'Review & coordination'; }
     });
-
     function confirmLogout() {
       localStorage.removeItem('relay-user');
       localStorage.removeItem('relay-role');
