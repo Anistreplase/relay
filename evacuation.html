@@ -75,14 +75,38 @@
           <div class="form-field"><label>Household</label><select id="update-hh-select"></select></div>
           <div class="form-field"><label>New evacuation status</label><select id="update-status-select"><option>At Home</option><option>Pre-emptively Evacuated</option><option>In Evacuation Center</option><option>Assisted</option><option>Unaccounted For</option></select></div>
           <div class="form-field"><label>Field note (optional)</label><textarea rows="3" id="update-note" placeholder="e.g. Transport required..."></textarea></div>
-          <button class="btn btn-primary" style="width: 100%; justify-content: center;" onclick="saveEvacStatus()">Save update on this device</button>
+          
+          <!-- THIS BUTTON NOW OPENS THE MODAL -->
+          <button class="btn btn-primary" style="width: 100%; justify-content: center;" onclick="prepareEvacUpdate()">Save update on this device</button>
         </div>
       </div>
     </div>
   </main>
+
+  <!-- CUSTOM MODAL: FIELD UPDATE PREVIEW -->
+  <div id="modal-evac" class="modal-overlay">
+    <div class="modal-box">
+      <div class="modal-eyebrow">Interactive Preview</div>
+      <div class="modal-title">Field update preview</div>
+      <div class="modal-desc" id="evac-modal-desc">
+        <!-- Injected by JS -->
+      </div>
+      <div class="modal-footer">
+        <div class="modal-footer-text">Sample interaction · No real records are changed.</div>
+        <div class="modal-actions">
+          <button class="btn btn-primary" onclick="confirmEvacUpdate()">Return to tracking</button>
+          <button class="btn btn-secondary" onclick="hideModal('modal-evac')">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script src="js/database.js"></script>
   <script>
     let affectedHouseholds = [];
+    let pendingEvacId = null;
+    let pendingEvacStatus = null;
+
     document.addEventListener('DOMContentLoaded', () => {
       let all = [];
       for (const key in households) all.push(households[key]);
@@ -122,15 +146,32 @@
       document.getElementById('kpi-not-evacuated').textContent = notEvacuated;
     });
 
-    function saveEvacStatus() {
-      const hhId = document.getElementById('update-hh-select').value;
-      const newStatus = document.getElementById('update-status-select').value;
-      if (hhId === 'No households') return;
+    // 1. Opens the modal and sets the text
+    function prepareEvacUpdate() {
+      pendingEvacId = document.getElementById('update-hh-select').value;
+      pendingEvacStatus = document.getElementById('update-status-select').value;
+      
+      if (pendingEvacId === 'No households') return;
+
+      const headName = affectedHouseholds.find(h => h.id === pendingEvacId).head;
+      
+      document.getElementById('evac-modal-desc').innerHTML = `
+        <strong>${headName} household (${pendingEvacId})</strong> would be marked as <strong>${pendingEvacStatus}</strong> on this device. 
+        <br><br>
+        The update would wait on this device until a connection returns.
+      `;
+      
+      showModal('modal-evac');
+    }
+
+    // 2. Actually saves the data when you click "Return to tracking"
+    function confirmEvacUpdate() {
       let savedEvacs = JSON.parse(localStorage.getItem('evacuation_statuses')) || {};
-      savedEvacs[hhId] = newStatus;
+      savedEvacs[pendingEvacId] = pendingEvacStatus;
       localStorage.setItem('evacuation_statuses', JSON.stringify(savedEvacs));
-      alert('Status updated to: ' + newStatus);
-      window.location.reload();
+      
+      hideModal('modal-evac');
+      window.location.reload(); // Refresh to show the new status
     }
   </script>
   <script src="js/app.js"></script>
