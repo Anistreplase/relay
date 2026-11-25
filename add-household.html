@@ -6,146 +6,26 @@
   <title>Relay - Add Household</title>
   <link rel="stylesheet" href="css/style.css">
   <style>
-    .form-grid {
-      display: grid;
-      grid-template-columns: 2fr 1fr;
-      gap: 24px;
-    }
-
-    .form-row {
-      display: grid;
-      grid-template-columns: 1fr 1fr;
-      gap: 16px;
-      margin-bottom: 16px;
-    }
-
-    .form-field {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-    }
-
-    .form-field label {
-      font-size: 12px;
-      font-weight: 600;
-      color: var(--text-main);
-    }
-
-    .form-field label span {
-      color: var(--red);
-    }
-
-    .form-field input, 
-    .form-field select {
-      padding: 10px 12px;
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      font-size: 13px;
-      font-family: inherit;
-    }
-
-    .form-field input:focus, 
-    .form-field select:focus {
-      outline: none;
-      border-color: var(--maroon);
-    }
-
-    .duplicate-banner {
-      background: #FEF3C7;
-      border: 1px solid #FCD34D;
-      padding: 12px 16px;
-      border-radius: 6px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 24px;
-      font-size: 13px;
-      color: #92400E;
-    }
-
-    .checklist-card {
-      background: var(--white);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 24px;
-      height: fit-content;
-    }
-
-    .checklist-card h3 {
-      font-size: 15px;
-      margin-bottom: 16px;
-    }
-
-    .checklist-item {
-      display: flex;
-      gap: 12px;
-      font-size: 12px;
-      color: var(--text-muted);
-      margin-bottom: 12px;
-      line-height: 1.4;
-    }
-
-    .checklist-item strong {
-      color: var(--text-main);
-      display: block;
-      margin-bottom: 2px;
-    }
-
-    .checklist-number {
-      background: var(--yellow);
-      color: var(--maroon);
-      width: 20px;
-      height: 20px;
-      border-radius: 50%;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      font-size: 10px;
-      font-weight: 700;
-      flex-shrink: 0;
-    }
-
-    .household-members-table {
-      width: 100%;
-      font-size: 12px;
-      margin-top: 12px;
-    }
-    
-    .household-members-table th {
-      text-align: left;
-      padding: 8px 12px;
-      background: var(--cream);
-      color: var(--text-muted);
-      font-size: 10px;
-    }
-    
-    .household-members-table td {
-      padding: 12px;
-      border-bottom: 1px solid var(--border);
-    }
-
-    .btn-text {
-      background: none;
-      border: none;
-      color: var(--red);
-      font-weight: 600;
-      font-size: 12px;
-      cursor: pointer;
-    }
+    .form-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 24px; }
+    .form-row { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+    .form-field { display: flex; flex-direction: column; gap: 6px; }
+    .form-field label { font-size: 12px; font-weight: 600; color: var(--text-main); }
+    .form-field label span { color: var(--red); }
+    .form-field input, .form-field select { padding: 10px 12px; border: 1px solid var(--border); border-radius: 6px; font-size: 13px; font-family: inherit; }
+    .form-field input:focus, .form-field select:focus { outline: none; border-color: var(--maroon); }
+    .duplicate-banner { background: #FEF3C7; border: 1px solid #FCD34D; padding: 12px 16px; border-radius: 6px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; font-size: 13px; color: #92400E; }
+    .checklist-card { background: var(--white); border: 1px solid var(--border); border-radius: 8px; padding: 24px; height: fit-content; }
+    .checklist-item { display: flex; gap: 12px; font-size: 12px; color: var(--text-muted); margin-bottom: 12px; line-height: 1.4; }
+    .checklist-number { background: var(--yellow); color: var(--maroon); width: 20px; height: 20px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 10px; font-weight: 700; flex-shrink: 0; }
   </style>
 </head>
 <body>
-
-  <!-- SIDEBAR -->
   <aside class="sidebar">
-    <div class="sidebar-logo">
-      <div class="logo-icon">R</div>
-      Relay
-    </div>
+    <div class="sidebar-logo"><div class="logo-icon">R</div> Relay</div>
     <div class="sidebar-section-title">Response Workspace</div>
     <nav class="sidebar-nav">
       <a href="dashboard.html"><span class="nav-icon">◈</span> Overview</a>
-      <a href="records.html"><span class="nav-icon">👥</span> Household records</a>
+      <a href="records.html" class="active"><span class="nav-icon">👥</span> Household records</a>
       <a href="verify.html"><span class="nav-icon">✓</span> Verification queue</a>
       <a href="preparedness.html"><span class="nav-icon">▤</span> Preparedness & offline</a>
       <a href="evacuation.html"><span class="nav-icon">⏱</span> Evacuation tracking</a>
@@ -164,10 +44,7 @@
     </div>
   </aside>
 
-  <!-- MAIN CONTENT -->
   <main class="main-content">
-    
-    <!-- TOP BAR -->
     <header class="topbar">
       <div class="topbar-left">
         <div class="workspace-selector">
@@ -189,24 +66,16 @@
       </div>
     </header>
 
-    <!-- PAGE HEADER -->
     <div class="page-header">
       <div>
-        <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px; text-transform: uppercase; letter-spacing: 0.05em;">
-          Household records / New record
-        </div>
+        <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px; text-transform: uppercase;">Household records / New record</div>
         <h1>Add household</h1>
         <p>Record information from a house visit or scheduled update.</p>
       </div>
-      <div style="font-size: 12px; color: var(--text-muted);">
-        * Required fields
-      </div>
+      <div style="font-size: 12px; color: var(--text-muted);">* Required fields</div>
     </div>
 
-    <!-- PAGE BODY -->
     <div class="page-body">
-      
-      <!-- DUPLICATE ALERT -->
       <div class="duplicate-banner">
         <div>
           <strong>Possible duplicate found</strong><br>
@@ -216,152 +85,92 @@
       </div>
 
       <div class="form-grid">
-        
-        <!-- LEFT COLUMN: FORM -->
         <div style="display: flex; flex-direction: column; gap: 24px;">
-          
           <div class="card">
             <h3 style="font-size: 16px; margin-bottom: 20px;">Household information</h3>
-            
             <div class="form-row">
               <div class="form-field">
                 <label>Household head <span>*</span></label>
-                <input type="text" placeholder="e.g. Ana Cruz">
+                <input type="text" id="new-head" placeholder="e.g. Ana Cruz">
               </div>
               <div class="form-field">
                 <label>Contact number <span>*</span></label>
-                <input type="text" placeholder="+63 9XX XXX XXXX">
+                <input type="text" id="new-contact" placeholder="+63 9XX XXX XXXX">
               </div>
             </div>
-
             <div class="form-row">
               <div class="form-field">
                 <label>Barangay <span>*</span></label>
-                <select>
-                  <option>San Miguel</option>
-                  <option>Tibanga</option>
-                  <option>Saray</option>
-                </select>
+                <select><option>San Miguel</option><option>Tibanga</option><option>Saray</option></select>
               </div>
               <div class="form-field">
                 <label>Purok <span>*</span></label>
-                <select>
-                  <option>Select purok...</option>
-                  <option>Purok 1</option>
-                  <option>Purok 2</option>
-                  <option>Purok 3</option>
-                  <option>Purok 4</option>
-                  <option>Purok 5</option>
+                <select id="new-purok">
+                  <option>Purok 1</option><option>Purok 2</option><option>Purok 3</option><option>Purok 4</option><option>Purok 5</option>
                 </select>
               </div>
             </div>
-
             <div class="form-row">
               <div class="form-field" style="grid-column: span 2;">
                 <label>Household address <span>*</span></label>
-                <input type="text" placeholder="e.g. 18 Riverside Street">
+                <input type="text" id="new-address" placeholder="e.g. 18 Riverside Street">
               </div>
             </div>
-
-            <div class="form-row" style="margin-bottom: 0;">
-              <div class="form-field">
-                <label>Collection method <span>*</span></label>
-                <select>
-                  <option>House visit</option>
-                  <option>Phone interview</option>
-                  <option>Office submission</option>
-                </select>
-              </div>
-              <div class="form-field">
-                <label>Date collected <span>*</span></label>
-                <input type="date" value="2026-10-24">
-              </div>
-            </div>
-          </div>
-
-          <!-- HOUSEHOLD MEMBERS -->
-          <div class="card">
-            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px;">
-              <h3 style="font-size: 16px;">Household members</h3>
-              <span style="font-size: 12px; color: var(--text-muted);">3 members · Fictional sample</span>
-            </div>
-            
-            <table class="household-members-table">
-              <thead>
-                <tr>
-                  <th>Name</th>
-                  <th>Age</th>
-                  <th>Category</th>
-                  <th>Action</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td><input type="text" value="Ana Cruz" style="width:100%; border:1px solid var(--border); padding:6px; border-radius:4px;"></td>
-                  <td><input type="text" value="34" style="width:100%; border:1px solid var(--border); padding:6px; border-radius:4px;"></td>
-                  <td><input type="text" value="Household head" style="width:100%; border:1px solid var(--border); padding:6px; border-radius:4px;"></td>
-                  <td><button class="btn-text">Edit</button></td>
-                </tr>
-                <tr>
-                  <td><input type="text" value="Leo Cruz" style="width:100%; border:1px solid var(--border); padding:6px; border-radius:4px;"></td>
-                  <td><input type="text" value="8" style="width:100%; border:1px solid var(--border); padding:6px; border-radius:4px;"></td>
-                  <td><input type="text" value="Child" style="width:100%; border:1px solid var(--border); padding:6px; border-radius:4px;"></td>
-                  <td><button class="btn-text">Edit</button></td>
-                </tr>
-                <tr>
-                  <td><input type="text" value="Nina Cruz" style="width:100%; border:1px solid var(--border); padding:6px; border-radius:4px;"></td>
-                  <td><input type="text" value="5" style="width:100%; border:1px solid var(--border); padding:6px; border-radius:4px;"></td>
-                  <td><input type="text" value="Child" style="width:100%; border:1px solid var(--border); padding:6px; border-radius:4px;"></td>
-                  <td><button class="btn-text">Edit</button></td>
-                </tr>
-              </tbody>
-            </table>
-
-            <button class="btn btn-secondary" style="margin-top: 16px;">+ Add household member</button>
           </div>
 
           <div style="display: flex; gap: 12px; justify-content: flex-end;">
             <button class="btn btn-secondary" onclick="window.location.href='records.html'">Cancel</button>
-            <button class="btn btn-primary" onclick="window.location.href='records.html'">Save as Unverified</button>
+            <button class="btn btn-primary" onclick="saveNewHousehold()">Save as Unverified</button>
           </div>
-
         </div>
 
-        <!-- RIGHT COLUMN: CHECKLIST -->
         <div>
           <div class="checklist-card">
             <h3 style="color: var(--maroon); margin-bottom: 20px;">Before you submit</h3>
-            
-            <div class="checklist-item">
-              <div class="checklist-number">01</div>
-              <div>
-                <strong>Complete required information</strong>
-                Fill in all fields marked with an asterisk.
-              </div>
-            </div>
-
-            <div class="checklist-item">
-              <div class="checklist-number">02</div>
-              <div>
-                <strong>Check the duplicate database</strong>
-                Review existing records to avoid creating a duplicate household.
-              </div>
-            </div>
-
-            <div class="checklist-item">
-              <div class="checklist-number">03</div>
-              <div>
-                <strong>Save the record as Unverified</strong>
-                All new records start as Unverified until a DRRM official reviews them.
-              </div>
-            </div>
+            <div class="checklist-item"><div class="checklist-number">01</div><div><strong>Complete required information</strong>Fill in all fields marked with an asterisk.</div></div>
+            <div class="checklist-item"><div class="checklist-number">02</div><div><strong>Check the duplicate database</strong>Review existing records to avoid creating a duplicate household.</div></div>
+            <div class="checklist-item"><div class="checklist-number">03</div><div><strong>Save the record as Unverified</strong>All new records start as Unverified until a DRRM official reviews them.</div></div>
           </div>
         </div>
-
       </div>
     </div>
   </main>
 
+  <script>
+    function saveNewHousehold() {
+      const head = document.getElementById('new-head').value;
+      const contact = document.getElementById('new-contact').value;
+      const purok = document.getElementById('new-purok').value;
+      const address = document.getElementById('new-address').value;
+
+      if (!head || !contact || !address) {
+        alert("Please fill in all required fields.");
+        return;
+      }
+
+      // Generate a random ID
+      const newId = "HH-SM-" + Math.floor(1000 + Math.random() * 9000);
+
+      // Create the new household object
+      const newRecord = {
+        id: newId,
+        head: head,
+        purok: purok + ", Barangay San Miguel",
+        address: address,
+        contact: contact,
+        tenure: "Owner", // Default for prototype
+        members: [{ name: head, age: 30, category: "Household head", needs: "None reported" }]
+      };
+
+      // Save to local storage (our fake database)
+      let customHouseholds = JSON.parse(localStorage.getItem('custom_households')) || {};
+      customHouseholds[newId] = newRecord;
+      localStorage.setItem('custom_households', JSON.stringify(customHouseholds));
+
+      alert("Household saved as Unverified!");
+      window.location.href = 'records.html';
+    }
+  </script>
   <script src="js/app.js"></script>
 </body>
 </html>
