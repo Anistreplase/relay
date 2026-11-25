@@ -71,7 +71,6 @@
       for (const key in households) all.push(households[key]);
       const custom = JSON.parse(localStorage.getItem('custom_households')) || {};
       for (const key in custom) all.push(custom[key]);
-      
       queueData = all.filter(hh => {
         const savedStatus = localStorage.getItem(`record_${hh.id}`) || "Unverified";
         return savedStatus === "Unverified" || savedStatus === "Needs Correction";
