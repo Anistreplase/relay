@@ -10,60 +10,17 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
 
   <style>
-    .prep-grid {
-      display: grid;
-      grid-template-columns: 2fr 1fr;
-      gap: 24px;
-    }
-
-    .map-container {
-      height: 400px;
-      width: 100%;
-      border-radius: 8px;
-      border: 1px solid var(--border);
-      z-index: 1; /* Important for Leaflet */
-    }
-
-    .offline-card {
-      background: var(--white);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 24px;
-      height: fit-content;
-    }
-
-    .checklist-item {
-      display: flex;
-      gap: 12px;
-      font-size: 13px;
-      color: var(--text-muted);
-      margin-bottom: 16px;
-      line-height: 1.4;
-    }
-
-    .checklist-item strong {
-      color: var(--text-main);
-      display: block;
-      margin-bottom: 4px;
-    }
-
-    .priority-table th { text-align: left; }
-    .priority-table td { font-size: 13px; }
-    
-    /* Ensure custom map markers don't have background */
-    .custom-marker {
-      background: none;
-      border: none;
-    }
+    .prep-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 24px; }
+    .map-container { height: 400px; width: 100%; border-radius: 8px; border: 1px solid var(--border); z-index: 1; }
+    .offline-card { background: var(--white); border: 1px solid var(--border); border-radius: 8px; padding: 24px; height: fit-content; }
+    .checklist-item { display: flex; gap: 12px; font-size: 13px; color: var(--text-muted); margin-bottom: 16px; line-height: 1.4; }
+    .checklist-item strong { color: var(--text-main); display: block; margin-bottom: 4px; }
   </style>
 </head>
 <body>
 
   <aside class="sidebar">
-    <div class="sidebar-logo">
-      <div class="logo-icon">R</div>
-      Relay
-    </div>
+    <div class="sidebar-logo"><div class="logo-icon">R</div> Relay</div>
     <div class="sidebar-section-title">Response Workspace</div>
     <nav class="sidebar-nav">
       <a href="dashboard.html"><span class="nav-icon">◈</span> Overview</a>
@@ -114,101 +71,41 @@
         <p>Prepare verified information and area maps before deployment.</p>
       </div>
       <div>
-        <button class="btn btn-primary btn-export-action">View evacuation tracking →</button>
+        <!-- FIXED: Now goes directly to evacuation tracking -->
+        <a href="evacuation.html" class="btn btn-primary">View evacuation tracking →</a>
       </div>
     </div>
 
     <div class="page-body">
       
-      <div class="alert-banner" style="background: #F3F4F6; border-color: #E5E7EB; color: var(--text-main);">
+      <div class="alert-banner" style="background: #F3F4F6; border-color: #E5E7EB; color: var(--text-main); margin-bottom: 24px;">
         <span><strong>Flood forecast · Puroks 2, 3 & 5</strong><br><span style="font-size:12px; color:var(--text-muted);">312 verified households in affected areas. 48 on the priority list.</span></span>
         <span class="pill pill-verified">Data current</span>
       </div>
 
       <div class="prep-grid">
         
-        <!-- LEFT COLUMN: MAP & PRIORITY LIST -->
         <div style="display: flex; flex-direction: column; gap: 24px;">
-          
           <div class="card" style="padding: 16px;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; padding: 0 8px;">
               <div class="card-title">Affected household map · Verified only</div>
               <div style="font-size: 11px; color: var(--text-muted);">📍 4 areas mapped</div>
             </div>
-            
-            <!-- REAL MAP CONTAINER -->
             <div id="map" class="map-container"></div>
-          </div>
-
-          <div class="card" style="padding: 0; overflow: hidden;">
-            <div class="card-header" style="padding: 20px 24px 16px 24px; border-bottom: none;">
-              <div class="card-title">Priority household outreach</div>
-              <span style="font-size: 11px; color: var(--text-muted);">48 households</span>
-            </div>
-            <div class="table-container">
-              <table class="priority-table">
-                <thead style="background: #F9FAFB;">
-                  <tr>
-                    <th style="padding-left: 24px;">Order</th>
-                    <th>Household</th>
-                    <th>Assistance need</th>
-                    <th>Assigned team</th>
-                  </tr>
-                </thead>
-                <tbody>
-                  <tr>
-                    <td style="padding-left: 24px;">01</td>
-                    <td><strong>Mendoza household</strong><br><span style="font-size: 11px; color: var(--text-muted);">HH-SM-0210 · Purok 4</span></td>
-                    <td>Mobility assistance</td>
-                    <td>Team Alpha</td>
-                  </tr>
-                  <tr>
-                    <td style="padding-left: 24px;">02</td>
-                    <td><strong>Garcia household</strong><br><span style="font-size: 11px; color: var(--text-muted);">HH-SM-0201 · Purok 3</span></td>
-                    <td>Medical equipment transport</td>
-                    <td>Team Bravo</td>
-                  </tr>
-                  <tr>
-                    <td style="padding-left: 24px;">03</td>
-                    <td><strong>Lim household</strong><br><span style="font-size: 11px; color: var(--text-muted);">HH-SM-0181 · Purok 1</span></td>
-                    <td>Assisted transport</td>
-                    <td>Team Alpha</td>
-                  </tr>
-                </tbody>
-              </table>
-            </div>
-            <div style="padding: 12px 24px; background: #F9FAFB; border-top: 1px solid var(--border); font-size: 11px; color: var(--text-muted);">
-              Priority order considers vulnerability and hazard exposure.
-            </div>
           </div>
         </div>
 
-        <!-- RIGHT COLUMN: OFFLINE PACKAGE -->
         <div style="display: flex; flex-direction: column; gap: 24px;">
           
           <div class="offline-card">
             <h3 style="font-size: 16px; margin-bottom: 8px; color: var(--maroon);">Prepare offline package</h3>
             <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 20px;">Package verified records and maps for field deployment.</p>
             
-            <div class="checklist-item">
-              <div>
-                <strong>📄 312 household records</strong>
-                Verified records and assistance needs.
-              </div>
-            </div>
-            <div class="checklist-item">
-              <div>
-                <strong>🗺️ 3 area maps</strong>
-                Purok boundaries and evacuation routes.
-              </div>
-            </div>
-            <div class="checklist-item">
-              <div>
-                <strong>📋 48 priority households</strong>
-                Outreach plan and assigned teams.
-              </div>
-            </div>
+            <div class="checklist-item"><div><strong>📄 312 household records</strong>Verified records and assistance needs.</div></div>
+            <div class="checklist-item"><div><strong>🗺️ 3 area maps</strong>Purok boundaries and evacuation routes.</div></div>
+            <div class="checklist-item"><div><strong>📋 48 priority households</strong>Outreach plan and assigned teams.</div></div>
 
+            <!-- FIXED: Only the download button triggers the export action -->
             <button class="btn btn-primary btn-export-action" style="width: 100%; justify-content: center; margin-top: 12px;">
               Download records & maps
             </button>
@@ -216,25 +113,9 @@
 
           <div class="offline-card" style="background: #FFFDF5; border-color: #FCD34D;">
             <h3 style="font-size: 15px; margin-bottom: 16px; color: #92400E;">Before you go offline</h3>
-            
-            <div class="checklist-item" style="color: #92400E;">
-              <div>
-                <strong>01 Download while connected</strong>
-                Ensure records and maps are saved on the device.
-              </div>
-            </div>
-            <div class="checklist-item" style="color: #92400E;">
-              <div>
-                <strong>02 Update evacuation status in the field</strong>
-                Changes stay on the device until a connection returns.
-              </div>
-            </div>
-            <div class="checklist-item" style="color: #92400E; margin-bottom: 0;">
-              <div>
-                <strong>03 Reconnect and synchronize</strong>
-                Review and confirm changes before syncing.
-              </div>
-            </div>
+            <div class="checklist-item" style="color: #92400E;"><div><strong>01 Download while connected</strong>Ensure records and maps are saved on the device.</div></div>
+            <div class="checklist-item" style="color: #92400E;"><div><strong>02 Update evacuation status in the field</strong>Changes stay on the device until a connection returns.</div></div>
+            <div class="checklist-item" style="color: #92400E; margin-bottom: 0;"><div><strong>03 Reconnect and synchronize</strong>Review and confirm changes before syncing.</div></div>
           </div>
 
         </div>
@@ -246,41 +127,15 @@
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   
   <script>
-    // Initialize the map centered on Iligan City
-    // Coordinates: 8.2280° N, 124.2452° E
     var map = L.map('map').setView([8.2280, 124.2452], 14);
+    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19, attribution: '© OpenStreetMap contributors' }).addTo(map);
 
-    // Load OpenStreetMap tiles
-    L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-      maxZoom: 19,
-      attribution: '© OpenStreetMap contributors'
-    }).addTo(map);
+    var redIcon = L.divIcon({ className: 'custom-marker', html: '<div style="background-color: #8B0000; width: 16px; height: 16px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.4);"></div>', iconSize: [16, 16], iconAnchor: [8, 8] });
+    var yellowIcon = L.divIcon({ className: 'custom-marker', html: '<div style="background-color: #FFD400; width: 16px; height: 16px; border-radius: 50%; border: 2px solid #5A1220; box-shadow: 0 2px 4px rgba(0,0,0,0.4);"></div>', iconSize: [16, 16], iconAnchor: [8, 8] });
 
-    // Custom red marker icon
-    var redIcon = L.divIcon({
-      className: 'custom-marker',
-      html: '<div style="background-color: #8B0000; width: 16px; height: 16px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.4);"></div>',
-      iconSize: [16, 16],
-      iconAnchor: [8, 8]
-    });
-
-    // Custom yellow marker icon (Priority)
-    var yellowIcon = L.divIcon({
-      className: 'custom-marker',
-      html: '<div style="background-color: #FFD400; width: 16px; height: 16px; border-radius: 50%; border: 2px solid #5A1220; box-shadow: 0 2px 4px rgba(0,0,0,0.4);"></div>',
-      iconSize: [16, 16],
-      iconAnchor: [8, 8]
-    });
-
-    // Add sample markers (Iligan City coordinates)
-    L.marker([8.2280, 124.2452], {icon: redIcon}).addTo(map)
-      .bindPopup('<b>Mendoza household</b><br>HH-SM-0210 · Purok 4<br>Mobility assistance');
-
-    L.marker([8.2320, 124.2480], {icon: yellowIcon}).addTo(map)
-      .bindPopup('<b>Garcia household</b><br>HH-SM-0201 · Purok 3<br>Medical equipment transport');
-
-    L.marker([8.2250, 124.2410], {icon: redIcon}).addTo(map)
-      .bindPopup('<b>Lim household</b><br>HH-SM-0181 · Purok 1<br>Assisted transport');
+    L.marker([8.2280, 124.2452], {icon: redIcon}).addTo(map).bindPopup('<b>Mendoza household</b><br>HH-SM-0210 · Purok 4<br>Mobility assistance');
+    L.marker([8.2320, 124.2480], {icon: yellowIcon}).addTo(map).bindPopup('<b>Garcia household</b><br>HH-SM-0201 · Purok 3<br>Medical equipment transport');
+    L.marker([8.2250, 124.2410], {icon: redIcon}).addTo(map).bindPopup('<b>Lim household</b><br>HH-SM-0181 · Purok 1<br>Assisted transport');
   </script>
 
   <script src="js/app.js"></script>
