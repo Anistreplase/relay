@@ -4,153 +4,64 @@
 
 document.addEventListener('DOMContentLoaded', () => {
   
-  // 1. Highlight the active sidebar link based on the current URL
+  // 1. Highlight the active sidebar link
   const currentPath = window.location.pathname.split('/').pop() || 'index.html';
-  const navLinks = document.querySelectorAll('.sidebar-nav a');
-  
-  navLinks.forEach(link => {
-    const linkPath = link.getAttribute('href');
-    if (linkPath === currentPath) {
-      link.classList.add('active');
-    }
+  document.querySelectorAll('.sidebar-nav a').forEach(link => {
+    if (link.getAttribute('href') === currentPath) link.classList.add('active');
   });
 
-  // 2. Role Swapping & Permissions (3 Roles)
-  const roleSelector = document.getElementById('role-selector');
-  if (roleSelector) {
-    const savedRole = localStorage.getItem('relay-role') || 'Barangay Official';
-    roleSelector.value = savedRole;
-    applyRolePermissions(savedRole);
-
-    roleSelector.addEventListener('change', (e) => {
-      const newRole = e.target.value;
-      localStorage.setItem('relay-role', newRole);
-      applyRolePermissions(newRole);
-      updateUserProfile(); // Update name instantly
-    });
-  }
-
-  // 3. Modal Controls
-  window.openModal = function(modalId) {
-    const modal = document.getElementById(modalId);
-    if (modal) modal.style.display = 'flex';
-  };
-
-  window.closeModal = function(modalId) {
-    const modal = document.getElementById(modalId);
-    if (modal) modal.style.display = 'none';
-  };
-
-  window.addEventListener('click', (e) => {
-    if (e.target.classList.contains('modal-overlay')) {
-      e.target.style.display = 'none';
-    }
-  });
-
-  // 4. Update User Profile Name on Load
+  // 2. Update User Profile Name
   updateUserProfile();
 
-  // 5. Make "Add Household" buttons work
-  document.querySelectorAll('.btn-add-action').forEach(btn => {
-    btn.addEventListener('click', () => {
+  // 3. Button Listeners (Using event delegation so it never breaks)
+  document.body.addEventListener('click', (e) => {
+    // Add Household
+    if (e.target.closest('.btn-add-action')) {
       window.location.href = 'add-household.html';
-    });
-  });
-
-  // 6. Make "Review" buttons work
-  document.querySelectorAll('.btn-verify-action').forEach(btn => {
-    if (btn.tagName === 'BUTTON') {
-      btn.addEventListener('click', () => {
-        window.location.href = 'review.html';
-      });
     }
-  });
-
-  // 7. Make "Export" buttons work (Simulated)
-  document.querySelectorAll('.btn-export-action').forEach(btn => {
-    btn.addEventListener('click', () => {
+    // Verify / View / Edit (Records & Dashboard)
+    if (e.target.closest('.btn-verify-action')) {
+      if (!e.target.closest('button').hasAttribute('onclick')) {
+        window.location.href = 'review.html';
+      }
+    }
+    // Export
+    if (e.target.closest('.btn-export-action')) {
       alert('Export started. In the full system, this would download a CSV file.');
-    });
-  });
-
-  // 8. Make Pagination work (Simulated)
-  document.querySelectorAll('.page-btn').forEach(btn => {
-    btn.addEventListener('click', () => {
+    }
+    // Pagination
+    if (e.target.closest('.page-btn')) {
       alert('Page changed! (Simulated pagination)');
-    });
+    }
   });
 
 });
 
 // =========================================
-// SAVE VERIFICATION STATUS (NEW)
-// =========================================
-function saveVerification() {
-  // 1. Get the selected radio button
-  const selectedStatus = document.querySelector('input[name="verification"]:checked').value;
-  
-  // 2. Map the value to the display text
-  let statusText = "Unverified";
-  if (selectedStatus === "verified") statusText = "Verified";
-  if (selectedStatus === "needs-correction") statusText = "Needs Correction";
-  if (selectedStatus === "unable") statusText = "Unable to Verify";
-
-  // 3. Save it to the browser's memory for the Santos household (HH-SM-0248)
-  localStorage.setItem('record_HH-SM-0248', statusText);
-
-  // 4. Show alert and redirect
-  alert('Record status updated to: ' + statusText);
-  window.location.href = 'records.html';
-}
-
-// =========================================
-// UPDATE USER PROFILE IN TOPBAR
+// UPDATE USER PROFILE
 // =========================================
 function updateUserProfile() {
   const savedRole = localStorage.getItem('relay-role') || 'Barangay Official';
-  
-  const userNameElement = document.querySelector('.user-name');
-  const userRoleElement = document.querySelector('.user-role');
+  const nameEl = document.querySelector('.user-name');
+  const roleEl = document.querySelector('.user-role');
 
-  if (userNameElement && userRoleElement) {
+  if (nameEl && roleEl) {
     if (savedRole === 'Admin') {
-      userNameElement.textContent = 'System Administrator';
-      userRoleElement.textContent = 'Full system access';
+      nameEl.textContent = 'System Administrator';
+      roleEl.textContent = 'Full system access';
     } else if (savedRole === 'Purok Officer') {
-      userNameElement.textContent = 'Purok Officer';
-      userRoleElement.textContent = 'Data collection & updates';
+      nameEl.textContent = 'Purok Officer';
+      roleEl.textContent = 'Data collection & updates';
     } else {
-      userNameElement.textContent = 'Barangay Official';
-      userRoleElement.textContent = 'Review & coordination';
+      nameEl.textContent = 'Barangay Official';
+      roleEl.textContent = 'Review & coordination';
     }
   }
 }
 
 // =========================================
-// PERMISSIONS LOGIC
+// LOGIN SIMULATION
 // =========================================
-function applyRolePermissions(role) {
-  const isAdmin = role === 'Admin';
-  const isBarangayOfficial = role === 'Barangay Official';
-  const isPurokOfficer = role === 'Purok Officer';
-
-  const verifyBtns = document.querySelectorAll('.btn-verify-action');
-  verifyBtns.forEach(btn => {
-    btn.style.display = (isAdmin || isBarangayOfficial) ? 'inline-flex' : 'none';
-  });
-
-  const addBtns = document.querySelectorAll('.btn-add-action');
-  addBtns.forEach(btn => {
-    btn.style.display = (isAdmin || isBarangayOfficial || isPurokOfficer) ? 'inline-flex' : 'none';
-  });
-
-  const editBtns = document.querySelectorAll('.btn-edit-action');
-  editBtns.forEach(btn => {
-    btn.style.display = (isAdmin || isBarangayOfficial || isPurokOfficer) ? 'inline-flex' : 'none';
-  });
-}
-
-// Simple login simulation
 function simulateLogin(event) {
   event.preventDefault();
   const email = document.getElementById('email').value;
@@ -161,4 +72,25 @@ function simulateLogin(event) {
     localStorage.setItem('relay-role', selectedRole);
     window.location.href = 'dashboard.html';
   }
+}
+
+// =========================================
+// SAVE VERIFICATION (THE FIX)
+// =========================================
+function saveVerification() {
+  // Get the selected radio button
+  const selectedStatus = document.querySelector('input[name="verification"]:checked').value;
+  
+  // Map the value to the display text
+  let statusText = "Unverified";
+  if (selectedStatus === "verified") statusText = "Verified";
+  if (selectedStatus === "needs-correction") statusText = "Needs Correction";
+  if (selectedStatus === "unable") statusText = "Unable to Verify";
+
+  // Save to browser memory
+  localStorage.setItem('record_HH-SM-0248', statusText);
+
+  // Redirect back to records
+  alert('Record status updated to: ' + statusText);
+  window.location.href = 'records.html';
 }
