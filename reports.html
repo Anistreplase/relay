@@ -1,0 +1,274 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Relay - Reports & Exports</title>
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .reports-grid { display: grid; grid-template-columns: 1fr 1.5fr; gap: 24px; }
+    
+    .report-option {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 16px;
+      margin-bottom: 12px;
+      cursor: pointer;
+      display: flex;
+      gap: 16px;
+      align-items: flex-start;
+      transition: all 0.2s;
+    }
+    
+    .report-option:hover { border-color: var(--maroon); background: #FFFDF5; }
+    .report-option.active { border-color: var(--maroon); background: #FFFDF5; box-shadow: 0 0 0 1px var(--maroon); }
+    
+    .report-icon {
+      font-size: 24px;
+      background: var(--cream);
+      width: 40px; height: 40px;
+      border-radius: 6px;
+      display: flex; align-items: center; justify-content: center;
+    }
+    
+    .report-details h4 { font-size: 14px; font-weight: 600; margin-bottom: 4px; }
+    .report-details p { font-size: 12px; color: var(--text-muted); line-height: 1.4; }
+
+    .preview-placeholder {
+      border: 2px dashed var(--border);
+      border-radius: 8px;
+      height: 100%;
+      min-height: 400px;
+      display: flex;
+      flex-direction: column;
+      align-items: center;
+      justify-content: center;
+      color: var(--text-muted);
+      background: #FAFAFA;
+    }
+    
+    .preview-active {
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 24px;
+      background: var(--white);
+      height: 100%;
+    }
+    
+    .preview-table th { background: var(--cream); padding: 8px 12px; font-size: 10px; }
+    .preview-table td { padding: 8px 12px; font-size: 12px; }
+    
+    .export-actions {
+      display: flex; gap: 12px; margin-top: 24px; padding-top: 24px; border-top: 1px solid var(--border);
+    }
+  </style>
+</head>
+<body>
+  <aside class="sidebar">
+    <div class="sidebar-logo"><div class="logo-icon">R</div> Relay</div>
+    <div class="sidebar-section-title">Response Workspace</div>
+    <nav class="sidebar-nav">
+      <a href="dashboard.html"><span class="nav-icon">◈</span> Overview</a>
+      <a href="records.html"><span class="nav-icon">👥</span> Household records</a>
+      <a href="verify.html"><span class="nav-icon">✓</span> Verification queue</a>
+      <a href="preparedness.html"><span class="nav-icon">▤</span> Preparedness & offline</a>
+      <a href="evacuation.html"><span class="nav-icon">⏱</span> Evacuation tracking</a>
+      <a href="revalidation.html"><span class="nav-icon">↻</span> Revalidation</a>
+      <a href="reports.html" class="active"><span class="nav-icon">📄</span> Reports & exports</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="status-card"><div class="status-title"><div class="status-dot"></div> System operational</div>Last synced at 09:42<br>Household records up to date</div>
+      <nav class="sidebar-nav" style="margin-top: 12px;"><a href="settings.html"><span class="nav-icon">⚙</span> Settings</a><a href="help.html"><span class="nav-icon">?</span> Help & support</a></nav>
+    </div>
+  </aside>
+  
+  <main class="main-content">
+    <header class="topbar">
+      <div class="topbar-left">
+        <div class="workspace-selector"><select id="workspace-selector" style="border:none; background:transparent; font-weight:600; font-size:14px; cursor:pointer;"><option>Barangay San Miguel</option></select></div>
+        <div class="search-bar"><span>🔍</span> Search households, puroks, records...</div>
+      </div>
+      <div class="topbar-right">
+        <span class="demo-badge">DEMO WORKSPACE</span><span>🔔</span>
+        <div class="user-profile"><div class="user-info"><div class="user-name">Loading...</div><div class="user-role">Loading...</div></div></div>
+      </div>
+    </header>
+    
+    <div class="page-header">
+      <div>
+        <h1>Reports & exports</h1>
+        <p>Generate summaries and download official records for partner agencies.</p>
+      </div>
+    </div>
+    
+    <div class="page-body">
+      <div class="reports-grid">
+        
+        <!-- LEFT COLUMN: REPORT SELECTION -->
+        <div>
+          <div class="card" style="padding: 16px;">
+            <h3 style="font-size: 14px; font-weight: 600; margin-bottom: 16px;">Select report type</h3>
+            
+            <div class="report-option active" onclick="selectReport('vulnerable', this)">
+              <div class="report-icon">👥</div>
+              <div class="report-details">
+                <h4>Vulnerable residents per purok</h4>
+                <p>List of residents requiring assistance, grouped by purok.</p>
+              </div>
+            </div>
+
+            <div class="report-option" onclick="selectReport('priority', this)">
+              <div class="report-icon">⚠️</div>
+              <div class="report-details">
+                <h4>Priority list</h4>
+                <p>Ranked households based on vulnerability and hazard exposure.</p>
+              </div>
+            </div>
+
+            <div class="report-option" onclick="selectReport('evacuation', this)">
+              <div class="report-icon">⏱</div>
+              <div class="report-details">
+                <h4>Evacuation status summary</h4>
+                <p>Current status of affected households during an active event.</p>
+              </div>
+            </div>
+
+            <div class="report-option" onclick="selectReport('pending', this)">
+              <div class="report-icon">✓</div>
+              <div class="report-details">
+                <h4>Records pending validation</h4>
+                <p>Households waiting for review by the DRRM official.</p>
+              </div>
+            </div>
+          </div>
+        </div>
+
+        <!-- RIGHT COLUMN: PREVIEW -->
+        <div>
+          <div class="card" style="padding: 24px; height: 100%;">
+            <div class="card-header" style="margin-bottom: 24px;">
+              <div class="card-title">Report preview</div>
+              <span class="pill pill-verified" id="preview-badge">Ready</span>
+            </div>
+            
+            <!-- EMPTY STATE -->
+            <div class="preview-placeholder" id="preview-empty">
+              <div style="font-size: 40px; margin-bottom: 16px;">📄</div>
+              <h3 style="font-size: 15px; color: var(--text-main); margin-bottom: 8px;">Vulnerable residents per purok</h3>
+              <p style="font-size: 13px; max-width: 300px; text-align: center;">Select a report on the left to generate a preview. Sensitive data is automatically omitted based on your role.</p>
+            </div>
+
+            <!-- ACTIVE STATE -->
+            <div class="preview-active" id="preview-active" style="display: none;">
+              <h3 style="font-size: 16px; font-weight: 600; margin-bottom: 4px;" id="preview-title">Vulnerable residents per purok</h3>
+              <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 24px;">Barangay San Miguel · Generated on 24 October 2026</p>
+              
+              <table class="preview-table">
+                <thead><tr><th>Purok</th><th>Total Households</th><th>Verified</th><th>Priority</th></tr></thead>
+                <tbody id="preview-body">
+                  <!-- Injected by JS -->
+                </tbody>
+              </table>
+
+              <div class="export-actions">
+                <button class="btn btn-primary" onclick="triggerExport('PDF')">Export as PDF</button>
+                <button class="btn btn-secondary" onclick="triggerExport('CSV')">Export as CSV</button>
+              </div>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <!-- CUSTOM MODAL: REPORTS & EXPORTS -->
+  <div id="modal-export" class="modal-overlay">
+    <div class="modal-box">
+      <div class="modal-eyebrow">Interactive Preview</div>
+      <div class="modal-title">Reports & exports</div>
+      <div class="modal-desc">
+        Prepare verified household records and affected-area maps for your response plan. Downloads are restricted to authorized users.
+        <br><br>
+        Your export will be generated and logged in the system audit trail.
+      </div>
+      <div class="modal-footer">
+        <div class="modal-footer-text">Sample interaction · No real records are changed.</div>
+        <div class="modal-actions">
+          <button class="btn btn-primary" onclick="hideModal('modal-export'); window.location.href='preparedness.html';">Open offline packages</button>
+          <button class="btn btn-secondary" onclick="hideModal('modal-export')">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
+  <script src="js/database.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      // Generate the preview table based on the database
+      let all = [];
+      for (const key in households) all.push(households[key]);
+      const custom = JSON.parse(localStorage.getItem('custom_households')) || {};
+      for (const key in custom) all.push(custom[key]);
+
+      const puroks = ['Purok 1', 'Purok 2', 'Purok 3', 'Purok 4', 'Purok 5'];
+      let tableHtml = '';
+
+      puroks.forEach(p => {
+        const inPurok = all.filter(h => h.purok.includes(p));
+        const verified = inPurok.filter(h => (localStorage.getItem(`record_${h.id}`) || "Unverified") === 'Verified');
+        
+        // Only show puroks that have data, or show all with 0s
+        if (inPurok.length > 0) {
+          tableHtml += `
+            <tr>
+              <td><strong>${p}</strong></td>
+              <td>${inPurok.length}</td>
+              <td><span class="pill pill-verified">${verified.length}</span></td>
+              <td>${verified.length}</td>
+            </tr>
+          `;
+        }
+      });
+
+      if (tableHtml === '') {
+        document.getElementById('preview-body').innerHTML = '<tr><td colspan="4" style="text-align:center;">No data available.</td></tr>';
+      } else {
+        document.getElementById('preview-body').innerHTML = tableHtml;
+      }
+    });
+
+    function selectReport(type, el) {
+      // Update UI active state
+      document.querySelectorAll('.report-option').forEach(opt => opt.classList.remove('active'));
+      el.classList.add('active');
+
+      // Show the preview
+      document.getElementById('preview-empty').style.display = 'none';
+      document.getElementById('preview-active').style.display = 'block';
+
+      // Change the title based on selection
+      const titles = {
+        'vulnerable': 'Vulnerable residents per purok',
+        'priority': 'Priority list',
+        'evacuation': 'Evacuation status summary',
+        'pending': 'Records pending validation'
+      };
+      document.getElementById('preview-title').textContent = titles[type];
+    }
+
+    function triggerExport(format) {
+      if (!navigator.onLine) {
+        alert("You are currently offline. This action cannot be completed until you reconnect.");
+        return;
+      }
+      // This calls the function in app.js that opens the custom modal
+      if (typeof showModal === 'function') {
+        showModal('modal-export');
+      } else {
+        alert('Export started.');
+      }
+    }
+  </script>
+  <script src="js/app.js"></script>
+</body>
+</html>
