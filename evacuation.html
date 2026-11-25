@@ -6,63 +6,15 @@
   <title>Relay - Evacuation Tracking</title>
   <link rel="stylesheet" href="css/style.css">
   <style>
-    .kpi-grid {
-      display: grid;
-      grid-template-columns: repeat(4, 1fr);
-      gap: 16px;
-      margin-bottom: 24px;
-    }
-
-    .kpi-card {
-      background: var(--white);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 20px;
-    }
-
+    .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
+    .kpi-card { background: var(--white); border: 1px solid var(--border); border-radius: 8px; padding: 20px; }
     .kpi-card .kpi-label { font-size: 12px; color: var(--text-muted); font-weight: 600; margin-bottom: 8px; }
     .kpi-card .kpi-value { font-size: 28px; font-weight: 700; color: var(--text-main); }
-
-    .sync-banner {
-      background: #FEF3C7;
-      border: 1px solid #FCD34D;
-      color: #92400E;
-      padding: 12px 16px;
-      border-radius: 6px;
-      font-size: 13px;
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      margin-bottom: 24px;
-    }
-
-    .update-panel {
-      background: var(--white);
-      border: 1px solid var(--border);
-      border-radius: 8px;
-      padding: 24px;
-      height: fit-content;
-      position: sticky;
-      top: 80px;
-    }
-
-    .form-field {
-      display: flex;
-      flex-direction: column;
-      gap: 6px;
-      margin-bottom: 16px;
-    }
-
+    .sync-banner { background: #FEF3C7; border: 1px solid #FCD34D; color: #92400E; padding: 12px 16px; border-radius: 6px; font-size: 13px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+    .update-panel { background: var(--white); border: 1px solid var(--border); border-radius: 8px; padding: 24px; height: fit-content; position: sticky; top: 80px; }
+    .form-field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
     .form-field label { font-size: 12px; font-weight: 600; }
-    .form-field select, .form-field textarea, .form-field input {
-      padding: 10px 12px;
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      font-family: inherit;
-      font-size: 13px;
-    }
-
-    /* Status Pills */
+    .form-field select, .form-field textarea { padding: 10px 12px; border: 1px solid var(--border); border-radius: 6px; font-family: inherit; font-size: 13px; }
     .status-at-home { background: #FEE2E2; color: #991B1B; }
     .status-evacuated { background: #D1FAE5; color: #065F46; }
     .status-en-route { background: #FEF3C7; color: #92400E; }
@@ -70,12 +22,8 @@
   </style>
 </head>
 <body>
-
   <aside class="sidebar">
-    <div class="sidebar-logo">
-      <div class="logo-icon">R</div>
-      Relay
-    </div>
+    <div class="sidebar-logo"><div class="logo-icon">R</div> Relay</div>
     <div class="sidebar-section-title">Response Workspace</div>
     <nav class="sidebar-nav">
       <a href="dashboard.html"><span class="nav-icon">◈</span> Overview</a>
@@ -131,48 +79,35 @@
     </div>
 
     <div class="page-body">
-      
-      <!-- SYNC BANNER -->
       <div class="sync-banner">
-        <div>
-          <strong>You are offline.</strong> Updates are saved on this device.
-        </div>
-        <div style="font-size: 12px;">
-          3 changes will synchronize when the connection returns. Last sync: 08:42
-        </div>
+        <div><strong>You are offline.</strong> Updates are saved on this device.</div>
+        <div style="font-size: 12px;">3 changes will synchronize when the connection returns. Last sync: 08:42</div>
       </div>
 
-      <!-- KPIS -->
       <div class="kpi-grid">
         <div class="kpi-card">
           <div class="kpi-label">Affected households</div>
-          <div class="kpi-value">312</div>
+          <div class="kpi-value" id="kpi-total">0</div>
         </div>
         <div class="kpi-card">
           <div class="kpi-label">Evacuated</div>
-          <div class="kpi-value" style="color: #10B981;">188</div>
+          <div class="kpi-value" id="kpi-evacuated" style="color: #10B981;">0</div>
         </div>
         <div class="kpi-card">
           <div class="kpi-label">Assisted en route</div>
-          <div class="kpi-value" style="color: #F59E0B;">36</div>
+          <div class="kpi-value" id="kpi-enroute" style="color: #F59E0B;">0</div>
         </div>
         <div class="kpi-card">
           <div class="kpi-label">Not yet evacuated</div>
-          <div class="kpi-value" style="color: #EF4444;">88</div>
+          <div class="kpi-value" id="kpi-not-evacuated" style="color: #EF4444;">0</div>
         </div>
       </div>
 
       <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px;">
         
-        <!-- LEFT: TABLE -->
         <div class="card" style="padding: 0; overflow: hidden; height: fit-content;">
           <div class="card-header" style="padding: 20px 24px;">
             <div class="card-title">Affected households</div>
-            <select class="filter-input" style="padding: 6px 12px;">
-              <option>All puroks</option>
-              <option>Purok 2</option>
-              <option>Purok 3</option>
-            </select>
           </div>
           <div class="table-container">
             <table>
@@ -183,52 +118,27 @@
                   <th>Sync state</th>
                 </tr>
               </thead>
-              <tbody>
-                <tr>
-                  <td style="padding-left: 24px;">
-                    <strong>Mendoza household</strong><br>
-                    <span style="color:var(--text-muted); font-size:11px;">HH-SM-0210 · Purok 4</span>
-                  </td>
-                  <td><span class="pill status-evacuated">Assisted</span></td>
-                  <td><span style="font-size: 11px; color: var(--text-muted);">Pending sync</span></td>
-                </tr>
-                <tr>
-                  <td style="padding-left: 24px;">
-                    <strong>Garcia household</strong><br>
-                    <span style="color:var(--text-muted); font-size:11px;">HH-SM-0201 · Purok 3</span>
-                  </td>
-                  <td><span class="pill status-at-home">At Home</span></td>
-                  <td><span style="font-size: 11px; color: #10B981;">Synced</span></td>
-                </tr>
-                <tr>
-                  <td style="padding-left: 24px;">
-                    <strong>Ramos household</strong><br>
-                    <span style="color:var(--text-muted); font-size:11px;">HH-SM-0140 · Purok 5</span>
-                  </td>
-                  <td><span class="pill status-en-route">En route</span></td>
-                  <td><span style="font-size: 11px; color: var(--text-muted);">Pending sync</span></td>
-                </tr>
-                <tr>
-                  <td style="padding-left: 24px;">
-                    <strong>Lim household</strong><br>
-                    <span style="color:var(--text-muted); font-size:11px;">HH-SM-0181 · Purok 1</span>
-                  </td>
-                  <td><span class="pill status-unaccounted">Unaccounted For</span></td>
-                  <td><span style="font-size: 11px; color: #10B981;">Synced</span></td>
-                </tr>
+              <tbody id="evac-table-body">
+                <!-- Injected by JS -->
               </tbody>
             </table>
           </div>
         </div>
 
-        <!-- RIGHT: UPDATE PANEL -->
         <div class="update-panel">
           <h3 style="font-size: 15px; margin-bottom: 4px;">Update evacuation status</h3>
-          <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 20px;">Garcia household · HH-SM-0201</p>
+          <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 20px;">Select a household to update</p>
+
+          <div class="form-field">
+            <label>Household</label>
+            <select id="update-hh-select">
+              <!-- Injected by JS -->
+            </select>
+          </div>
 
           <div class="form-field">
             <label>New evacuation status</label>
-            <select>
+            <select id="update-status-select">
               <option>At Home</option>
               <option>Pre-emptively Evacuated</option>
               <option>In Evacuation Center</option>
@@ -238,20 +148,11 @@
           </div>
 
           <div class="form-field">
-            <label>Assigned responder team</label>
-            <select>
-              <option>Team Alpha</option>
-              <option>Team Bravo</option>
-              <option>Team Charlie</option>
-            </select>
-          </div>
-
-          <div class="form-field">
             <label>Field note (optional)</label>
-            <textarea rows="3" placeholder="e.g. Transport required for medical equipment."></textarea>
+            <textarea rows="3" id="update-note" placeholder="e.g. Transport required for medical equipment."></textarea>
           </div>
 
-          <button class="btn btn-primary" style="width: 100%; justify-content: center;" onclick="alert('Status updated locally. Will sync when online.')">
+          <button class="btn btn-primary" style="width: 100%; justify-content: center;" onclick="saveEvacStatus()">
             Save update on this device
           </button>
         </div>
@@ -260,6 +161,82 @@
     </div>
   </main>
 
+  <script src="js/database.js"></script>
+  <script>
+    let affectedHouseholds = [];
+
+    document.addEventListener('DOMContentLoaded', () => {
+      // 1. Load data (Only Verified households are affected for this prototype)
+      let all = [];
+      for (const key in households) all.push(households[key]);
+      const custom = JSON.parse(localStorage.getItem('custom_households')) || {};
+      for (const key in custom) all.push(custom[key]);
+      
+      affectedHouseholds = all.filter(hh => {
+        const status = localStorage.getItem(`record_${hh.id}`) || "Unverified";
+        return status === 'Verified'; // Only verified ones show up here
+      });
+
+      // Get saved evacuation statuses
+      const savedEvacs = JSON.parse(localStorage.getItem('evacuation_statuses')) || {};
+      
+      let evacuated = 0, enroute = 0, notEvacuated = 0;
+      let tableHtml = '';
+      let selectHtml = '';
+
+      if (affectedHouseholds.length === 0) {
+        tableHtml = '<tr><td colspan="3" style="text-align:center; padding: 20px;">No verified households available.</td></tr>';
+        selectHtml = '<option>No households</option>';
+      } else {
+        affectedHouseholds.forEach(hh => {
+          const status = savedEvacs[hh.id] || "At Home";
+          
+          if (status === 'Assisted' || status === 'In Evacuation Center' || status === 'Pre-emptively Evacuated') evacuated++;
+          else if (status === 'Unaccounted For') notEvacuated++;
+          else enroute++; // At home counts as en route/not yet
+
+          let pillClass = "status-at-home";
+          if (status === 'Assisted' || status === 'In Evacuation Center' || status === 'Pre-emptively Evacuated') pillClass = "status-evacuated";
+          if (status === 'Unaccounted For') pillClass = "status-unaccounted";
+
+          tableHtml += `
+            <tr>
+              <td style="padding-left: 24px;">
+                <strong>${hh.head} household</strong><br>
+                <span style="color:var(--text-muted); font-size:11px;">${hh.id} · ${hh.purok.split(',')[0]}</span>
+              </td>
+              <td><span class="pill ${pillClass}">${status}</span></td>
+              <td><span style="font-size: 11px; color: var(--text-muted);">Synced</span></td>
+            </tr>
+          `;
+
+          selectHtml += `<option value="${hh.id}">${hh.head} (${hh.id})</option>`;
+        });
+      }
+
+      document.getElementById('evac-table-body').innerHTML = tableHtml;
+      document.getElementById('update-hh-select').innerHTML = selectHtml;
+
+      document.getElementById('kpi-total').textContent = affectedHouseholds.length;
+      document.getElementById('kpi-evacuated').textContent = evacuated;
+      document.getElementById('kpi-enroute').textContent = enroute;
+      document.getElementById('kpi-not-evacuated').textContent = notEvacuated;
+    });
+
+    function saveEvacStatus() {
+      const hhId = document.getElementById('update-hh-select').value;
+      const newStatus = document.getElementById('update-status-select').value;
+
+      if (hhId === 'No households') return;
+
+      let savedEvacs = JSON.parse(localStorage.getItem('evacuation_statuses')) || {};
+      savedEvacs[hhId] = newStatus;
+      localStorage.setItem('evacuation_statuses', JSON.stringify(savedEvacs));
+
+      alert('Status updated to: ' + newStatus);
+      window.location.reload();
+    }
+  </script>
   <script src="js/app.js"></script>
 </body>
 </html>
