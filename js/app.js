@@ -109,4 +109,31 @@ function simulateLogin(event) {
     localStorage.setItem('relay-role', selectedRole);
     window.location.href = 'dashboard.html';
   }
+
+  // =========================================
+// UPDATE USER PROFILE IN TOPBAR
+// =========================================
+function updateUserProfile() {
+  const savedRole = localStorage.getItem('relay-role') || 'Barangay Official';
+  const savedUser = localStorage.getItem('relay-user') || 'user@barangay.gov.ph';
+
+  const userNameElement = document.querySelector('.user-name');
+  const userRoleElement = document.querySelector('.user-role');
+
+  if (userNameElement && userRoleElement) {
+    if (savedRole === 'Admin') {
+      userNameElement.textContent = 'System Administrator';
+      userRoleElement.textContent = 'Full system access';
+    } else if (savedRole === 'Purok Officer') {
+      userNameElement.textContent = 'Purok Officer';
+      userRoleElement.textContent = 'Data collection & updates';
+    } else {
+      userNameElement.textContent = 'Barangay Official';
+      userRoleElement.textContent = 'Review & coordination';
+    }
+  }
+}
+
+// Run the profile update when the page loads
+document.addEventListener('DOMContentLoaded', updateUserProfile);
 }
