@@ -35,154 +35,71 @@
       <a href="reports.html"><span class="nav-icon">📄</span> Reports & exports</a>
     </nav>
     <div class="sidebar-footer">
-      <div class="status-card">
-        <div class="status-title"><div class="status-dot"></div> System operational</div>
-        Last synced at 09:42<br>Household records up to date
-      </div>
-      <nav class="sidebar-nav" style="margin-top: 12px;">
-        <a href="settings.html"><span class="nav-icon">⚙</span> Settings</a>
-        <a href="help.html"><span class="nav-icon">?</span> Help & support</a>
-      </nav>
+      <div class="status-card"><div class="status-title"><div class="status-dot"></div> System operational</div>Last synced at 09:42<br>Household records up to date</div>
+      <nav class="sidebar-nav" style="margin-top: 12px;"><a href="settings.html"><span class="nav-icon">⚙</span> Settings</a><a href="help.html"><span class="nav-icon">?</span> Help & support</a></nav>
     </div>
   </aside>
-
   <main class="main-content">
     <header class="topbar">
       <div class="topbar-left">
-        <div class="workspace-selector">
-          <select id="workspace-selector" style="border:none; background:transparent; font-weight:600; font-size:14px; cursor:pointer;">
-            <option>Barangay San Miguel</option>
-          </select>
-        </div>
+        <div class="workspace-selector"><select id="workspace-selector" style="border:none; background:transparent; font-weight:600; font-size:14px; cursor:pointer;"><option>Barangay San Miguel</option></select></div>
         <div class="search-bar"><span>🔍</span> Search households, puroks, records...</div>
       </div>
       <div class="topbar-right">
-        <span class="demo-badge">DEMO WORKSPACE</span>
-        <span>🔔</span>
-        <div class="user-profile">
-          <div class="user-info">
-            <div class="user-name">Loading...</div>
-            <div class="user-role">Loading...</div>
-          </div>
-        </div>
+        <span class="demo-badge">DEMO WORKSPACE</span><span>🔔</span>
+        <div class="user-profile"><div class="user-info"><div class="user-name">Loading...</div><div class="user-role">Loading...</div></div></div>
       </div>
     </header>
-
     <div class="page-header">
-      <div>
-        <h1>Evacuation tracking</h1>
-        <p>Flood preparedness · Puroks 2, 3 & 5 · Latest view on this device</p>
-      </div>
-      <div>
-        <span class="pill pill-unable" style="background: #FEF3C7; color: #92400E;">OFFLINE MODE</span>
-      </div>
+      <div><h1>Evacuation tracking</h1><p>Flood preparedness · Puroks 2, 3 & 5 · Latest view on this device</p></div>
+      <div><span class="pill pill-unable" style="background: #FEF3C7; color: #92400E;">OFFLINE MODE</span></div>
     </div>
-
     <div class="page-body">
       <div class="sync-banner">
         <div><strong>You are offline.</strong> Updates are saved on this device.</div>
         <div style="font-size: 12px;">3 changes will synchronize when the connection returns. Last sync: 08:42</div>
       </div>
-
       <div class="kpi-grid">
-        <div class="kpi-card">
-          <div class="kpi-label">Affected households</div>
-          <div class="kpi-value" id="kpi-total">0</div>
-        </div>
-        <div class="kpi-card">
-          <div class="kpi-label">Evacuated</div>
-          <div class="kpi-value" id="kpi-evacuated" style="color: #10B981;">0</div>
-        </div>
-        <div class="kpi-card">
-          <div class="kpi-label">Assisted en route</div>
-          <div class="kpi-value" id="kpi-enroute" style="color: #F59E0B;">0</div>
-        </div>
-        <div class="kpi-card">
-          <div class="kpi-label">Not yet evacuated</div>
-          <div class="kpi-value" id="kpi-not-evacuated" style="color: #EF4444;">0</div>
-        </div>
+        <div class="kpi-card"><div class="kpi-label">Affected households</div><div class="kpi-value" id="kpi-total">0</div></div>
+        <div class="kpi-card"><div class="kpi-label">Evacuated</div><div class="kpi-value" id="kpi-evacuated" style="color: #10B981;">0</div></div>
+        <div class="kpi-card"><div class="kpi-label">Assisted en route</div><div class="kpi-value" id="kpi-enroute" style="color: #F59E0B;">0</div></div>
+        <div class="kpi-card"><div class="kpi-label">Not yet evacuated</div><div class="kpi-value" id="kpi-not-evacuated" style="color: #EF4444;">0</div></div>
       </div>
-
       <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px;">
-        
         <div class="card" style="padding: 0; overflow: hidden; height: fit-content;">
-          <div class="card-header" style="padding: 20px 24px;">
-            <div class="card-title">Affected households</div>
-          </div>
+          <div class="card-header" style="padding: 20px 24px;"><div class="card-title">Affected households</div></div>
           <div class="table-container">
             <table>
-              <thead style="background: #F9FAFB;">
-                <tr>
-                  <th style="padding-left: 24px;">Household</th>
-                  <th>Status</th>
-                  <th>Sync state</th>
-                </tr>
-              </thead>
-              <tbody id="evac-table-body">
-                <!-- Injected by JS -->
-              </tbody>
+              <thead style="background: #F9FAFB;"><tr><th style="padding-left: 24px;">Household</th><th>Status</th><th>Sync state</th></tr></thead>
+              <tbody id="evac-table-body"></tbody>
             </table>
           </div>
         </div>
-
         <div class="update-panel">
           <h3 style="font-size: 15px; margin-bottom: 4px;">Update evacuation status</h3>
           <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 20px;">Select a household to update</p>
-
-          <div class="form-field">
-            <label>Household</label>
-            <select id="update-hh-select">
-              <!-- Injected by JS -->
-            </select>
-          </div>
-
-          <div class="form-field">
-            <label>New evacuation status</label>
-            <select id="update-status-select">
-              <option>At Home</option>
-              <option>Pre-emptively Evacuated</option>
-              <option>In Evacuation Center</option>
-              <option>Assisted</option>
-              <option>Unaccounted For</option>
-            </select>
-          </div>
-
-          <div class="form-field">
-            <label>Field note (optional)</label>
-            <textarea rows="3" id="update-note" placeholder="e.g. Transport required for medical equipment."></textarea>
-          </div>
-
-          <button class="btn btn-primary" style="width: 100%; justify-content: center;" onclick="saveEvacStatus()">
-            Save update on this device
-          </button>
+          <div class="form-field"><label>Household</label><select id="update-hh-select"></select></div>
+          <div class="form-field"><label>New evacuation status</label><select id="update-status-select"><option>At Home</option><option>Pre-emptively Evacuated</option><option>In Evacuation Center</option><option>Assisted</option><option>Unaccounted For</option></select></div>
+          <div class="form-field"><label>Field note (optional)</label><textarea rows="3" id="update-note" placeholder="e.g. Transport required..."></textarea></div>
+          <button class="btn btn-primary" style="width: 100%; justify-content: center;" onclick="saveEvacStatus()">Save update on this device</button>
         </div>
-
       </div>
     </div>
   </main>
-
   <script src="js/database.js"></script>
   <script>
     let affectedHouseholds = [];
-
     document.addEventListener('DOMContentLoaded', () => {
-      // 1. Load data (Only Verified households are affected for this prototype)
       let all = [];
       for (const key in households) all.push(households[key]);
       const custom = JSON.parse(localStorage.getItem('custom_households')) || {};
       for (const key in custom) all.push(custom[key]);
       
-      affectedHouseholds = all.filter(hh => {
-        const status = localStorage.getItem(`record_${hh.id}`) || "Unverified";
-        return status === 'Verified'; // Only verified ones show up here
-      });
-
-      // Get saved evacuation statuses
+      affectedHouseholds = all.filter(hh => (localStorage.getItem(`record_${hh.id}`) || "Unverified") === 'Verified');
       const savedEvacs = JSON.parse(localStorage.getItem('evacuation_statuses')) || {};
       
       let evacuated = 0, enroute = 0, notEvacuated = 0;
-      let tableHtml = '';
-      let selectHtml = '';
+      let tableHtml = '', selectHtml = '';
 
       if (affectedHouseholds.length === 0) {
         tableHtml = '<tr><td colspan="3" style="text-align:center; padding: 20px;">No verified households available.</td></tr>';
@@ -190,33 +107,21 @@
       } else {
         affectedHouseholds.forEach(hh => {
           const status = savedEvacs[hh.id] || "At Home";
-          
           if (status === 'Assisted' || status === 'In Evacuation Center' || status === 'Pre-emptively Evacuated') evacuated++;
           else if (status === 'Unaccounted For') notEvacuated++;
-          else enroute++; // At home counts as en route/not yet
+          else enroute++;
 
           let pillClass = "status-at-home";
           if (status === 'Assisted' || status === 'In Evacuation Center' || status === 'Pre-emptively Evacuated') pillClass = "status-evacuated";
           if (status === 'Unaccounted For') pillClass = "status-unaccounted";
 
-          tableHtml += `
-            <tr>
-              <td style="padding-left: 24px;">
-                <strong>${hh.head} household</strong><br>
-                <span style="color:var(--text-muted); font-size:11px;">${hh.id} · ${hh.purok.split(',')[0]}</span>
-              </td>
-              <td><span class="pill ${pillClass}">${status}</span></td>
-              <td><span style="font-size: 11px; color: var(--text-muted);">Synced</span></td>
-            </tr>
-          `;
-
+          tableHtml += `<tr><td style="padding-left: 24px;"><strong>${hh.head} household</strong><br><span style="color:var(--text-muted); font-size:11px;">${hh.id} · ${hh.purok.split(',')[0]}</span></td><td><span class="pill ${pillClass}">${status}</span></td><td><span style="font-size: 11px; color: var(--text-muted);">Synced</span></td></tr>`;
           selectHtml += `<option value="${hh.id}">${hh.head} (${hh.id})</option>`;
         });
       }
 
       document.getElementById('evac-table-body').innerHTML = tableHtml;
       document.getElementById('update-hh-select').innerHTML = selectHtml;
-
       document.getElementById('kpi-total').textContent = affectedHouseholds.length;
       document.getElementById('kpi-evacuated').textContent = evacuated;
       document.getElementById('kpi-enroute').textContent = enroute;
@@ -226,13 +131,10 @@
     function saveEvacStatus() {
       const hhId = document.getElementById('update-hh-select').value;
       const newStatus = document.getElementById('update-status-select').value;
-
       if (hhId === 'No households') return;
-
       let savedEvacs = JSON.parse(localStorage.getItem('evacuation_statuses')) || {};
       savedEvacs[hhId] = newStatus;
       localStorage.setItem('evacuation_statuses', JSON.stringify(savedEvacs));
-
       alert('Status updated to: ' + newStatus);
       window.location.reload();
     }
