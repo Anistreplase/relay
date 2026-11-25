@@ -59,7 +59,6 @@ document.addEventListener('DOMContentLoaded', () => {
 
   // 6. Make "Review" buttons work
   document.querySelectorAll('.btn-verify-action').forEach(btn => {
-    // If it's an <a> tag, it already has an href. If it's a <button>, add logic.
     if (btn.tagName === 'BUTTON') {
       btn.addEventListener('click', () => {
         window.location.href = 'review.html';
@@ -114,19 +113,16 @@ function applyRolePermissions(role) {
   const isBarangayOfficial = role === 'Barangay Official';
   const isPurokOfficer = role === 'Purok Officer';
 
-  // Verify Buttons
   const verifyBtns = document.querySelectorAll('.btn-verify-action');
   verifyBtns.forEach(btn => {
     btn.style.display = (isAdmin || isBarangayOfficial) ? 'inline-flex' : 'none';
   });
 
-  // Add Household Buttons
   const addBtns = document.querySelectorAll('.btn-add-action');
   addBtns.forEach(btn => {
     btn.style.display = (isAdmin || isBarangayOfficial || isPurokOfficer) ? 'inline-flex' : 'none';
   });
 
-  // Edit Buttons
   const editBtns = document.querySelectorAll('.btn-edit-action');
   editBtns.forEach(btn => {
     btn.style.display = (isAdmin || isBarangayOfficial || isPurokOfficer) ? 'inline-flex' : 'none';
