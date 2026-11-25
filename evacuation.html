@@ -10,7 +10,6 @@
     .kpi-card { background: var(--white); border: 1px solid var(--border); border-radius: 8px; padding: 20px; }
     .kpi-card .kpi-label { font-size: 12px; color: var(--text-muted); font-weight: 600; margin-bottom: 8px; }
     .kpi-card .kpi-value { font-size: 28px; font-weight: 700; color: var(--text-main); }
-    .sync-banner { background: #FEF3C7; border: 1px solid #FCD34D; color: #92400E; padding: 12px 16px; border-radius: 6px; font-size: 13px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
     .update-panel { background: var(--white); border: 1px solid var(--border); border-radius: 8px; padding: 24px; height: fit-content; position: sticky; top: 80px; }
     .form-field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
     .form-field label { font-size: 12px; font-weight: 600; }
@@ -51,14 +50,9 @@
       </div>
     </header>
     <div class="page-header">
-      <div><h1>Evacuation tracking</h1><p>Flood preparedness · Puroks 2, 3 & 5 · Latest view on this device</p></div>
-      <div><span class="pill pill-unable" style="background: #FEF3C7; color: #92400E;">OFFLINE MODE</span></div>
+      <div><h1>Evacuation tracking</h1><p>Flood preparedness · Puroks 2, 3 & 5</p></div>
     </div>
     <div class="page-body">
-      <div class="sync-banner">
-        <div><strong>You are offline.</strong> Updates are saved on this device.</div>
-        <div style="font-size: 12px;">3 changes will synchronize when the connection returns. Last sync: 08:42</div>
-      </div>
       <div class="kpi-grid">
         <div class="kpi-card"><div class="kpi-label">Affected households</div><div class="kpi-value" id="kpi-total">0</div></div>
         <div class="kpi-card"><div class="kpi-label">Evacuated</div><div class="kpi-value" id="kpi-evacuated" style="color: #10B981;">0</div></div>
