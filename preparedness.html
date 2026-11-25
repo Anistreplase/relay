@@ -5,20 +5,15 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Relay - Preparedness & Offline</title>
   <link rel="stylesheet" href="css/style.css">
-  
-  <!-- Leaflet Map CSS -->
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
-
   <style>
     .prep-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 24px; }
-    .map-container { height: 400px; width: 100%; border-radius: 8px; border: 1px solid var(--border); z-index: 1; background-color: #e5e5e5; }
+    .map-container { height: 350px; width: 100%; border-radius: 8px; border: 1px solid var(--border); z-index: 1; background: #e5e5e5; }
     .offline-card { background: var(--white); border: 1px solid var(--border); border-radius: 8px; padding: 24px; height: fit-content; }
     .checklist-item { display: flex; gap: 12px; font-size: 13px; color: var(--text-muted); margin-bottom: 16px; line-height: 1.4; }
     .checklist-item strong { color: var(--text-main); display: block; margin-bottom: 4px; }
     .priority-table th { text-align: left; }
     .priority-table td { font-size: 13px; }
-    
-    /* Evacuation Status Pills */
     .status-at-home { background: #FEE2E2; color: #991B1B; }
     .status-evacuated { background: #D1FAE5; color: #065F46; }
     .status-en-route { background: #FEF3C7; color: #92400E; }
@@ -26,7 +21,6 @@
   </style>
 </head>
 <body>
-
   <aside class="sidebar">
     <div class="sidebar-logo"><div class="logo-icon">R</div> Relay</div>
     <div class="sidebar-section-title">Response Workspace</div>
@@ -84,18 +78,13 @@
     </div>
 
     <div class="page-body">
-      
       <div class="prep-grid">
-        
-        <!-- LEFT COLUMN: MAP & PRIORITY LIST -->
         <div style="display: flex; flex-direction: column; gap: 24px;">
-          
           <div class="card" style="padding: 16px;">
             <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 16px; padding: 0 8px;">
               <div class="card-title">Affected household map · Verified only</div>
               <div style="font-size: 11px; color: var(--text-muted);" id="map-count">📍 0 areas mapped</div>
             </div>
-            <!-- The map container is now taller to show the streets clearly -->
             <div id="map" class="map-container"></div>
           </div>
 
@@ -107,91 +96,84 @@
             <div class="table-container">
               <table class="priority-table">
                 <thead style="background: #F9FAFB;">
-                  <tr>
-                    <th style="padding-left: 24px;">Order</th>
-                    <th>Household</th>
-                    <th>Assistance need</th>
-                    <th>Evac Status</th>
-                  </tr>
+                  <tr><th style="padding-left: 24px;">Order</th><th>Household</th><th>Assistance need</th><th>Evac Status</th></tr>
                 </thead>
-                <tbody id="priority-body">
-                  <!-- Injected by JS -->
-                </tbody>
+                <tbody id="priority-body"></tbody>
               </table>
             </div>
           </div>
         </div>
 
-        <!-- RIGHT COLUMN: OFFLINE PACKAGE -->
         <div style="display: flex; flex-direction: column; gap: 24px;">
-          
           <div class="offline-card">
             <h3 style="font-size: 16px; margin-bottom: 8px; color: var(--maroon);">Prepare offline package</h3>
             <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 20px;">Package verified records and maps for field deployment.</p>
-            
-            <div class="checklist-item">
-              <div><strong id="record-count-text">📄 0 household records</strong> Verified records and assistance needs.</div>
-            </div>
-            <div class="checklist-item">
-              <div><strong>🗺️ 3 area maps</strong> Purok boundaries and evacuation routes.</div>
-            </div>
-            <div class="checklist-item">
-              <div><strong id="priority-count-text">📋 0 priority households</strong> Outreach plan and assigned teams.</div>
-            </div>
-
-            <button class="btn btn-primary btn-export-action" style="width: 100%; justify-content: center; margin-top: 12px;">
-              Download records & maps
-            </button>
+            <div class="checklist-item"><div><strong id="record-count-text">📄 0 household records</strong> Verified records and assistance needs.</div></div>
+            <div class="checklist-item"><div><strong>🗺️ 3 area maps</strong> Purok boundaries and evacuation routes.</div></div>
+            <div class="checklist-item"><div><strong id="priority-count-text">📋 0 priority households</strong> Outreach plan and assigned teams.</div></div>
+            <button class="btn btn-primary" onclick="showModal('modal-offline')" style="width: 100%; justify-content: center; margin-top: 12px;">Download records & maps</button>
           </div>
-
           <div class="offline-card" style="background: #FFFDF5; border-color: #FCD34D;">
             <h3 style="font-size: 15px; margin-bottom: 16px; color: #92400E;">Before you go offline</h3>
             <div class="checklist-item" style="color: #92400E;"><div><strong>01 Download while connected</strong>Ensure records and maps are saved on the device.</div></div>
             <div class="checklist-item" style="color: #92400E;"><div><strong>02 Update evacuation status in the field</strong>Changes stay on the device until a connection returns.</div></div>
             <div class="checklist-item" style="color: #92400E; margin-bottom: 0;"><div><strong>03 Reconnect and synchronize</strong>Review and confirm changes before syncing.</div></div>
           </div>
-
         </div>
       </div>
     </div>
   </main>
 
+  <!-- CUSTOM MODAL: OFFLINE PACKAGE -->
+  <div id="modal-offline" class="modal-overlay">
+    <div class="modal-box">
+      <div class="modal-eyebrow">Interactive Preview</div>
+      <div class="modal-title">Offline package preview</div>
+      <div class="modal-desc">
+        <span id="modal-record-count">0</span> verified household records, 3 area maps, and <span id="modal-priority-count">0</span> priority households would be stored on this device for use in the field.
+        <br><br>
+        The update would wait on this device until a connection returns.
+      </div>
+      <div class="modal-footer">
+        <div class="modal-footer-text">Sample interaction · No real records are changed.</div>
+        <div class="modal-actions">
+          <button class="btn btn-primary" onclick="hideModal('modal-offline'); window.location.href='evacuation.html';">Open field tracking</button>
+          <button class="btn btn-secondary" onclick="hideModal('modal-offline')">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script src="js/database.js"></script>
   <script>
     document.addEventListener('DOMContentLoaded', () => {
-      // 1. Load Data
       let all = [];
       for (const key in households) all.push(households[key]);
       const custom = JSON.parse(localStorage.getItem('custom_households')) || {};
       for (const key in custom) all.push(custom[key]);
       
-      // Filter only Verified
-      const verified = all.filter(hh => {
-        const status = localStorage.getItem(`record_${hh.id}`) || "Unverified";
-        return status === 'Verified';
-      });
-
-      // Get saved evacuation statuses
+      const verified = all.filter(hh => (localStorage.getItem(`record_${hh.id}`) || "Unverified") === 'Verified');
       const savedEvacs = JSON.parse(localStorage.getItem('evacuation_statuses')) || {};
 
-      // 2. Update Numbers
       document.getElementById('map-count').textContent = `📍 ${verified.length} areas mapped`;
       document.getElementById('priority-count').textContent = `${verified.length} households`;
       document.getElementById('record-count-text').textContent = `📄 ${verified.length} household records`;
       document.getElementById('priority-count-text').textContent = `📋 ${verified.length} priority households`;
+      
+      // Update Modal text
+      document.getElementById('modal-record-count').textContent = verified.length;
+      document.getElementById('modal-priority-count').textContent = verified.length;
 
-      // 3. Populate Priority List
       const priorityBody = document.getElementById('priority-body');
       if (verified.length === 0) {
         priorityBody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding: 20px;">No verified households yet.</td></tr>';
       } else {
         verified.forEach((hh, index) => {
           const evacStatus = savedEvacs[hh.id] || "At Home";
-          
-          let pillClass = "status-at-home";
+          let pillClass = "status-en-route";
           if (evacStatus === 'Assisted' || evacStatus === 'In Evacuation Center' || evacStatus === 'Pre-emptively Evacuated') pillClass = "status-evacuated";
           if (evacStatus === 'Unaccounted For') pillClass = "status-unaccounted";
-          if (evacStatus === 'At Home') pillClass = "status-en-route";
+          if (evacStatus === 'At Home') pillClass = "status-at-home";
 
           priorityBody.innerHTML += `
             <tr>
@@ -204,20 +186,9 @@
         });
       }
 
-      // 4. Init Map
-      var map = L.map('map').setView([8.2280, 124.2452], 15); // Zoom 15 shows streets clearly
-      
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { 
-        maxZoom: 19, 
-        attribution: '© OpenStreetMap contributors' 
-      }).addTo(map);
-
-      var redIcon = L.divIcon({ 
-        className: 'custom-marker', 
-        html: '<div style="background-color: #8B0000; width: 16px; height: 16px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.4);"></div>', 
-        iconSize: [16, 16], 
-        iconAnchor: [8, 8] 
-      });
+      var map = L.map('map').setView([8.2280, 124.2452], 15);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
+      var redIcon = L.divIcon({ className: 'custom-marker', html: '<div style="background-color: #8B0000; width: 16px; height: 16px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.4);"></div>', iconSize: [16, 16], iconAnchor: [8, 8] });
       
       if (verified.length === 0) {
         L.marker([8.2280, 124.2452], {icon: redIcon}).addTo(map).bindPopup('No verified households yet.');
@@ -225,12 +196,12 @@
         verified.forEach(hh => {
           const lat = 8.2280 + (Math.random() - 0.5) * 0.01;
           const lng = 124.2452 + (Math.random() - 0.5) * 0.01;
-          L.marker([lat, lng], {icon: redIcon}).addTo(map).bindPopup(`<b>${hh.head} household</b><br>${hh.id}<br>${hh.purok.split(',')[0]}`);
+          L.marker([lat, lng], {icon: redIcon}).addTo(map).bindPopup(`<b>${hh.head} household</b><br>${hh.id}`);
         });
       }
     });
   </script>
-
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="js/app.js"></script>
 </body>
 </html>
