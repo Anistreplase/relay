@@ -104,11 +104,11 @@
             <div class="form-row">
               <div class="form-field">
                 <label>Household head <span>*</span></label>
-                <input type="text" id="new-head" placeholder="e.g. Ana Cruz" value="Ana Cruz">
+                <input type="text" id="new-head" placeholder="e.g. Ana Cruz">
               </div>
               <div class="form-field">
                 <label>Contact number <span>*</span></label>
-                <input type="text" id="new-contact" placeholder="+63 9XX XXX XXXX" value="0912 345 6789">
+                <input type="text" id="new-contact" placeholder="+63 9XX XXX XXXX">
               </div>
             </div>
 
@@ -130,7 +130,7 @@
             <div class="form-row">
               <div class="form-field" style="grid-column: span 2;">
                 <label>Household address <span>*</span></label>
-                <input type="text" id="new-address" placeholder="e.g. 18 Riverside Street" value="18 Riverside Street">
+                <input type="text" id="new-address" placeholder="e.g. 18 Riverside Street">
               </div>
             </div>
 
@@ -168,9 +168,9 @@
             <table class="members-table">
               <thead><tr><th>Name</th><th>Age</th><th>Category</th><th>Action</th></tr></thead>
               <tbody>
-                <tr><td>Ana Cruz</td><td>34</td><td>Household head</td><td><a href="#" style="color: var(--red); font-weight: 600;">Edit</a></td></tr>
-                <tr><td>Leo Cruz</td><td>8</td><td>Child</td><td><a href="#" style="color: var(--red); font-weight: 600;">Edit</a></td></tr>
-                <tr><td>Nico Cruz</td><td>5</td><td>Child</td><td><a href="#" style="color: var(--red); font-weight: 600;">Edit</a></td></tr>
+                <tr><td>Ana Cruz</td><td>34</td><td>Household head</td><td><a href="#" onclick="alert('Member editing will be available in the full system.'); return false;" style="color: var(--red); font-weight: 600;">Edit</a></td></tr>
+                <tr><td>Leo Cruz</td><td>8</td><td>Child</td><td><a href="#" onclick="alert('Member editing will be available in the full system.'); return false;" style="color: var(--red); font-weight: 600;">Edit</a></td></tr>
+                <tr><td>Nico Cruz</td><td>5</td><td>Child</td><td><a href="#" onclick="alert('Member editing will be available in the full system.'); return false;" style="color: var(--red); font-weight: 600;">Edit</a></td></tr>
               </tbody>
             </table>
             <button class="btn btn-secondary" style="width: 100%; margin-top: 16px; justify-content: center;">+ Add household member</button>
@@ -178,9 +178,19 @@
 
           <div class="checklist-card" style="background: #FFFDF5; border-color: #FCD34D;">
             <h3 style="color: var(--maroon); margin-bottom: 20px; font-size: 15px;">Before you submit</h3>
-            <div class="checklist-item" style="color: #92400E;"><div class="checklist-number">01</div><div><strong>Complete required information</strong>Fill in all fields marked with an asterisk.</div></div>
-            <div class="checklist-item" style="color: #92400E;"><div class="checklist-number">02</div><div><strong>Check the duplicate database</strong>Review existing records to avoid creating a duplicate household.</div></div>
-            <div class="checklist-item" style="color: #92400E;"><div class="checklist-number">03</div><div><strong>Save the record as Unverified</strong>All new records start as Unverified until a DRRM official reviews them.</div></div>
+            
+            <div class="checklist-item" style="color: #92400E;">
+              <div class="checklist-number">01</div>
+              <div><strong>Complete required information</strong> Fill in all fields marked with an asterisk.</div>
+            </div>
+            <div class="checklist-item" style="color: #92400E;">
+              <div class="checklist-number">02</div>
+              <div><strong>Check the duplicate database</strong> Review existing records to avoid creating a duplicate household.</div>
+            </div>
+            <div class="checklist-item" style="color: #92400E;">
+              <div class="checklist-number">03</div>
+              <div><strong>Save the record as Unverified</strong> All new records start as Unverified until a DRRM official reviews them.</div>
+            </div>
           </div>
         </div>
       </div>
@@ -196,12 +206,17 @@
       const purokError = document.getElementById('purok-error');
       const purokInput = document.getElementById('new-purok');
 
-      // Validate required fields
+      // Clear previous errors
+      purokInput.classList.remove('error');
+      purokError.style.display = 'none';
+
+      // Validate
+      if (!purok) {
+        purokInput.classList.add('error');
+        purokError.style.display = 'block';
+      }
+
       if (!head || !contact || !purok || !address) {
-        if (!purok) {
-          purokInput.classList.add('error');
-          purokError.style.display = 'block';
-        }
         alert("Please fill in all required fields.");
         return;
       }
@@ -218,9 +233,7 @@
         contact: contact,
         tenure: "Owner",
         members: [
-          { name: "Ana Cruz", age: 34, category: "Household head", needs: "None" },
-          { name: "Leo Cruz", age: 8, category: "Child", needs: "None" },
-          { name: "Nico Cruz", age: 5, category: "Child", needs: "None" }
+          { name: head, age: 30, category: "Household head", needs: "None" }
         ]
       };
 
