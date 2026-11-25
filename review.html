@@ -31,39 +31,21 @@
       <a href="reports.html"><span class="nav-icon">📄</span> Reports & exports</a>
     </nav>
     <div class="sidebar-footer">
-      <div class="status-card">
-        <div class="status-title"><div class="status-dot"></div> System operational</div>
-        Last synced at 09:42<br>Household records up to date
-      </div>
-      <nav class="sidebar-nav" style="margin-top: 12px;">
-        <a href="settings.html"><span class="nav-icon">⚙</span> Settings</a>
-        <a href="help.html"><span class="nav-icon">?</span> Help & support</a>
-      </nav>
+      <div class="status-card"><div class="status-title"><div class="status-dot"></div> System operational</div>Last synced at 09:42<br>Household records up to date</div>
+      <nav class="sidebar-nav" style="margin-top: 12px;"><a href="settings.html"><span class="nav-icon">⚙</span> Settings</a><a href="help.html"><span class="nav-icon">?</span> Help & support</a></nav>
     </div>
   </aside>
-
   <main class="main-content">
     <header class="topbar">
       <div class="topbar-left">
-        <div class="workspace-selector">
-          <select id="workspace-selector" style="border:none; background:transparent; font-weight:600; font-size:14px; cursor:pointer;">
-            <option>Barangay San Miguel</option>
-          </select>
-        </div>
+        <div class="workspace-selector"><select id="workspace-selector" style="border:none; background:transparent; font-weight:600; font-size:14px; cursor:pointer;"><option>Barangay San Miguel</option></select></div>
         <div class="search-bar"><span>🔍</span> Search households, puroks, records...</div>
       </div>
       <div class="topbar-right">
-        <span class="demo-badge">DEMO WORKSPACE</span>
-        <span>🔔</span>
-        <div class="user-profile">
-          <div class="user-info">
-            <div class="user-name">Loading...</div>
-            <div class="user-role">Loading...</div>
-          </div>
-        </div>
+        <span class="demo-badge">DEMO WORKSPACE</span><span>🔔</span>
+        <div class="user-profile"><div class="user-info"><div class="user-name">Loading...</div><div class="user-role">Loading...</div></div></div>
       </div>
     </header>
-
     <div class="page-header">
       <div>
         <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px; text-transform: uppercase;">Verification queue</div>
@@ -72,59 +54,67 @@
       </div>
       <div><span class="pill pill-unverified">Unverified</span></div>
     </div>
-
     <div class="page-body">
       <div class="review-grid">
         <div style="display: flex; flex-direction: column; gap: 24px;">
           <div class="card">
-            <div class="card-header">
-              <div class="card-title">Household details</div>
-              <span id="review-id" style="font-size: 12px; color: var(--text-muted);"></span>
-            </div>
+            <div class="card-header"><div class="card-title">Household details</div><span id="review-id" style="font-size: 12px; color: var(--text-muted);"></span></div>
             <div class="detail-row"><div class="detail-label">Household head</div><div class="detail-value" id="review-head"></div></div>
             <div class="detail-row"><div class="detail-label">Address</div><div class="detail-value" id="review-address"></div></div>
             <div class="detail-row"><div class="detail-label">Purok</div><div class="detail-value" id="review-purok"></div></div>
             <div class="detail-row"><div class="detail-label">Contact number</div><div class="detail-value" id="review-contact"></div></div>
             <div class="detail-row"><div class="detail-label">Tenure</div><div class="detail-value" id="review-tenure"></div></div>
           </div>
-
           <div class="card">
-            <div class="card-header">
-              <div class="card-title">Household members</div>
-            </div>
-            <table>
-              <thead>
-                <tr><th>Name</th><th>Age</th><th>Category</th><th>Assistance needed</th></tr>
-              </thead>
-              <tbody id="review-members-body">
-                <!-- Members will be injected here by JS -->
-              </tbody>
-            </table>
+            <div class="card-header"><div class="card-title">Household members</div></div>
+            <table><thead><tr><th>Name</th><th>Age</th><th>Category</th><th>Assistance needed</th></tr></thead><tbody id="review-members-body"></tbody></table>
           </div>
         </div>
-
         <div style="display: flex; flex-direction: column; gap: 24px;">
           <div class="decision-card">
             <h3 style="font-size: 15px; color: var(--maroon); margin-bottom: 8px;">Verification decision</h3>
             <div class="radio-group">
-              <label class="radio-label"><input type="radio" name="verification" value="verified" checked> Verified</label>
-              <label class="radio-label"><input type="radio" name="verification" value="needs-correction"> Needs Correction</label>
-              <label class="radio-label"><input type="radio" name="verification" value="unable"> Unable to Verify</label>
+              <label class="radio-label"><input type="radio" name="verification" value="Verified" checked> Verified</label>
+              <label class="radio-label"><input type="radio" name="verification" value="Needs Correction"> Needs Correction</label>
+              <label class="radio-label"><input type="radio" name="verification" value="Unable to Verify"> Unable to Verify</label>
             </div>
-            <button class="btn btn-primary" style="width: 100%; justify-content: center;" onclick="saveVerification()">Save verification</button>
+            <button class="btn btn-primary" style="width: 100%; justify-content: center;" onclick="showModal('modal-verify')">Save verification</button>
           </div>
         </div>
       </div>
     </div>
   </main>
 
+  <!-- CUSTOM MODAL: VERIFICATION PREVIEW -->
+  <div id="modal-verify" class="modal-overlay">
+    <div class="modal-box">
+      <div class="modal-eyebrow">Interactive Preview</div>
+      <div class="modal-title">Verification action preview</div>
+      <div class="modal-desc">
+        The selected outcome is <strong><span id="modal-status-text">Verified</span></strong>. Saving this record will update its status and make it available to authorized responders.
+      </div>
+      <div class="modal-footer">
+        <div class="modal-footer-text">Sample interaction · No real records are changed.</div>
+        <div class="modal-actions">
+          <button class="btn btn-primary" onclick="saveVerification()">Continue</button>
+          <button class="btn btn-secondary" onclick="hideModal('modal-verify')">Close</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script src="js/database.js"></script>
   <script>
-    // THIS RUNS WHEN THE REVIEW PAGE LOADS
+    let currentRecordId = 'HH-SM-0248';
     document.addEventListener('DOMContentLoaded', () => {
-      const recordId = localStorage.getItem('selected_household') || 'HH-SM-0248';
-      const data = households[recordId];
-
+      currentRecordId = localStorage.getItem('selected_household') || 'HH-SM-0248';
+      
+      let all = [];
+      for (const key in households) all.push(households[key]);
+      const custom = JSON.parse(localStorage.getItem('custom_households')) || {};
+      for (const key in custom) all.push(custom[key]);
+      
+      const data = all.find(h => h.id === currentRecordId);
       if (data) {
         document.getElementById('review-id').textContent = data.id;
         document.getElementById('review-head').textContent = data.head;
@@ -132,25 +122,28 @@
         document.getElementById('review-purok').textContent = data.purok;
         document.getElementById('review-contact').textContent = data.contact;
         document.getElementById('review-tenure').textContent = data.tenure;
-        
-        // Update the header
         document.getElementById('dynamic-header-text').innerHTML = `${data.head} household · ${data.purok.split(',')[0]} · Submitted 24 October 2026`;
-
-        // Inject members
-        const membersBody = document.getElementById('review-members-body');
-        membersBody.innerHTML = ''; 
+        
+        const membersBody = document.getElementById('review-members-body'); membersBody.innerHTML = ''; 
         data.members.forEach(member => {
-          membersBody.innerHTML += `
-            <tr>
-              <td><strong>${member.name}</strong></td>
-              <td>${member.age}</td>
-              <td>${member.category}</td>
-              <td>${member.needs}</td>
-            </tr>
-          `;
+          membersBody.innerHTML += `<tr><td><strong>${member.name}</strong></td><td>${member.age}</td><td>${member.category}</td><td>${member.needs}</td></tr>`;
         });
       }
+
+      // Update modal text when radio button changes
+      document.querySelectorAll('input[name="verification"]').forEach(radio => {
+        radio.addEventListener('change', (e) => {
+          document.getElementById('modal-status-text').textContent = e.target.value;
+        });
+      });
     });
+
+    function saveVerification() {
+      const selectedStatus = document.querySelector('input[name="verification"]:checked').value;
+      localStorage.setItem(`record_${currentRecordId}`, selectedStatus);
+      hideModal('modal-verify');
+      window.location.href = 'records.html';
+    }
   </script>
   <script src="js/app.js"></script>
 </body>
