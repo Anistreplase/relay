@@ -15,7 +15,6 @@
     .radio-group { display: flex; flex-direction: column; gap: 12px; margin: 16px 0; }
     .radio-label { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; cursor: pointer; }
     .radio-label input { width: 16px; height: 16px; accent-color: var(--maroon); }
-    .review-notes { width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 6px; font-family: inherit; font-size: 13px; resize: vertical; min-height: 80px; margin-bottom: 16px; }
   </style>
 </head>
 <body>
@@ -67,9 +66,9 @@
 
     <div class="page-header">
       <div>
-        <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px; text-transform: uppercase;">Verification queue / HH-SM-0248</div>
+        <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px; text-transform: uppercase;">Verification queue</div>
         <h1>Review household record</h1>
-        <p>Santos household · Purok 2 · Submitted 24 October 2026</p>
+        <p id="dynamic-header-text">Loading...</p>
       </div>
       <div><span class="pill pill-unverified">Unverified</span></div>
     </div>
@@ -80,70 +79,79 @@
           <div class="card">
             <div class="card-header">
               <div class="card-title">Household details</div>
-              <span style="font-size: 12px; color: var(--text-muted);">HH-SM-0248</span>
+              <span id="review-id" style="font-size: 12px; color: var(--text-muted);"></span>
             </div>
-            <div class="detail-row"><div class="detail-label">Household head</div><div class="detail-value">Ana Cruz</div></div>
-            <div class="detail-row"><div class="detail-label">Address</div><div class="detail-value">18 Riverside Street</div></div>
-            <div class="detail-row"><div class="detail-label">Purok</div><div class="detail-value">Purok 2, Barangay San Miguel</div></div>
-            <div class="detail-row"><div class="detail-label">Contact number</div><div class="detail-value">+63 912 345 6789</div></div>
-            <div class="detail-row"><div class="detail-label">Tenure</div><div class="detail-value">Owner</div></div>
+            <div class="detail-row"><div class="detail-label">Household head</div><div class="detail-value" id="review-head"></div></div>
+            <div class="detail-row"><div class="detail-label">Address</div><div class="detail-value" id="review-address"></div></div>
+            <div class="detail-row"><div class="detail-label">Purok</div><div class="detail-value" id="review-purok"></div></div>
+            <div class="detail-row"><div class="detail-label">Contact number</div><div class="detail-value" id="review-contact"></div></div>
+            <div class="detail-row"><div class="detail-label">Tenure</div><div class="detail-value" id="review-tenure"></div></div>
           </div>
 
           <div class="card">
             <div class="card-header">
               <div class="card-title">Household members</div>
-              <span style="font-size: 12px; color: var(--text-muted);">3 members</span>
             </div>
             <table>
               <thead>
                 <tr><th>Name</th><th>Age</th><th>Category</th><th>Assistance needed</th></tr>
               </thead>
-              <tbody>
-                <tr><td><strong>Ana Cruz</strong></td><td>34</td><td>Household head</td><td>None reported</td></tr>
-                <tr><td><strong>Leo Cruz</strong></td><td>8</td><td>Child</td><td>None reported</td></tr>
-                <tr><td><strong>Nina Cruz</strong></td><td>5</td><td>Child</td><td>None reported</td></tr>
+              <tbody id="review-members-body">
+                <!-- Members will be injected here by JS -->
               </tbody>
             </table>
-          </div>
-
-          <div class="card">
-            <div class="card-header"><div class="card-title">Submission checks</div></div>
-            <div style="font-size: 13px; color: var(--text-muted); line-height: 1.8;">
-              ✓ Required information complete<br>
-              ✓ No possible duplicates flagged<br>
-              ✓ Purok officer confirmation received
-            </div>
           </div>
         </div>
 
         <div style="display: flex; flex-direction: column; gap: 24px;">
           <div class="decision-card">
             <h3 style="font-size: 15px; color: var(--maroon); margin-bottom: 8px;">Verification decision</h3>
-            <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 16px;">Select the outcome of your review. Only Verified records become available to authorized city responders.</p>
             <div class="radio-group">
               <label class="radio-label"><input type="radio" name="verification" value="verified" checked> Verified</label>
               <label class="radio-label"><input type="radio" name="verification" value="needs-correction"> Needs Correction</label>
               <label class="radio-label"><input type="radio" name="verification" value="unable"> Unable to Verify</label>
             </div>
-            <label style="font-size: 13px; font-weight: 600; display: block; margin-bottom: 8px;">Review notes (optional)</label>
-            <textarea class="review-notes" placeholder="Add remarks..."></textarea>
-            
-            <!-- THE FIX IS HERE -->
             <button class="btn btn-primary" style="width: 100%; justify-content: center;" onclick="saveVerification()">Save verification</button>
-          </div>
-
-          <div class="card" style="background: var(--cream);">
-            <div class="card-title" style="margin-bottom: 12px;">Record activity</div>
-            <div style="font-size: 12px; color: var(--text-muted); line-height: 1.8;">
-              <strong>09:10</strong> · Office confirmation received<br>
-              <strong>08:45</strong> · Saved in Unverified<br>
-              <strong>08:20</strong> · Household visit completed
-            </div>
           </div>
         </div>
       </div>
     </div>
   </main>
+
+  <script src="js/database.js"></script>
+  <script>
+    // THIS RUNS WHEN THE REVIEW PAGE LOADS
+    document.addEventListener('DOMContentLoaded', () => {
+      const recordId = localStorage.getItem('selected_household') || 'HH-SM-0248';
+      const data = households[recordId];
+
+      if (data) {
+        document.getElementById('review-id').textContent = data.id;
+        document.getElementById('review-head').textContent = data.head;
+        document.getElementById('review-address').textContent = data.address;
+        document.getElementById('review-purok').textContent = data.purok;
+        document.getElementById('review-contact').textContent = data.contact;
+        document.getElementById('review-tenure').textContent = data.tenure;
+        
+        // Update the header
+        document.getElementById('dynamic-header-text').innerHTML = `${data.head} household · ${data.purok.split(',')[0]} · Submitted 24 October 2026`;
+
+        // Inject members
+        const membersBody = document.getElementById('review-members-body');
+        membersBody.innerHTML = ''; 
+        data.members.forEach(member => {
+          membersBody.innerHTML += `
+            <tr>
+              <td><strong>${member.name}</strong></td>
+              <td>${member.age}</td>
+              <td>${member.category}</td>
+              <td>${member.needs}</td>
+            </tr>
+          `;
+        });
+      }
+    });
+  </script>
   <script src="js/app.js"></script>
 </body>
 </html>
