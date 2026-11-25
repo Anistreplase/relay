@@ -37,6 +37,25 @@ document.addEventListener('DOMContentLoaded', () => {
 
 });
 
+// =========================================
+// SESSION TERMINATION LISTENER
+// =========================================
+window.addEventListener('storage', (e) => {
+  // If the sessions list changes in another tab...
+  if (e.key === 'relay-active-sessions') {
+    const sessions = JSON.parse(e.newValue) || {};
+    const currentSessionId = sessionStorage.getItem('relay-session-id');
+    
+    // Check if THIS tab's session was deleted from the list
+    if (currentSessionId && !sessions[currentSessionId]) {
+      alert("⚠️ Your session has been terminated by an administrator or another device.");
+      localStorage.removeItem('relay-user');
+      localStorage.removeItem('relay-role');
+      window.location.href = 'index.html';
+    }
+  }
+});
+
 function updateUserProfile() {
   const savedRole = localStorage.getItem('relay-role') || 'Barangay Official';
   const nameEl = document.querySelector('.user-name');
@@ -64,9 +83,6 @@ function simulateLogin(event) {
   }
 }
 
-// =========================================
-// MODALS
-// =========================================
 function showModal(modalId) {
   const modal = document.getElementById(modalId);
   if (modal) modal.style.display = 'flex';
@@ -95,9 +111,6 @@ function saveVerification() {
   }
 }
 
-// =========================================
-// OFFLINE SYNC LOGIC
-// =========================================
 function initNetworkListener() {
   let banner = document.createElement('div');
   banner.id = 'sync-banner';
