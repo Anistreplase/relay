@@ -83,6 +83,27 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // =========================================
+// SAVE VERIFICATION STATUS (NEW)
+// =========================================
+function saveVerification() {
+  // 1. Get the selected radio button
+  const selectedStatus = document.querySelector('input[name="verification"]:checked').value;
+  
+  // 2. Map the value to the display text
+  let statusText = "Unverified";
+  if (selectedStatus === "verified") statusText = "Verified";
+  if (selectedStatus === "needs-correction") statusText = "Needs Correction";
+  if (selectedStatus === "unable") statusText = "Unable to Verify";
+
+  // 3. Save it to the browser's memory for the Santos household (HH-SM-0248)
+  localStorage.setItem('record_HH-SM-0248', statusText);
+
+  // 4. Show alert and redirect
+  alert('Record status updated to: ' + statusText);
+  window.location.href = 'records.html';
+}
+
+// =========================================
 // UPDATE USER PROFILE IN TOPBAR
 // =========================================
 function updateUserProfile() {
