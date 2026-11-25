@@ -1,0 +1,265 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Relay - Evacuation Tracking</title>
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .kpi-card {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 20px;
+    }
+
+    .kpi-card .kpi-label { font-size: 12px; color: var(--text-muted); font-weight: 600; margin-bottom: 8px; }
+    .kpi-card .kpi-value { font-size: 28px; font-weight: 700; color: var(--text-main); }
+
+    .sync-banner {
+      background: #FEF3C7;
+      border: 1px solid #FCD34D;
+      color: #92400E;
+      padding: 12px 16px;
+      border-radius: 6px;
+      font-size: 13px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 24px;
+    }
+
+    .update-panel {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 24px;
+      height: fit-content;
+      position: sticky;
+      top: 80px;
+    }
+
+    .form-field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-bottom: 16px;
+    }
+
+    .form-field label { font-size: 12px; font-weight: 600; }
+    .form-field select, .form-field textarea, .form-field input {
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-family: inherit;
+      font-size: 13px;
+    }
+
+    /* Status Pills */
+    .status-at-home { background: #FEE2E2; color: #991B1B; }
+    .status-evacuated { background: #D1FAE5; color: #065F46; }
+    .status-en-route { background: #FEF3C7; color: #92400E; }
+    .status-unaccounted { background: #F3F4F6; color: #374151; }
+  </style>
+</head>
+<body>
+
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon">R</div>
+      Relay
+    </div>
+    <div class="sidebar-section-title">Response Workspace</div>
+    <nav class="sidebar-nav">
+      <a href="dashboard.html"><span class="nav-icon">◈</span> Overview</a>
+      <a href="records.html"><span class="nav-icon">👥</span> Household records</a>
+      <a href="verify.html"><span class="nav-icon">✓</span> Verification queue</a>
+      <a href="preparedness.html"><span class="nav-icon">▤</span> Preparedness & offline</a>
+      <a href="evacuation.html" class="active"><span class="nav-icon">⏱</span> Evacuation tracking</a>
+      <a href="revalidation.html"><span class="nav-icon">↻</span> Revalidation</a>
+      <a href="reports.html"><span class="nav-icon">📄</span> Reports & exports</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="status-card">
+        <div class="status-title"><div class="status-dot"></div> System operational</div>
+        Last synced at 09:42<br>Household records up to date
+      </div>
+      <nav class="sidebar-nav" style="margin-top: 12px;">
+        <a href="settings.html"><span class="nav-icon">⚙</span> Settings</a>
+        <a href="help.html"><span class="nav-icon">?</span> Help & support</a>
+      </nav>
+    </div>
+  </aside>
+
+  <main class="main-content">
+    <header class="topbar">
+      <div class="topbar-left">
+        <div class="workspace-selector">
+          <select id="workspace-selector" style="border:none; background:transparent; font-weight:600; font-size:14px; cursor:pointer;">
+            <option>Barangay San Miguel</option>
+          </select>
+        </div>
+        <div class="search-bar"><span>🔍</span> Search households, puroks, records...</div>
+      </div>
+      <div class="topbar-right">
+        <span class="demo-badge">DEMO WORKSPACE</span>
+        <span>🔔</span>
+        <div class="user-profile">
+          <div class="user-info">
+            <div class="user-name">Loading...</div>
+            <div class="user-role">Loading...</div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <div class="page-header">
+      <div>
+        <h1>Evacuation tracking</h1>
+        <p>Flood preparedness · Puroks 2, 3 & 5 · Latest view on this device</p>
+      </div>
+      <div>
+        <span class="pill pill-unable" style="background: #FEF3C7; color: #92400E;">OFFLINE MODE</span>
+      </div>
+    </div>
+
+    <div class="page-body">
+      
+      <!-- SYNC BANNER -->
+      <div class="sync-banner">
+        <div>
+          <strong>You are offline.</strong> Updates are saved on this device.
+        </div>
+        <div style="font-size: 12px;">
+          3 changes will synchronize when the connection returns. Last sync: 08:42
+        </div>
+      </div>
+
+      <!-- KPIS -->
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-label">Affected households</div>
+          <div class="kpi-value">312</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Evacuated</div>
+          <div class="kpi-value" style="color: #10B981;">188</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Assisted en route</div>
+          <div class="kpi-value" style="color: #F59E0B;">36</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Not yet evacuated</div>
+          <div class="kpi-value" style="color: #EF4444;">88</div>
+        </div>
+      </div>
+
+      <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px;">
+        
+        <!-- LEFT: TABLE -->
+        <div class="card" style="padding: 0; overflow: hidden; height: fit-content;">
+          <div class="card-header" style="padding: 20px 24px;">
+            <div class="card-title">Affected households</div>
+            <select class="filter-input" style="padding: 6px 12px;">
+              <option>All puroks</option>
+              <option>Purok 2</option>
+              <option>Purok 3</option>
+            </select>
+          </div>
+          <div class="table-container">
+            <table>
+              <thead style="background: #F9FAFB;">
+                <tr>
+                  <th style="padding-left: 24px;">Household</th>
+                  <th>Status</th>
+                  <th>Sync state</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td style="padding-left: 24px;">
+                    <strong>Mendoza household</strong><br>
+                    <span style="color:var(--text-muted); font-size:11px;">HH-SM-0210 · Purok 4</span>
+                  </td>
+                  <td><span class="pill status-evacuated">Assisted</span></td>
+                  <td><span style="font-size: 11px; color: var(--text-muted);">Pending sync</span></td>
+                </tr>
+                <tr>
+                  <td style="padding-left: 24px;">
+                    <strong>Garcia household</strong><br>
+                    <span style="color:var(--text-muted); font-size:11px;">HH-SM-0201 · Purok 3</span>
+                  </td>
+                  <td><span class="pill status-at-home">At Home</span></td>
+                  <td><span style="font-size: 11px; color: #10B981;">Synced</span></td>
+                </tr>
+                <tr>
+                  <td style="padding-left: 24px;">
+                    <strong>Ramos household</strong><br>
+                    <span style="color:var(--text-muted); font-size:11px;">HH-SM-0140 · Purok 5</span>
+                  </td>
+                  <td><span class="pill status-en-route">En route</span></td>
+                  <td><span style="font-size: 11px; color: var(--text-muted);">Pending sync</span></td>
+                </tr>
+                <tr>
+                  <td style="padding-left: 24px;">
+                    <strong>Lim household</strong><br>
+                    <span style="color:var(--text-muted); font-size:11px;">HH-SM-0181 · Purok 1</span>
+                  </td>
+                  <td><span class="pill status-unaccounted">Unaccounted For</span></td>
+                  <td><span style="font-size: 11px; color: #10B981;">Synced</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+        <!-- RIGHT: UPDATE PANEL -->
+        <div class="update-panel">
+          <h3 style="font-size: 15px; margin-bottom: 4px;">Update evacuation status</h3>
+          <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 20px;">Garcia household · HH-SM-0201</p>
+
+          <div class="form-field">
+            <label>New evacuation status</label>
+            <select>
+              <option>At Home</option>
+              <option>Pre-emptively Evacuated</option>
+              <option>In Evacuation Center</option>
+              <option>Assisted</option>
+              <option>Unaccounted For</option>
+            </select>
+          </div>
+
+          <div class="form-field">
+            <label>Assigned responder team</label>
+            <select>
+              <option>Team Alpha</option>
+              <option>Team Bravo</option>
+              <option>Team Charlie</option>
+            </select>
+          </div>
+
+          <div class="form-field">
+            <label>Field note (optional)</label>
+            <textarea rows="3" placeholder="e.g. Transport required for medical equipment."></textarea>
+          </div>
+
+          <button class="btn btn-primary" style="width: 100%; justify-content: center;" onclick="alert('Status updated locally. Will sync when online.')">
+            Save update on this device
+          </button>
+        </div>
+
+      </div>
+    </div>
+  </main>
+
+  <script src="js/app.js"></script>
+</body>
+</html>
