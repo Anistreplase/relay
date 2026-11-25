@@ -6,73 +6,21 @@
   <title>Relay - Review Household</title>
   <link rel="stylesheet" href="css/style.css">
   <style>
-    .review-grid {
-      display: grid;
-      grid-template-columns: 2fr 1fr;
-      gap: 24px;
-    }
-
-    .detail-row {
-      display: flex;
-      justify-content: space-between;
-      padding: 12px 0;
-      border-bottom: 1px solid var(--border);
-      font-size: 13px;
-    }
-
+    .review-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 24px; }
+    .detail-row { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
     .detail-row:last-child { border-bottom: none; }
     .detail-label { color: var(--text-muted); width: 40%; }
     .detail-value { font-weight: 600; width: 60%; }
-
-    .decision-card {
-      border: 2px solid var(--maroon);
-      border-radius: 8px;
-      padding: 20px;
-      background: #FFFDF5;
-    }
-
-    .radio-group {
-      display: flex;
-      flex-direction: column;
-      gap: 12px;
-      margin: 16px 0;
-    }
-
-    .radio-label {
-      display: flex;
-      align-items: center;
-      gap: 8px;
-      font-size: 13px;
-      font-weight: 600;
-      cursor: pointer;
-    }
-
-    .radio-label input {
-      width: 16px;
-      height: 16px;
-      accent-color: var(--maroon);
-    }
-
-    .review-notes {
-      width: 100%;
-      padding: 12px;
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      font-family: inherit;
-      font-size: 13px;
-      resize: vertical;
-      min-height: 80px;
-      margin-bottom: 16px;
-    }
+    .decision-card { border: 2px solid var(--maroon); border-radius: 8px; padding: 20px; background: #FFFDF5; }
+    .radio-group { display: flex; flex-direction: column; gap: 12px; margin: 16px 0; }
+    .radio-label { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; cursor: pointer; }
+    .radio-label input { width: 16px; height: 16px; accent-color: var(--maroon); }
+    .review-notes { width: 100%; padding: 12px; border: 1px solid var(--border); border-radius: 6px; font-family: inherit; font-size: 13px; resize: vertical; min-height: 80px; margin-bottom: 16px; }
   </style>
 </head>
 <body>
-
   <aside class="sidebar">
-    <div class="sidebar-logo">
-      <div class="logo-icon">R</div>
-      Relay
-    </div>
+    <div class="sidebar-logo"><div class="logo-icon">R</div> Relay</div>
     <div class="sidebar-section-title">Response Workspace</div>
     <nav class="sidebar-nav">
       <a href="dashboard.html"><span class="nav-icon">◈</span> Overview</a>
@@ -119,49 +67,26 @@
 
     <div class="page-header">
       <div>
-        <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px; text-transform: uppercase;">
-          Verification queue / HH-SM-0248
-        </div>
+        <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px; text-transform: uppercase;">Verification queue / HH-SM-0248</div>
         <h1>Review household record</h1>
         <p>Santos household · Purok 2 · Submitted 24 October 2026</p>
       </div>
-      <div>
-        <span class="pill pill-unverified">Unverified</span>
-      </div>
+      <div><span class="pill pill-unverified">Unverified</span></div>
     </div>
 
     <div class="page-body">
       <div class="review-grid">
-        
-        <!-- LEFT COLUMN: HOUSEHOLD DETAILS -->
         <div style="display: flex; flex-direction: column; gap: 24px;">
-          
           <div class="card">
             <div class="card-header">
               <div class="card-title">Household details</div>
               <span style="font-size: 12px; color: var(--text-muted);">HH-SM-0248</span>
             </div>
-            
-            <div class="detail-row">
-              <div class="detail-label">Household head</div>
-              <div class="detail-value">Ana Cruz</div>
-            </div>
-            <div class="detail-row">
-              <div class="detail-label">Address</div>
-              <div class="detail-value">18 Riverside Street</div>
-            </div>
-            <div class="detail-row">
-              <div class="detail-label">Purok</div>
-              <div class="detail-value">Purok 2, Barangay San Miguel</div>
-            </div>
-            <div class="detail-row">
-              <div class="detail-label">Contact number</div>
-              <div class="detail-value">+63 912 345 6789</div>
-            </div>
-            <div class="detail-row">
-              <div class="detail-label">Tenure</div>
-              <div class="detail-value">Owner</div>
-            </div>
+            <div class="detail-row"><div class="detail-label">Household head</div><div class="detail-value">Ana Cruz</div></div>
+            <div class="detail-row"><div class="detail-label">Address</div><div class="detail-value">18 Riverside Street</div></div>
+            <div class="detail-row"><div class="detail-label">Purok</div><div class="detail-value">Purok 2, Barangay San Miguel</div></div>
+            <div class="detail-row"><div class="detail-label">Contact number</div><div class="detail-value">+63 912 345 6789</div></div>
+            <div class="detail-row"><div class="detail-label">Tenure</div><div class="detail-value">Owner</div></div>
           </div>
 
           <div class="card">
@@ -171,79 +96,38 @@
             </div>
             <table>
               <thead>
-                <tr>
-                  <th>Name</th>
-                  <th>Age</th>
-                  <th>Category</th>
-                  <th>Assistance needed</th>
-                </tr>
+                <tr><th>Name</th><th>Age</th><th>Category</th><th>Assistance needed</th></tr>
               </thead>
               <tbody>
-                <tr>
-                  <td><strong>Ana Cruz</strong></td>
-                  <td>34</td>
-                  <td>Household head</td>
-                  <td>None reported</td>
-                </tr>
-                <tr>
-                  <td><strong>Leo Cruz</strong></td>
-                  <td>8</td>
-                  <td>Child</td>
-                  <td>None reported</td>
-                </tr>
-                <tr>
-                  <td><strong>Nina Cruz</strong></td>
-                  <td>5</td>
-                  <td>Child</td>
-                  <td>None reported</td>
-                </tr>
+                <tr><td><strong>Ana Cruz</strong></td><td>34</td><td>Household head</td><td>None reported</td></tr>
+                <tr><td><strong>Leo Cruz</strong></td><td>8</td><td>Child</td><td>None reported</td></tr>
+                <tr><td><strong>Nina Cruz</strong></td><td>5</td><td>Child</td><td>None reported</td></tr>
               </tbody>
             </table>
           </div>
 
           <div class="card">
-            <div class="card-header">
-              <div class="card-title">Submission checks</div>
-            </div>
+            <div class="card-header"><div class="card-title">Submission checks</div></div>
             <div style="font-size: 13px; color: var(--text-muted); line-height: 1.8;">
               ✓ Required information complete<br>
               ✓ No possible duplicates flagged<br>
               ✓ Purok officer confirmation received
             </div>
           </div>
-
         </div>
 
-        <!-- RIGHT COLUMN: DECISION -->
         <div style="display: flex; flex-direction: column; gap: 24px;">
-          
           <div class="decision-card">
             <h3 style="font-size: 15px; color: var(--maroon); margin-bottom: 8px;">Verification decision</h3>
-            <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 16px;">
-              Select the outcome of your review. Only Verified records become available to authorized city responders.
-            </p>
-
+            <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 16px;">Select the outcome of your review. Only Verified records become available to authorized city responders.</p>
             <div class="radio-group">
-              <label class="radio-label">
-                <input type="radio" name="verification" value="verified" checked>
-                Verified
-              </label>
-              <label class="radio-label">
-                <input type="radio" name="verification" value="needs-correction">
-                Needs Correction
-              </label>
-              <label class="radio-label">
-                <input type="radio" name="verification" value="unable">
-                Unable to Verify
-              </label>
+              <label class="radio-label"><input type="radio" name="verification" value="verified" checked> Verified</label>
+              <label class="radio-label"><input type="radio" name="verification" value="needs-correction"> Needs Correction</label>
+              <label class="radio-label"><input type="radio" name="verification" value="unable"> Unable to Verify</label>
             </div>
-
             <label style="font-size: 13px; font-weight: 600; display: block; margin-bottom: 8px;">Review notes (optional)</label>
             <textarea class="review-notes" placeholder="Add remarks..."></textarea>
-
-           <button class="btn btn-primary btn-verify-action" style="width: 100%; justify-content: center;" onclick="alert('Record status updated successfully!'); window.location.href='records.html';">
-              Save verification
-           </button>
+            <button class="btn btn-primary btn-verify-action" style="width: 100%; justify-content: center;" onclick="saveVerification()">Save verification</button>
           </div>
 
           <div class="card" style="background: var(--cream);">
@@ -254,12 +138,10 @@
               <strong>08:20</strong> · Household visit completed
             </div>
           </div>
-
         </div>
       </div>
     </div>
   </main>
-
   <script src="js/app.js"></script>
 </body>
 </html>
