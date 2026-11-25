@@ -12,6 +12,11 @@
     .kpi-card .kpi-value { font-size: 28px; font-weight: 700; color: var(--text-main); margin-bottom: 4px; }
     .kpi-card .kpi-sub { font-size: 11px; color: var(--text-muted); }
     .dashboard-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 24px; }
+    .chart-bar-container { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; font-size: 13px; }
+    .chart-bar-container .label { width: 100px; color: var(--text-muted); }
+    .chart-bar-container .bar-track { flex-grow: 1; background: var(--cream); height: 8px; border-radius: 4px; overflow: hidden; }
+    .chart-bar-container .bar-fill { height: 100%; border-radius: 4px; }
+    .chart-bar-container .value { width: 40px; text-align: right; font-weight: 600; }
     .alert-banner { background: #FEF3C7; border: 1px solid #FCD34D; color: #92400E; padding: 12px 16px; border-radius: 6px; font-size: 13px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
   </style>
 </head>
@@ -75,7 +80,7 @@
 
     <div class="page-body">
       <div class="alert-banner">
-        <span><strong>Keep records current.</strong> Keep records current before the next response.</span>
+        <span><strong>78 households are due for revalidation.</strong> Keep records current before the next response.</span>
         <a href="revalidation.html" style="font-weight:600; color:#92400E; text-decoration:underline;">Open work queue →</a>
       </div>
 
@@ -106,7 +111,6 @@
         <!-- LEFT COLUMN -->
         <div style="display: flex; flex-direction: column; gap: 24px;">
           
-          <!-- WORK QUEUE -->
           <div class="card">
             <div class="card-header">
               <div class="card-title">Verification work queue</div>
@@ -118,6 +122,7 @@
                   <tr>
                     <th>Household</th>
                     <th>Status</th>
+                    <th>Flag</th>
                     <th>Action</th>
                   </tr>
                 </thead>
@@ -127,15 +132,60 @@
               </table>
             </div>
           </div>
+
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">Every record, accounted for</div>
+              <span style="font-size:11px; color:var(--text-muted);">Verification status</span>
+            </div>
+            <div style="padding-top: 12px;">
+              <div class="chart-bar-container">
+                <div class="label">Verified</div>
+                <div class="bar-track"><div class="bar-fill" id="bar-verified" style="width: 0%; background: #10B981;"></div></div>
+                <div class="value" id="val-verified">0</div>
+              </div>
+              <div class="chart-bar-container">
+                <div class="label">Unverified</div>
+                <div class="bar-track"><div class="bar-fill" id="bar-unverified" style="width: 0%; background: #6B7280;"></div></div>
+                <div class="value" id="val-unverified">0</div>
+              </div>
+              <div class="chart-bar-container">
+                <div class="label">Needs Correction</div>
+                <div class="bar-track"><div class="bar-fill" id="bar-needs" style="width: 0%; background: #F59E0B;"></div></div>
+                <div class="value" id="val-needs">0</div>
+              </div>
+            </div>
+          </div>
         </div>
 
         <!-- RIGHT COLUMN -->
         <div style="display: flex; flex-direction: column; gap: 24px;">
+          
+          <div class="card">
+            <div class="card-header">
+              <div class="card-title">Preparedness & evacuation</div>
+              <span class="pill pill-verified" style="font-size:10px;">Forecast active</span>
+            </div>
+            <p style="font-size:12px; color:var(--text-muted); margin-bottom:16px;">Flood preparedness · Puroks 2, 3 & 5</p>
+            <div style="display:flex; gap:16px; margin-bottom:16px;">
+              <div><div style="font-size:20px; font-weight:700;">312</div><div style="font-size:11px; color:var(--text-muted);">Verified households</div></div>
+              <div><div style="font-size:20px; font-weight:700;">48</div><div style="font-size:11px; color:var(--text-muted);">Priority households</div></div>
+              <div><div style="font-size:20px; font-weight:700;">188</div><div style="font-size:11px; color:var(--text-muted);">Evacuated so far</div></div>
+            </div>
+            <div style="background:var(--cream); height:6px; border-radius:3px; margin-bottom:8px;"><div style="background:#10B981; height:100%; width:60%; border-radius:3px;"></div></div>
+            <div style="display:flex; justify-content:space-between; font-size:11px; color:var(--text-muted);"><span>188 of 312 households evacuated: 60%</span><a href="evacuation.html" style="color:var(--maroon); font-weight:600;">Open tracking →</a></div>
+          </div>
+
           <div class="card" style="background: #FEF3C7; border-color: #FCD34D;">
             <div class="card-title" style="color:#92400E; margin-bottom:8px;">Ready beyond the connection</div>
             <p style="font-size:12px; color:#92400E; margin-bottom:16px;">Download verified household records and area maps before deployment.</p>
+            <div style="display:flex; flex-direction:column; gap:6px; font-size:11px; color:#92400E; margin-bottom:16px;">
+              <div><strong>Verified records only</strong></div>
+              <div>City responders may access the latest officer data. Only the records are made visible.</div>
+            </div>
             <button class="btn btn-yellow" style="width:100%;" onclick="window.location.href='preparedness.html'">Prepare offline package</button>
           </div>
+
         </div>
       </div>
     </div>
@@ -144,6 +194,7 @@
   <script src="js/database.js"></script>
   <script>
     document.addEventListener('DOMContentLoaded', () => {
+      // 1. Load all data
       let all = [];
       for (const key in households) all.push(households[key]);
       const custom = JSON.parse(localStorage.getItem('custom_households')) || {};
@@ -151,35 +202,56 @@
       
       let verified = 0, unverified = 0, needs = 0;
       let queueHtml = '';
+      let queueCount = 0;
 
       all.forEach(hh => {
         const savedStatus = localStorage.getItem(`record_${hh.id}`) || "Unverified";
         
+        // Count statuses
         if (savedStatus === 'Verified') verified++;
         else if (savedStatus === 'Needs Correction') needs++;
         else unverified++;
 
-        // Add unverified to the queue UI
-        if (savedStatus !== 'Verified' && queueHtml.length < 300) {
+        // Build the queue (only show up to 3 for the dashboard)
+        if (savedStatus !== 'Verified' && queueCount < 3) {
           const pillClass = savedStatus === "Needs Correction" ? "pill-needs" : "pill-unverified";
+          const flagText = savedStatus === "Needs Correction" ? "Address correction" : "Office confirmed";
+          
           queueHtml += `
             <tr data-id="${hh.id}">
-              <td><strong>${hh.head} household</strong><br><span style="color:var(--text-muted); font-size:11px;">${hh.id}</span></td>
+              <td><strong>${hh.head} household</strong><br><span style="color:var(--text-muted); font-size:11px;">${hh.id} · ${hh.purok.split(',')[0]}</span></td>
               <td><span class="pill ${pillClass}">${savedStatus}</span></td>
+              <td>${flagText}</td>
               <td><button class="btn btn-secondary btn-verify-action" style="padding:6px 12px; font-size:12px;">Review</button></td>
             </tr>
           `;
+          queueCount++;
         }
       });
 
-      // Update numbers
+      // 2. Update KPI numbers
       document.getElementById('dash-total').textContent = all.length;
       document.getElementById('dash-verified').textContent = verified;
       document.getElementById('dash-unverified').textContent = unverified;
       document.getElementById('dash-needs').textContent = needs;
 
-      // Update queue table
-      document.getElementById('dash-queue-body').innerHTML = queueHtml || '<tr><td colspan="3" style="text-align:center; padding: 20px;">No pending records.</td></tr>';
+      // 3. Update the Chart (calculate percentages)
+      if (all.length > 0) {
+        const pctVerified = Math.round((verified / all.length) * 100);
+        const pctUnverified = Math.round((unverified / all.length) * 100);
+        const pctNeeds = Math.round((needs / all.length) * 100);
+
+        document.getElementById('bar-verified').style.width = pctVerified + '%';
+        document.getElementById('bar-unverified').style.width = pctUnverified + '%';
+        document.getElementById('bar-needs').style.width = pctNeeds + '%';
+        
+        document.getElementById('val-verified').textContent = verified;
+        document.getElementById('val-unverified').textContent = unverified;
+        document.getElementById('val-needs').textContent = needs;
+      }
+
+      // 4. Update queue table
+      document.getElementById('dash-queue-body').innerHTML = queueHtml || '<tr><td colspan="4" style="text-align:center; padding: 20px;">No pending records.</td></tr>';
     });
   </script>
   <script src="js/app.js"></script>
