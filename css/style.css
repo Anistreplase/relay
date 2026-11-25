@@ -474,3 +474,10 @@ button[disabled], .btn[disabled] {
   cursor: not-allowed !important;
   pointer-events: none;
 }
+
+/* =========================================
+   CLICKABLE LOGO HOVER EFFECT
+   ========================================= */
+.sidebar-logo:hover {
+  opacity: 0.8;
+}
