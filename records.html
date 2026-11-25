@@ -6,122 +6,26 @@
   <title>Relay - Household Records</title>
   <link rel="stylesheet" href="css/style.css">
   <style>
-    /* Page-specific styles for Records */
-    .tabs-container {
-      display: flex;
-      gap: 24px;
-      border-bottom: 1px solid var(--border);
-      margin-bottom: 24px;
-    }
-
-    .tab {
-      padding: 12px 0;
-      font-size: 14px;
-      font-weight: 600;
-      color: var(--text-muted);
-      cursor: pointer;
-      border-bottom: 2px solid transparent;
-      transition: all 0.2s;
-      display: flex;
-      align-items: center;
-      gap: 8px;
-    }
-
+    .tabs-container { display: flex; gap: 24px; border-bottom: 1px solid var(--border); margin-bottom: 24px; }
+    .tab { padding: 12px 0; font-size: 14px; font-weight: 600; color: var(--text-muted); cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.2s; display: flex; align-items: center; gap: 8px; }
     .tab:hover { color: var(--text-main); }
-
-    .tab.active {
-      color: var(--maroon);
-      border-bottom-color: var(--maroon);
-    }
-
-    .tab .count {
-      background: var(--cream);
-      padding: 2px 8px;
-      border-radius: 9999px;
-      font-size: 11px;
-      font-weight: 600;
-    }
-
-    .tab.active .count {
-      background: var(--maroon);
-      color: var(--white);
-    }
-
-    .filters-row {
-      display: flex;
-      gap: 12px;
-      margin-bottom: 24px;
-    }
-
-    .filter-input {
-      background: var(--white);
-      border: 1px solid var(--border);
-      border-radius: 6px;
-      padding: 10px 16px;
-      font-size: 13px;
-      color: var(--text-main);
-    }
-
-    .filter-input:focus {
-      outline: none;
-      border-color: var(--maroon);
-    }
-
+    .tab.active { color: var(--maroon); border-bottom-color: var(--maroon); }
+    .tab .count { background: var(--cream); padding: 2px 8px; border-radius: 9999px; font-size: 11px; font-weight: 600; }
+    .tab.active .count { background: var(--maroon); color: var(--white); }
+    .filters-row { display: flex; gap: 12px; margin-bottom: 24px; }
+    .filter-input { background: var(--white); border: 1px solid var(--border); border-radius: 6px; padding: 10px 16px; font-size: 13px; color: var(--text-main); }
+    .filter-input:focus { outline: none; border-color: var(--maroon); }
     .search-input { flex-grow: 1; }
-
-    .pagination {
-      display: flex;
-      justify-content: space-between;
-      align-items: center;
-      padding-top: 20px;
-      border-top: 1px solid var(--border);
-      font-size: 13px;
-      color: var(--text-muted);
-    }
-
-    .page-buttons {
-      display: flex;
-      gap: 8px;
-    }
-
-    .page-btn {
-      width: 32px;
-      height: 32px;
-      display: flex;
-      align-items: center;
-      justify-content: center;
-      border-radius: 6px;
-      border: 1px solid var(--border);
-      background: var(--white);
-      font-size: 13px;
-      cursor: pointer;
-    }
-
-    .page-btn.active {
-      background: var(--maroon);
-      color: var(--white);
-      border-color: var(--maroon);
-    }
-
-    .verified-banner {
-      background: #FEF3C7;
-      border-left: 4px solid #F59E0B;
-      padding: 16px;
-      font-size: 13px;
-      color: #92400E;
-      border-radius: 0 6px 6px 0;
-      margin-top: 24px;
-    }
+    .pagination { display: flex; justify-content: space-between; align-items: center; padding-top: 20px; border-top: 1px solid var(--border); font-size: 13px; color: var(--text-muted); }
+    .page-buttons { display: flex; gap: 8px; }
+    .page-btn { width: 32px; height: 32px; display: flex; align-items: center; justify-content: center; border-radius: 6px; border: 1px solid var(--border); background: var(--white); font-size: 13px; cursor: pointer; }
+    .page-btn.active { background: var(--maroon); color: var(--white); border-color: var(--maroon); }
+    .verified-banner { background: #FEF3C7; border-left: 4px solid #F59E0B; padding: 16px; font-size: 13px; color: #92400E; border-radius: 0 6px 6px 0; margin-top: 24px; }
   </style>
 </head>
 <body>
-
-  <!-- SIDEBAR -->
   <aside class="sidebar">
-    <div class="sidebar-logo">
-      <div class="logo-icon">R</div>
-      Relay
-    </div>
+    <div class="sidebar-logo"><div class="logo-icon">R</div> Relay</div>
     <div class="sidebar-section-title">Response Workspace</div>
     <nav class="sidebar-nav">
       <a href="dashboard.html"><span class="nav-icon">◈</span> Overview</a>
@@ -144,10 +48,7 @@
     </div>
   </aside>
 
-  <!-- MAIN CONTENT -->
   <main class="main-content">
-    
-    <!-- TOP BAR -->
     <header class="topbar">
       <div class="topbar-left">
         <div class="workspace-selector">
@@ -169,7 +70,6 @@
       </div>
     </header>
 
-    <!-- PAGE HEADER -->
     <div class="page-header">
       <div>
         <h1>Household records</h1>
@@ -181,10 +81,7 @@
       </div>
     </div>
 
-    <!-- PAGE BODY -->
     <div class="page-body">
-      
-      <!-- TABS -->
       <div class="tabs-container">
         <div class="tab active">All records <span class="count">1,248</span></div>
         <div class="tab">Verified <span class="count">1,086</span></div>
@@ -193,127 +90,101 @@
         <div class="tab">Unable to Verify <span class="count">16</span></div>
       </div>
 
-      <!-- FILTERS -->
       <div class="filters-row">
         <input type="text" class="filter-input search-input" placeholder="Search by household head, ID, or address...">
         <select class="filter-input">
-          <option>All puroks</option>
-          <option>Purok 1</option>
-          <option>Purok 2</option>
-          <option>Purok 3</option>
-          <option>Purok 4</option>
-          <option>Purok 5</option>
+          <option>All puroks</option><option>Purok 1</option><option>Purok 2</option><option>Purok 3</option><option>Purok 4</option><option>Purok 5</option>
         </select>
         <select class="filter-input">
-          <option>Last updated</option>
-          <option>Date added</option>
-          <option>Household head A-Z</option>
+          <option>Last updated</option><option>Date added</option><option>Household head A-Z</option>
         </select>
       </div>
 
       <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px; text-align: right;">1,248 households</div>
 
-      <!-- TABLE -->
       <div class="card" style="padding: 0; overflow: hidden;">
         <div class="table-container">
           <table>
             <thead style="background: #F9FAFB;">
               <tr>
                 <th style="padding-left: 24px;">Household / ID</th>
-                <th>Purok</th>
-                <th>Members</th>
-                <th>Verification status</th>
-                <th>Last updated</th>
-                <th>Action</th>
+                <th>Purok</th><th>Members</th><th>Verification status</th><th>Last updated</th><th>Action</th>
               </tr>
             </thead>
             <tbody>
-              <!-- Row 1: Unverified (Needs review) -->
+              <!-- Row 1: Santos (Dynamic) -->
               <tr>
                 <td style="padding-left: 24px;">
                   <strong>Santos household</strong><br>
                   <span style="color:var(--text-muted); font-size:11px;">HH-SM-0248 · Ana Cruz</span>
                 </td>
-                <td>Purok 2</td>
-                <td>5</td>
-                <td><span class="pill pill-unverified">Unverified</span></td>
+                <td>Purok 2</td><td>5</td>
+                <td id="status-santos"><span class="pill pill-unverified">Unverified</span></td>
                 <td>24 Oct 2026</td>
                 <td><button class="btn btn-secondary btn-verify-action" style="padding:6px 12px; font-size:12px;">View →</button></td>
               </tr>
 
-              <!-- Row 2: Verified -->
               <tr>
                 <td style="padding-left: 24px;">
                   <strong>Reyes household</strong><br>
                   <span style="color:var(--text-muted); font-size:11px;">HH-SM-0201 · Lito Reyes</span>
                 </td>
-                <td>Purok 3</td>
-                <td>4</td>
+                <td>Purok 3</td><td>4</td>
                 <td><span class="pill pill-verified">Verified</span></td>
                 <td>24 Oct 2026</td>
                 <td><button class="btn btn-secondary btn-verify-action" style="padding:6px 12px; font-size:12px;">View →</button></td>
               </tr>
 
-              <!-- Row 3: Needs Correction (Highlighted) -->
               <tr style="background: #FFFDF5;">
                 <td style="padding-left: 24px;">
                   <strong>Diaz Cruz household</strong><br>
                   <span style="color:var(--text-muted); font-size:11px;">HH-SM-0232 · Sofia Diaz Cruz</span>
                 </td>
-                <td>Purok 4</td>
-                <td>5</td>
+                <td>Purok 4</td><td>5</td>
                 <td><span class="pill pill-needs">Needs Correction</span></td>
                 <td>23 Oct 2026</td>
                 <td><button class="btn btn-secondary btn-verify-action" style="padding:6px 12px; font-size:12px;">Edit</button></td>
               </tr>
 
-              <!-- Row 4: Verified -->
               <tr>
                 <td style="padding-left: 24px;">
                   <strong>Mendoza household</strong><br>
                   <span style="color:var(--text-muted); font-size:11px;">HH-SM-0210 · Luis Mendoza</span>
                 </td>
-                <td>Purok 4</td>
-                <td>4</td>
+                <td>Purok 4</td><td>4</td>
                 <td><span class="pill pill-verified">Verified</span></td>
                 <td>22 Oct 2026</td>
                 <td><button class="btn btn-secondary btn-verify-action" style="padding:6px 12px; font-size:12px;">View →</button></td>
               </tr>
 
-              <!-- Row 5: Verified -->
               <tr>
                 <td style="padding-left: 24px;">
                   <strong>Garcia household</strong><br>
                   <span style="color:var(--text-muted); font-size:11px;">HH-SM-0195 · Ana Garcia</span>
                 </td>
-                <td>Purok 3</td>
-                <td>3</td>
+                <td>Purok 3</td><td>3</td>
                 <td><span class="pill pill-verified">Verified</span></td>
                 <td>22 Oct 2026</td>
                 <td><button class="btn btn-secondary btn-verify-action" style="padding:6px 12px; font-size:12px;">View →</button></td>
               </tr>
 
-              <!-- Row 6: Unable to Verify -->
               <tr>
                 <td style="padding-left: 24px;">
                   <strong>Lim household</strong><br>
                   <span style="color:var(--text-muted); font-size:11px;">HH-SM-0181 · Kevin Lim</span>
                 </td>
-                <td>Purok 1</td>
-                <td>2</td>
+                <td>Purok 1</td><td>2</td>
                 <td><span class="pill pill-unable">Unable to Verify</span></td>
                 <td>21 Oct 2026</td>
                 <td><button class="btn btn-secondary btn-verify-action" style="padding:6px 12px; font-size:12px;">Retry</button></td>
               </tr>
 
-              <!-- Row 7: Verified -->
               <tr>
                 <td style="padding-left: 24px;">
                   <strong>Ramos household</strong><br>
                   <span style="color:var(--text-muted); font-size:11px;">HH-SM-0140 · Elena Ramos</span>
                 </td>
-                <td>Purok 5</td>
-                <td>5</td>
+                <td>Purok 5</td><td>5</td>
                 <td><span class="pill pill-verified">Verified</span></td>
                 <td>20 Oct 2026</td>
                 <td><button class="btn btn-secondary btn-verify-action" style="padding:6px 12px; font-size:12px;">View →</button></td>
@@ -322,7 +193,6 @@
           </table>
         </div>
         
-        <!-- PAGINATION -->
         <div style="padding: 16px 24px; background: #F9FAFB;">
           <div class="pagination" style="border-top: none; padding-top: 0;">
             <span>Showing 1-7 of 1,248 households</span>
@@ -337,15 +207,31 @@
         </div>
       </div>
 
-      <!-- INFO BANNER -->
       <div class="verified-banner">
         <strong>Verified records support safer decisions.</strong><br>
         Only Verified records become available to authorized city responders and partner offices.
       </div>
-
     </div>
   </main>
 
+  <!-- SCRIPT TO READ SAVED STATUS -->
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const savedStatus = localStorage.getItem('record_HH-SM-0248');
+      if (savedStatus) {
+        const statusCell = document.getElementById('status-santos');
+        if (statusCell) {
+          if (savedStatus === 'Verified') {
+            statusCell.innerHTML = '<span class="pill pill-verified">Verified</span>';
+          } else if (savedStatus === 'Needs Correction') {
+            statusCell.innerHTML = '<span class="pill pill-needs">Needs Correction</span>';
+          } else if (savedStatus === 'Unable to Verify') {
+            statusCell.innerHTML = '<span class="pill pill-unable">Unable to Verify</span>';
+          }
+        }
+      }
+    });
+  </script>
   <script src="js/app.js"></script>
 </body>
 </html>
