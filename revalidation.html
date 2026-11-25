@@ -1,0 +1,245 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Relay - Revalidation & Post-Event</title>
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(4, 1fr);
+      gap: 16px;
+      margin-bottom: 24px;
+    }
+
+    .kpi-card {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 20px;
+    }
+
+    .kpi-card .kpi-label { font-size: 12px; color: var(--text-muted); font-weight: 600; margin-bottom: 8px; }
+    .kpi-card .kpi-value { font-size: 28px; font-weight: 700; color: var(--text-main); }
+
+    .revalidation-grid {
+      display: grid;
+      grid-template-columns: 2fr 1fr;
+      gap: 24px;
+    }
+
+    .checklist-item {
+      display: flex;
+      gap: 12px;
+      font-size: 12px;
+      color: var(--text-main);
+      margin-bottom: 12px;
+      line-height: 1.4;
+    }
+    
+    .checklist-item input[type="checkbox"] {
+      margin-top: 2px;
+      accent-color: var(--maroon);
+    }
+  </style>
+</head>
+<body>
+
+  <aside class="sidebar">
+    <div class="sidebar-logo">
+      <div class="logo-icon">R</div>
+      Relay
+    </div>
+    <div class="sidebar-section-title">Response Workspace</div>
+    <nav class="sidebar-nav">
+      <a href="dashboard.html"><span class="nav-icon">◈</span> Overview</a>
+      <a href="records.html"><span class="nav-icon">👥</span> Household records</a>
+      <a href="verify.html"><span class="nav-icon">✓</span> Verification queue</a>
+      <a href="preparedness.html"><span class="nav-icon">▤</span> Preparedness & offline</a>
+      <a href="evacuation.html"><span class="nav-icon">⏱</span> Evacuation tracking</a>
+      <a href="revalidation.html" class="active"><span class="nav-icon">↻</span> Revalidation</a>
+      <a href="reports.html"><span class="nav-icon">📄</span> Reports & exports</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="status-card">
+        <div class="status-title"><div class="status-dot"></div> System operational</div>
+        Last synced at 09:42<br>Household records up to date
+      </div>
+      <nav class="sidebar-nav" style="margin-top: 12px;">
+        <a href="settings.html"><span class="nav-icon">⚙</span> Settings</a>
+        <a href="help.html"><span class="nav-icon">?</span> Help & support</a>
+      </nav>
+    </div>
+  </aside>
+
+  <main class="main-content">
+    <header class="topbar">
+      <div class="topbar-left">
+        <div class="workspace-selector">
+          <select id="workspace-selector" style="border:none; background:transparent; font-weight:600; font-size:14px; cursor:pointer;">
+            <option>Barangay San Miguel</option>
+          </select>
+        </div>
+        <div class="search-bar"><span>🔍</span> Search households, puroks, records...</div>
+      </div>
+      <div class="topbar-right">
+        <span class="demo-badge">DEMO WORKSPACE</span>
+        <span>🔔</span>
+        <div class="user-profile">
+          <div class="user-info">
+            <div class="user-name">Loading...</div>
+            <div class="user-role">Loading...</div>
+          </div>
+        </div>
+      </div>
+    </header>
+
+    <div class="page-header">
+      <div>
+        <h1>Revalidation & post-event review</h1>
+        <p>Your assigned records · Purok 2 · Monday, 2 November 2026</p>
+      </div>
+      <div>
+        <button class="btn btn-secondary btn-export-action">View reminder history</button>
+      </div>
+    </div>
+
+    <div class="page-body">
+      
+      <div class="alert-banner" style="background: #FEF3C7; border-color: #FCD34D; color: #92400E; margin-bottom: 24px;">
+        <span><strong>The response is complete.</strong> Keep household circumstances current.</span>
+        <span style="font-size: 12px;">Review residents, assistance needs, and evacuation changes.</span>
+      </div>
+
+      <div class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-label">Due for revalidation</div>
+          <div class="kpi-value">12</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Overdue</div>
+          <div class="kpi-value" style="color: #EF4444;">3</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Post-event follow-ups</div>
+          <div class="kpi-value">6</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-label">Completed this week</div>
+          <div class="kpi-value" style="color: #10B981;">18</div>
+        </div>
+      </div>
+
+      <div class="revalidation-grid">
+        
+        <!-- LEFT: WORK QUEUE -->
+        <div class="card" style="padding: 0; overflow: hidden; height: fit-content;">
+          <div class="card-header" style="padding: 20px 24px; border-bottom: 1px solid var(--border);">
+            <div class="card-title">Your household work queue</div>
+            <select class="filter-input" style="padding: 6px 12px;">
+              <option>Purok 2</option>
+            </select>
+          </div>
+          <div class="table-container">
+            <table>
+              <thead style="background: #F9FAFB;">
+                <tr>
+                  <th style="padding-left: 24px;">Household</th>
+                  <th>Last updated</th>
+                  <th>Review date</th>
+                  <th>Task</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr>
+                  <td style="padding-left: 24px;">
+                    <strong>Mendoza household</strong><br>
+                    <span style="color:var(--text-muted); font-size:11px;">HH-SM-0210</span>
+                  </td>
+                  <td>22 Oct 2026</td>
+                  <td>31 Oct 2026</td>
+                  <td><span class="pill status-at-home">Overdue</span></td>
+                </tr>
+                <tr>
+                  <td style="padding-left: 24px;">
+                    <strong>Castillo household</strong><br>
+                    <span style="color:var(--text-muted); font-size:11px;">HH-SM-0190</span>
+                  </td>
+                  <td>02 Aug 2026</td>
+                  <td>02 Nov 2026</td>
+                  <td><span class="pill status-en-route">Due today</span></td>
+                </tr>
+                <tr>
+                  <td style="padding-left: 24px;">
+                    <strong>Flores household</strong><br>
+                    <span style="color:var(--text-muted); font-size:11px;">HH-SM-0184</span>
+                  </td>
+                  <td>21 Oct 2026</td>
+                  <td>02 Nov 2026</td>
+                  <td><span class="pill status-en-route">Due today</span></td>
+                </tr>
+                <tr>
+                  <td style="padding-left: 24px;">
+                    <strong>Aquino household</strong><br>
+                    <span style="color:var(--text-muted); font-size:11px;">HH-SM-0155</span>
+                  </td>
+                  <td>02 Aug 2026</td>
+                  <td>02 Nov 2026</td>
+                  <td><span class="pill status-en-route">Due today</span></td>
+                </tr>
+              </tbody>
+            </table>
+          </div>
+          <div style="padding: 12px 24px; background: #F9FAFB; border-top: 1px solid var(--border); font-size: 11px; color: var(--text-muted); display: flex; justify-content: space-between;">
+            <span>Showing 4 of 12 households</span>
+            <span>Purok 2</span>
+          </div>
+        </div>
+
+        <!-- RIGHT: FOLLOW-UP PANEL -->
+        <div style="display: flex; flex-direction: column; gap: 24px;">
+          
+          <div class="card" style="background: #FFFDF5; border-color: #FCD34D;">
+            <h3 style="font-size: 15px; margin-bottom: 4px;">Complete household follow-up</h3>
+            <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 16px;">Mendoza household · HH-SM-0210</p>
+            
+            <div class="checklist-item">
+              <input type="checkbox" checked>
+              <div>
+                <strong>Review with the household</strong><br>
+                <span style="color: var(--text-muted); font-size: 11px;">✓ Resident composition<br>✓ Address and contact details<br>✓ Assistance and health needs<br>✓ Evacuation and return status</span>
+              </div>
+            </div>
+
+            <div class="checklist-item" style="margin-top: 16px;">
+              <input type="checkbox">
+              <div>
+                <strong>Follow-up notes</strong><br>
+                <span style="color: var(--text-muted); font-size: 11px;">Residents have returned home. Mobility assistance is still required.</span>
+              </div>
+            </div>
+
+            <div style="font-size: 11px; color: var(--text-muted); margin: 16px 0; padding-top: 16px; border-top: 1px solid #FCD34D;">
+              Updated records are saved as Unverified and return to the DRRM verification queue.
+            </div>
+
+            <button class="btn btn-primary" style="width: 100%; justify-content: center;" onclick="alert('Record submitted for re-verification!'); window.location.href='records.html';">
+              Re-submit for verification
+            </button>
+          </div>
+
+          <div class="card" style="background: var(--white);">
+            <h3 style="font-size: 14px; margin-bottom: 8px;">Your next reminder</h3>
+            <div style="font-size: 13px; font-weight: 600; color: var(--maroon);">03 November 2026 · 08:00 PHT</div>
+            <p style="font-size: 11px; color: var(--text-muted); margin-top: 8px;">This system reminds you about records that are still due.</p>
+          </div>
+
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="js/app.js"></script>
+</body>
+</html>
