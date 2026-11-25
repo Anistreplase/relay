@@ -26,147 +26,79 @@
       <a href="reports.html"><span class="nav-icon">📄</span> Reports & exports</a>
     </nav>
     <div class="sidebar-footer">
-      <div class="status-card">
-        <div class="status-title"><div class="status-dot"></div> System operational</div>
-        Last synced at 09:42<br>Household records up to date
-      </div>
-      <nav class="sidebar-nav" style="margin-top: 12px;">
-        <a href="settings.html"><span class="nav-icon">⚙</span> Settings</a>
-        <a href="help.html"><span class="nav-icon">?</span> Help & support</a>
-      </nav>
+      <div class="status-card"><div class="status-title"><div class="status-dot"></div> System operational</div>Last synced at 09:42<br>Household records up to date</div>
+      <nav class="sidebar-nav" style="margin-top: 12px;"><a href="settings.html"><span class="nav-icon">⚙</span> Settings</a><a href="help.html"><span class="nav-icon">?</span> Help & support</a></nav>
     </div>
   </aside>
-
   <main class="main-content">
     <header class="topbar">
       <div class="topbar-left">
-        <div class="workspace-selector">
-          <select id="workspace-selector" style="border:none; background:transparent; font-weight:600; font-size:14px; cursor:pointer;">
-            <option>Barangay San Miguel</option>
-          </select>
-        </div>
+        <div class="workspace-selector"><select id="workspace-selector" style="border:none; background:transparent; font-weight:600; font-size:14px; cursor:pointer;"><option>Barangay San Miguel</option></select></div>
         <div class="search-bar"><span>🔍</span> Search households, puroks, records...</div>
       </div>
       <div class="topbar-right">
-        <span class="demo-badge">DEMO WORKSPACE</span>
-        <span>🔔</span>
-        <div class="user-profile">
-          <div class="user-info">
-            <div class="user-name">Loading...</div>
-            <div class="user-role">Loading...</div>
-          </div>
-        </div>
+        <span class="demo-badge">DEMO WORKSPACE</span><span>🔔</span>
+        <div class="user-profile"><div class="user-info"><div class="user-name">Loading...</div><div class="user-role">Loading...</div></div></div>
       </div>
     </header>
-
     <div class="page-header">
-      <div>
-        <h1>Verification queue</h1>
-        <p>Records waiting for review and validation by the Barangay DRRM official.</p>
-      </div>
+      <div><h1>Verification queue</h1><p>Records waiting for review and validation by the Barangay DRRM official.</p></div>
     </div>
-
     <div class="page-body">
       <div class="filters-row">
         <input type="text" id="search-input" class="filter-input search-input" placeholder="Search by household head or ID..." onkeyup="filterQueue()">
-        <select id="purok-filter" class="filter-input" onchange="filterQueue()">
-          <option value="All">All puroks</option>
-          <option value="Purok 1">Purok 1</option>
-          <option value="Purok 2">Purok 2</option>
-          <option value="Purok 3">Purok 3</option>
-          <option value="Purok 4">Purok 4</option>
-          <option value="Purok 5">Purok 5</option>
-        </select>
+        <select id="purok-filter" class="filter-input" onchange="filterQueue()"><option value="All">All puroks</option><option value="Purok 1">Purok 1</option><option value="Purok 2">Purok 2</option><option value="Purok 3">Purok 3</option><option value="Purok 4">Purok 4</option><option value="Purok 5">Purok 5</option></select>
       </div>
-
       <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px; text-align: right;" id="row-count">0 records pending</div>
-
       <div class="card" style="padding: 0; overflow: hidden;">
         <div class="table-container">
           <table>
-            <thead style="background: #F9FAFB;">
-              <tr>
-                <th style="padding-left: 24px;">Household / ID</th>
-                <th>Purok</th>
-                <th>Status</th>
-                <th>Action</th>
-              </tr>
-            </thead>
-            <tbody id="table-body">
-              <!-- Rows injected by JS -->
-            </tbody>
+            <thead style="background: #F9FAFB;"><tr><th style="padding-left: 24px;">Household / ID</th><th>Purok</th><th>Status</th><th>Action</th></tr></thead>
+            <tbody id="table-body"></tbody>
           </table>
         </div>
       </div>
-
       <div class="alert-banner" style="margin-top: 24px;">
         <span><strong>Reminder:</strong> You can only verify records assigned to your specific Barangay. City responders cannot access unverified data.</span>
       </div>
     </div>
   </main>
-
   <script src="js/database.js"></script>
   <script>
     let queueData = [];
-
     document.addEventListener('DOMContentLoaded', () => {
-      // 1. Combine static and custom database
       let all = [];
       for (const key in households) all.push(households[key]);
-      
       const custom = JSON.parse(localStorage.getItem('custom_households')) || {};
       for (const key in custom) all.push(custom[key]);
       
-      // 2. Filter ONLY for Unverified or Needs Correction
       queueData = all.filter(hh => {
-        const savedStatus = localStorage.getItem(`record_${hh.id}`);
-        const currentStatus = savedStatus || "Unverified";
-        return currentStatus === "Unverified" || currentStatus === "Needs Correction";
+        const savedStatus = localStorage.getItem(`record_${hh.id}`) || "Unverified";
+        return savedStatus === "Unverified" || savedStatus === "Needs Correction";
       });
-
       renderQueue(queueData);
     });
-
     function renderQueue(data) {
-      const tbody = document.getElementById('table-body');
-      tbody.innerHTML = '';
-      
+      const tbody = document.getElementById('table-body'); tbody.innerHTML = '';
       if (data.length === 0) {
         tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 40px; color: var(--text-muted);">No records pending verification. Excellent work!</td></tr>';
-        document.getElementById('row-count').textContent = `0 records pending`;
-        return;
+        document.getElementById('row-count').textContent = `0 records pending`; return;
       }
-
       data.forEach(hh => {
         const savedStatus = localStorage.getItem(`record_${hh.id}`) || "Unverified";
         const pillClass = savedStatus === "Needs Correction" ? "pill-needs" : "pill-unverified";
-
-        tbody.innerHTML += `
-          <tr data-id="${hh.id}">
-            <td style="padding-left: 24px;">
-              <strong>${hh.head} household</strong><br>
-              <span style="color:var(--text-muted); font-size:11px;">${hh.id} · ${hh.head}</span>
-            </td>
-            <td>${hh.purok.split(',')[0]}</td>
-            <td><span class="pill ${pillClass}">${savedStatus}</span></td>
-            <td><button class="btn btn-primary btn-verify-action" style="padding:6px 12px; font-size:12px;">Review Record</button></td>
-          </tr>
-        `;
+        tbody.innerHTML += `<tr data-id="${hh.id}"><td style="padding-left: 24px;"><strong>${hh.head} household</strong><br><span style="color:var(--text-muted); font-size:11px;">${hh.id} · ${hh.head}</span></td><td>${hh.purok.split(',')[0]}</td><td><span class="pill ${pillClass}">${savedStatus}</span></td><td><button class="btn btn-primary btn-verify-action" style="padding:6px 12px; font-size:12px;">Review Record</button></td></tr>`;
       });
-
       document.getElementById('row-count').textContent = `${data.length} records pending`;
     }
-
     function filterQueue() {
       const query = document.getElementById('search-input').value.toLowerCase();
       const purok = document.getElementById('purok-filter').value;
-      
       let filtered = queueData.filter(hh => {
         const matchesSearch = hh.head.toLowerCase().includes(query) || hh.id.toLowerCase().includes(query);
         const matchesPurok = purok === "All" || hh.purok.includes(purok);
         return matchesSearch && matchesPurok;
       });
-      
       renderQueue(filtered);
     }
   </script>
