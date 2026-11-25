@@ -13,6 +13,16 @@ document.addEventListener('DOMContentLoaded', () => {
   initNetworkListener();
   initNotifications();
 
+  // 1. Make the Sidebar Logo clickable to return to Dashboard
+  const sidebarLogo = document.querySelector('.sidebar-logo');
+  if (sidebarLogo) {
+    sidebarLogo.style.cursor = 'pointer';
+    sidebarLogo.addEventListener('click', () => {
+      window.location.href = 'dashboard.html';
+    });
+  }
+
+  // 2. Global Button Listeners
   document.body.addEventListener('click', (e) => {
     if (e.target.closest('.btn-add-action')) window.location.href = 'add-household.html';
     
@@ -39,7 +49,6 @@ document.addEventListener('DOMContentLoaded', () => {
   // Close notification dropdown if clicking outside
   document.addEventListener('click', (e) => {
     const dropdown = document.getElementById('notif-dropdown');
-    const bell = document.getElementById('notif-bell');
     if (dropdown && dropdown.style.display === 'block' && !e.target.closest('#notif-container')) {
       dropdown.style.display = 'none';
     }
@@ -54,14 +63,12 @@ function initNotifications() {
   const topbarRight = document.querySelector('.topbar-right');
   if (!topbarRight) return;
 
-  // 1. Replace the static bell with a dynamic container
   const bellHTML = `
     <div id="notif-container" style="position: relative; cursor: pointer;">
       <span id="notif-bell" style="font-size: 18px; position: relative;">🔔
         <span id="notif-badge" style="display: none; position: absolute; top: -2px; right: -2px; width: 8px; height: 8px; background: #EF4444; border-radius: 50%; border: 2px solid var(--white);"></span>
       </span>
       
-      <!-- Dropdown Menu -->
       <div id="notif-dropdown" style="display: none; position: absolute; top: 30px; right: -10px; width: 320px; background: var(--white); border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); z-index: 1000; padding: 16px;">
         <h4 style="font-size: 14px; font-weight: 600; margin-bottom: 12px; display: flex; justify-content: space-between;">
           Notifications <span style="font-size: 11px; color: var(--maroon); cursor: pointer;" onclick="clearNotifications()">Mark all as read</span>
@@ -73,29 +80,24 @@ function initNotifications() {
     </div>
   `;
 
-  // Find the bell emoji and replace it
   const topbarRightChildren = Array.from(topbarRight.children);
   const bellElement = topbarRightChildren.find(el => el.textContent.includes('🔔'));
   if (bellElement) {
     bellElement.outerHTML = bellHTML;
   }
 
-  // Attach click event to toggle dropdown
   document.getElementById('notif-bell').addEventListener('click', (e) => {
     e.stopPropagation();
     const dropdown = document.getElementById('notif-dropdown');
     dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
   });
 
-  // 2. Generate actual notification data from the database
   generateNotifications();
 }
 
 function generateNotifications() {
-  // Check if we already marked them read in this session
   const isRead = sessionStorage.getItem('notifs-read') === 'true';
   
-  // Get verified households (since they need revalidation)
   let all = [];
   if (typeof households !== 'undefined') {
     for (const key in households) all.push(households[key]);
