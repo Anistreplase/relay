@@ -22,6 +22,16 @@
     input:checked + .slider:before { transform: translateX(20px); }
     .reminder-row { display: flex; justify-content: space-between; align-items: center; padding: 16px 0; border-bottom: 1px solid var(--border); }
     .reminder-row:last-child { border-bottom: none; }
+    
+    /* Session Card Styles */
+    .session-item { display: flex; justify-content: space-between; align-items: flex-start; padding: 12px 0; border-bottom: 1px solid var(--border); }
+    .session-item:last-child { border-bottom: none; }
+    .session-icon { font-size: 20px; margin-right: 12px; }
+    .session-info h4 { font-size: 13px; font-weight: 600; margin-bottom: 2px; }
+    .session-info p { font-size: 11px; color: var(--text-muted); }
+    .btn-terminate { background: none; border: none; color: var(--red); font-size: 12px; font-weight: 600; cursor: pointer; padding: 4px; }
+    .btn-terminate:hover { text-decoration: underline; }
+    .current-badge { background: #D1FAE5; color: #065F46; font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 4px; display: inline-block; margin-left: 6px; }
   </style>
 </head>
 <body>
@@ -42,7 +52,6 @@
       <nav class="sidebar-nav" style="margin-top: 12px;"><a href="settings.html" class="active"><span class="nav-icon">⚙</span> Settings</a><a href="help.html"><span class="nav-icon">?</span> Help & support</a></nav>
     </div>
   </aside>
-  
   <main class="main-content">
     <header class="topbar">
       <div class="topbar-left">
@@ -54,12 +63,10 @@
         <div class="user-profile"><div class="user-info"><div class="user-name">Loading...</div><div class="user-role">Loading...</div></div></div>
       </div>
     </header>
-    
     <div class="page-header">
       <div><h1>Settings</h1><p>Your account, workspace preferences, and session controls.</p></div>
       <div><a href="dashboard.html" class="btn btn-secondary">Back to dashboard</a></div>
     </div>
-    
     <div class="page-body">
       <div class="settings-grid">
         <div>
@@ -90,24 +97,25 @@
         </div>
         
         <div>
+          <!-- RECENT SESSIONS CARD -->
+          <div class="card">
+            <div class="card-title">Recent security activity</div>
+            <div class="card-subtitle">If you see a device you don't recognize, log it out immediately.</div>
+            <div id="session-list">
+              <!-- Injected by JS -->
+            </div>
+          </div>
+
           <div class="card" style="background: #FFFDF5; border-color: #FCD34D;">
             <div class="card-title" style="color: #92400E;">Your information, protected</div>
             <p style="font-size: 13px; color: #92400E; margin: 12px 0; font-weight: 600;">Access follows your assigned role.</p>
             <p style="font-size: 12px; color: #92400E; line-height: 1.5;">Household information is available only within the permissions granted to your account.</p>
-          </div>
-          
-          <div class="card">
-            <div class="card-title">Before leaving this device</div>
-            <p style="font-size: 12px; color: var(--text-muted); margin: 12px 0; line-height: 1.5;">Review pending offline changes before logging out. Return to evacuation tracking to check any unsynchronized updates.</p>
-            <button class="btn btn-secondary" style="width: 100%; justify-content: center; margin-bottom: 12px;" onclick="window.location.href='evacuation.html'">Open evacuation tracking</button>
-            <div style="font-size: 11px; color: var(--text-muted); text-align: center;">This is a navigation prototype. No real account credentials or household records are stored here.</div>
           </div>
         </div>
       </div>
     </div>
   </main>
 
-  <!-- CUSTOM MODAL: LOGOUT -->
   <div id="modal-logout" class="modal-overlay">
     <div class="modal-box">
       <div class="modal-eyebrow">Interactive Preview</div>
@@ -124,15 +132,19 @@
   </div>
 
   <script>
+    // Generate a unique ID for this specific tab/browser session
+    let sessionId = sessionStorage.getItem('relay-session-id');
+    if (!sessionId) {
+      sessionId = 'sess_' + Math.random().toString(36).substr(2, 9);
+      sessionStorage.setItem('relay-session-id', sessionId);
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
       const role = localStorage.getItem('relay-role') || 'Barangay Official';
-      
       const roleEl = document.getElementById('setting-role');
       const workspaceEl = document.getElementById('setting-workspace');
       const respEl = document.getElementById('setting-responsibilities');
-      const locEl = document.getElementById('setting-location');
-
-      // 1. Set Role, Workspace, and Responsibilities
+      
       if (role === 'Admin') {
         roleEl.textContent = 'System Administrator';
         workspaceEl.textContent = 'City-Wide Administration';
@@ -147,31 +159,92 @@
         respEl.textContent = 'Review & coordination';
       }
 
-      // 2. Detect Actual Location via IP (Like real sites do)
+      // Fetch IP Location
       fetch('https://ipapi.co/json/')
         .then(response => response.json())
         .then(data => {
-          if (data.city && data.country_name) {
-            locEl.textContent = `${data.city}, ${data.country_name}`;
-          } else {
-            locEl.textContent = 'Iligan City, Philippines'; // Fallback
-          }
+          document.getElementById('setting-location').textContent = `${data.city}, ${data.country_name}`;
+          registerSession(data.city, data.country_name);
         })
         .catch(() => {
-          // If API fails (e.g., Adblocker), fallback to Timezone
-          try {
-            const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-            locEl.textContent = timezone.split('/')[1].replace('_', ' ') + ' (Timezone)';
-          } catch (e) {
-            locEl.textContent = 'Iligan City, Philippines';
-          }
+          document.getElementById('setting-location').textContent = 'Iligan City, Philippines';
+          registerSession('Iligan City', 'Philippines');
         });
+
+      loadSessions();
     });
 
+    // Register this current tab as an active session
+    function registerSession(city, country) {
+      let sessions = JSON.parse(localStorage.getItem('relay-active-sessions')) || {};
+      
+      // If this session isn't logged, add it
+      if (!sessions[sessionId]) {
+        const browserInfo = navigator.userAgent.includes('Chrome') ? 'Chrome on ' : navigator.userAgent.includes('Firefox') ? 'Firefox on ' : 'Browser on ';
+        const osInfo = navigator.userAgent.includes('Windows') ? 'Windows' : navigator.userAgent.includes('Mac') ? 'Mac' : 'Unknown OS';
+        
+        sessions[sessionId] = {
+          device: browserInfo + osInfo,
+          location: `${city}, ${country}`,
+          time: new Date().toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }),
+          isCurrent: true
+        };
+        localStorage.setItem('relay-active-sessions', JSON.stringify(sessions));
+      }
+      loadSessions();
+    }
+
+    // Render the list of sessions
+    function loadSessions() {
+      let sessions = JSON.parse(localStorage.getItem('relay-active-sessions')) || {};
+      const listEl = document.getElementById('session-list');
+      listEl.innerHTML = '';
+
+      Object.keys(sessions).forEach(key => {
+        const sess = sessions[key];
+        const isCurrent = key === sessionId;
+        
+        // Make sure only one shows as "current" visually
+        if (isCurrent) sess.isCurrent = true;
+        else sess.isCurrent = false;
+
+        listEl.innerHTML += `
+          <div class="session-item">
+            <div style="display: flex;">
+              <div class="session-icon">💻</div>
+              <div class="session-info">
+                <h4>${sess.device} ${isCurrent ? '<span class="current-badge">Current session</span>' : ''}</h4>
+                <p>📍 ${sess.location} · 🕒 ${sess.time}</p>
+              </div>
+            </div>
+            ${!isCurrent ? `<button class="btn-terminate" onclick="terminateSession('${key}')">Log out</button>` : ''}
+          </div>
+        `;
+      });
+    }
+
+    // Log out a specific session
+    function terminateSession(idToTerminate) {
+      let sessions = JSON.parse(localStorage.getItem('relay-active-sessions')) || {};
+      
+      // Remove it from the list
+      delete sessions[idToTerminate];
+      
+      // Save back to local storage (this triggers the storage event in other tabs)
+      localStorage.setItem('relay-active-sessions', JSON.stringify(sessions));
+      
+      // If the user terminated their own session from another tab
+      if (idToTerminate === sessionId) {
+        localStorage.removeItem('relay-user');
+        localStorage.removeItem('relay-role');
+        window.location.href = 'index.html';
+      } else {
+        loadSessions(); // Refresh UI
+      }
+    }
+
     function confirmLogout() {
-      localStorage.removeItem('relay-user');
-      localStorage.removeItem('relay-role');
-      window.location.href = 'index.html';
+      terminateSession(sessionId);
     }
   </script>
   <script src="js/app.js"></script>
