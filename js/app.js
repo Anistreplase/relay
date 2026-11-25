@@ -4,31 +4,41 @@
 
 document.addEventListener('DOMContentLoaded', () => {
   
-  // 1. Highlight active link
+  // 1. Highlight active sidebar link
   const currentPath = window.location.pathname.split('/').pop() || 'index.html';
   document.querySelectorAll('.sidebar-nav a').forEach(link => {
     if (link.getAttribute('href') === currentPath) link.classList.add('active');
   });
 
-  // 2. User Profile
+  // 2. Update User Profile
   updateUserProfile();
 
-  // 3. Button Listeners
+  // 3. Initialize Offline/Online Listener
+  initNetworkListener();
+
+  // 4. Button Listeners
   document.body.addEventListener('click', (e) => {
     if (e.target.closest('.btn-add-action')) window.location.href = 'add-household.html';
     
-    // SAVE WHICH HOUSEHOLD WAS CLICKED
     const verifyBtn = e.target.closest('.btn-verify-action');
     if (verifyBtn) {
       const row = verifyBtn.closest('tr');
       if (row && row.hasAttribute('data-id')) {
         const recordId = row.getAttribute('data-id');
-        localStorage.setItem('selected_household', recordId); // Save the ID
+        localStorage.setItem('selected_household', recordId); 
         window.location.href = 'review.html';
       }
     }
 
-    if (e.target.closest('.btn-export-action')) alert('Export started.');
+    if (e.target.closest('.btn-export-action')) {
+      // We now check if they are offline before letting them export
+      if (!navigator.onLine) {
+        alert("You are currently offline. This action cannot be completed until you reconnect.");
+      } else {
+        if(typeof showModal === 'function') showModal('modal-export');
+        else alert('Export started.');
+      }
+    }
     if (e.target.closest('.page-btn')) alert('Page changed! (Simulated pagination)');
   });
 
@@ -62,28 +72,7 @@ function simulateLogin(event) {
 }
 
 // =========================================
-// SAVE VERIFICATION (NOW DYNAMIC)
-// =========================================
-function saveVerification() {
-  const selectedStatus = document.querySelector('input[name="verification"]:checked').value;
-  const recordId = localStorage.getItem('selected_household');
-  
-  let statusText = "Unverified";
-  if (selectedStatus === "verified") statusText = "Verified";
-  if (selectedStatus === "needs-correction") statusText = "Needs Correction";
-  if (selectedStatus === "unable") statusText = "Unable to Verify";
-
-  // Save status specifically to the selected household ID
-  if (recordId) {
-    localStorage.setItem(`record_${recordId}`, statusText);
-  }
-
-  alert('Record updated to: ' + statusText);
-  window.location.href = 'records.html';
-}
-
-// =========================================
-// CUSTOM MODAL CONTROLS
+// MODALS
 // =========================================
 function showModal(modalId) {
   const modal = document.getElementById(modalId);
@@ -95,16 +84,82 @@ function hideModal(modalId) {
   if (modal) modal.style.display = 'none';
 }
 
-// Make the Export buttons use the modal instead of alerts
-document.addEventListener('DOMContentLoaded', () => {
-  document.querySelectorAll('.btn-export-action').forEach(btn => {
-    // Remove any previous click listeners by cloning the node
-    const newBtn = btn.cloneNode(true);
-    btn.parentNode.replaceChild(newBtn, btn);
+function saveVerification() {
+  const selectedStatus = document.querySelector('input[name="verification"]:checked').value;
+  const recordId = localStorage.getItem('selected_household');
+  
+  // Simulate checking for internet
+  if (!navigator.onLine) {
+    // Save to offline queue
+    let offlineQueue = JSON.parse(localStorage.getItem('offline_queue')) || [];
+    offlineQueue.push({ id: recordId, status: selectedStatus, timestamp: Date.now() });
+    localStorage.setItem('offline_queue', JSON.stringify(offlineQueue));
     
-    newBtn.addEventListener('click', (e) => {
-      e.preventDefault();
-      showModal('modal-export'); // We will create this modal below
-    });
-  });
-});
+    // We still update local storage so the user sees the change immediately
+    localStorage.setItem(`record_${recordId}`, selectedStatus);
+    
+    alert('Saved locally. It will sync when your connection returns.');
+    window.location.href = 'records.html';
+  } else {
+    localStorage.setItem(`record_${recordId}`, selectedStatus);
+    alert('Record updated successfully.');
+    window.location.href = 'records.html';
+  }
+}
+
+// =========================================
+// GOOGLE DOCS STYLE OFFLINE SYNC LOGIC
+// =========================================
+function initNetworkListener() {
+  // Create the banner element and inject it into the body
+  let banner = document.createElement('div');
+  banner.id = 'sync-banner';
+  banner.className = 'global-banner';
+  document.body.prepend(banner);
+  
+  const updateStatus = () => {
+    const isOnline = navigator.onLine;
+    const queue = JSON.parse(localStorage.getItem('offline_queue')) || [];
+    
+    if (!isOnline) {
+      document.body.classList.add('has-banner');
+      banner.className = 'global-banner offline';
+      banner.innerHTML = `⚠️ <strong>Offline Mode:</strong> You can navigate, but changes are saved locally. ${queue.length > 0 ? `(${queue.length} changes pending)` : ''}`;
+      
+      // Disable save buttons visually
+      document.querySelectorAll('button.btn-primary').forEach(btn => {
+        if(btn.innerText.includes('Save') || btn.innerText.includes('Submit') || btn.innerText.includes('Download')) {
+          btn.setAttribute('disabled', 'true');
+        }
+      });
+    } else {
+      banner.className = 'global-banner online';
+      
+      // If we have queued items, show syncing
+      if (queue.length > 0) {
+        banner.innerHTML = `🔄 <strong>Back online.</strong> Synchronizing ${queue.length} changes...`;
+        
+        // Wait 2 seconds to simulate uploading to server
+        setTimeout(() => {
+          localStorage.removeItem('offline_queue');
+          banner.innerHTML = `✅ <strong>All changes synced.</strong>`;
+          document.body.classList.remove('has-banner');
+          setTimeout(() => { banner.style.display = 'none'; }, 3000);
+        }, 2000);
+      } else {
+        banner.style.display = 'none';
+        document.body.classList.remove('has-banner');
+      }
+      
+      // Re-enable buttons
+      document.querySelectorAll('button[disabled]').forEach(btn => btn.removeAttribute('disabled'));
+    }
+  };
+
+  // Run on page load
+  updateStatus();
+
+  // Listen for actual network changes
+  window.addEventListener('online', updateStatus);
+  window.addEventListener('offline', updateStatus);
+}
