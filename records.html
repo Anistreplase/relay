@@ -80,11 +80,11 @@
 
     <div class="page-body">
       <div class="tabs-container">
-        <div class="tab active">All records</div>
-        <div class="tab">Verified</div>
-        <div class="tab">Unverified</div>
-        <div class="tab">Needs Correction</div>
-        <div class="tab">Unable to Verify</div>
+        <div class="tab active" onclick="changeTab('All', this)">All records <span class="count" id="count-all">0</span></div>
+        <div class="tab" onclick="changeTab('Verified', this)">Verified <span class="count" id="count-verified">0</span></div>
+        <div class="tab" onclick="changeTab('Unverified', this)">Unverified <span class="count" id="count-unverified">0</span></div>
+        <div class="tab" onclick="changeTab('Needs Correction', this)">Needs Correction <span class="count" id="count-needs">0</span></div>
+        <div class="tab" onclick="changeTab('Unable to Verify', this)">Unable to Verify <span class="count" id="count-unable">0</span></div>
       </div>
 
       <div class="filters-row">
@@ -104,7 +104,7 @@
         </select>
       </div>
 
-      <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px; text-align: right;" id="row-count">1,248 households</div>
+      <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px; text-align: right;" id="row-count">0 households</div>
 
       <div class="card" style="padding: 0; overflow: hidden;">
         <div class="table-container">
@@ -116,28 +116,16 @@
               </tr>
             </thead>
             <tbody id="table-body">
-              <!-- Rows will be injected by JS -->
+              <!-- Rows injected by JS -->
             </tbody>
           </table>
         </div>
         
         <div style="padding: 16px 24px; background: #F9FAFB;">
           <div class="pagination" style="border-top: none; padding-top: 0;">
-            <span id="showing-text">Showing 1-3 of 3 households</span>
-            <div class="page-buttons">
-              <button class="page-btn">←</button>
-              <button class="page-btn active">1</button>
-              <button class="page-btn">2</button>
-              <button class="page-btn">3</button>
-              <button class="page-btn">Next →</button>
-            </div>
+            <span id="showing-text">Showing 0 of 0 households</span>
           </div>
         </div>
-      </div>
-
-      <div class="verified-banner">
-        <strong>Verified records support safer decisions.</strong><br>
-        Only Verified records become available to authorized city responders and partner offices.
       </div>
     </div>
   </main>
@@ -145,32 +133,60 @@
   <script src="js/database.js"></script>
   <script>
     let allHouseholds = [];
+    let currentTab = 'All';
 
-    // 1. Load and combine static + custom households
     function loadData() {
-      // Load static
-      for (const key in households) {
-        allHouseholds.push(households[key]);
-      }
+      allHouseholds = [];
+      for (const key in households) allHouseholds.push(households[key]);
       
-      // Load custom from localStorage
       const custom = JSON.parse(localStorage.getItem('custom_households')) || {};
-      for (const key in custom) {
-        allHouseholds.push(custom[key]);
-      }
+      for (const key in custom) allHouseholds.push(custom[key]);
       
-      // Apply saved statuses
       allHouseholds.forEach(hh => {
         const savedStatus = localStorage.getItem(`record_${hh.id}`);
         hh.status = savedStatus || "Unverified";
-        // Give them fake dates for sorting
-        hh.dateAdded = hh.id === "HH-SM-0248" ? "2026-10-24" : "2026-10-20";
       });
 
-      renderTable(allHouseholds);
+      updateTabCounts();
+      filterTable();
     }
 
-    // 2. Render the table
+    function updateTabCounts() {
+      document.getElementById('count-all').textContent = allHouseholds.length;
+      document.getElementById('count-verified').textContent = allHouseholds.filter(h => h.status === 'Verified').length;
+      document.getElementById('count-unverified').textContent = allHouseholds.filter(h => h.status === 'Unverified').length;
+      document.getElementById('count-needs').textContent = allHouseholds.filter(h => h.status === 'Needs Correction').length;
+      document.getElementById('count-unable').textContent = allHouseholds.filter(h => h.status === 'Unable to Verify').length;
+    }
+
+    function changeTab(status, element) {
+      currentTab = status;
+      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
+      element.classList.add('active');
+      filterTable();
+    }
+
+    function filterTable() {
+      const query = document.getElementById('search-input').value.toLowerCase();
+      const purok = document.getElementById('purok-filter').value;
+      
+      let filtered = allHouseholds.filter(hh => {
+        const matchesSearch = hh.head.toLowerCase().includes(query) || hh.id.toLowerCase().includes(query) || hh.address.toLowerCase().includes(query);
+        const matchesPurok = purok === "All" || hh.purok.includes(purok);
+        const matchesTab = currentTab === 'All' || hh.status === currentTab;
+        return matchesSearch && matchesPurok && matchesTab;
+      });
+      
+      renderTable(filtered);
+    }
+
+    function sortTable() {
+      const sortBy = document.getElementById('sort-filter').value;
+      if (sortBy === 'name-asc') allHouseholds.sort((a, b) => a.head.localeCompare(b.head));
+      else if (sortBy === 'name-desc') allHouseholds.sort((a, b) => b.head.localeCompare(a.head));
+      filterTable(); 
+    }
+
     function renderTable(data) {
       const tbody = document.getElementById('table-body');
       tbody.innerHTML = '';
@@ -205,36 +221,6 @@
 
       document.getElementById('showing-text').textContent = `Showing 1-${data.length} of ${data.length} households`;
       document.getElementById('row-count').textContent = `${data.length} households`;
-    }
-
-    // 3. Filter Logic
-    function filterTable() {
-      const query = document.getElementById('search-input').value.toLowerCase();
-      const purok = document.getElementById('purok-filter').value;
-      
-      let filtered = allHouseholds.filter(hh => {
-        const matchesSearch = hh.head.toLowerCase().includes(query) || hh.id.toLowerCase().includes(query) || hh.address.toLowerCase().includes(query);
-        const matchesPurok = purok === "All" || hh.purok.includes(purok);
-        return matchesSearch && matchesPurok;
-      });
-      
-      renderTable(filtered);
-    }
-
-    // 4. Sorting Logic
-    function sortTable() {
-      const sortBy = document.getElementById('sort-filter').value;
-      
-      let sorted = [...allHouseholds];
-      if (sortBy === 'name-asc') {
-        sorted.sort((a, b) => a.head.localeCompare(b.head));
-      } else if (sortBy === 'name-desc') {
-        sorted.sort((a, b) => b.head.localeCompare(a.head));
-      } else {
-        sorted.sort((a, b) => b.id.localeCompare(a.id));
-      }
-      
-      filterTable(); // re-apply search filters on the sorted list
     }
 
     document.addEventListener('DOMContentLoaded', loadData);
