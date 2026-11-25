@@ -11,6 +11,7 @@ document.addEventListener('DOMContentLoaded', () => {
 
   updateUserProfile();
   initNetworkListener();
+  initNotifications();
 
   document.body.addEventListener('click', (e) => {
     if (e.target.closest('.btn-add-action')) window.location.href = 'add-household.html';
@@ -35,18 +36,108 @@ document.addEventListener('DOMContentLoaded', () => {
     if (e.target.closest('.page-btn')) alert('Page changed! (Simulated pagination)');
   });
 
+  // Close notification dropdown if clicking outside
+  document.addEventListener('click', (e) => {
+    const dropdown = document.getElementById('notif-dropdown');
+    const bell = document.getElementById('notif-bell');
+    if (dropdown && dropdown.style.display === 'block' && !e.target.closest('#notif-container')) {
+      dropdown.style.display = 'none';
+    }
+  });
+
 });
+
+// =========================================
+// NOTIFICATION ENGINE (FRQ-13)
+// =========================================
+function initNotifications() {
+  const topbarRight = document.querySelector('.topbar-right');
+  if (!topbarRight) return;
+
+  // 1. Replace the static bell with a dynamic container
+  const bellHTML = `
+    <div id="notif-container" style="position: relative; cursor: pointer;">
+      <span id="notif-bell" style="font-size: 18px; position: relative;">🔔
+        <span id="notif-badge" style="display: none; position: absolute; top: -2px; right: -2px; width: 8px; height: 8px; background: #EF4444; border-radius: 50%; border: 2px solid var(--white);"></span>
+      </span>
+      
+      <!-- Dropdown Menu -->
+      <div id="notif-dropdown" style="display: none; position: absolute; top: 30px; right: -10px; width: 320px; background: var(--white); border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); z-index: 1000; padding: 16px;">
+        <h4 style="font-size: 14px; font-weight: 600; margin-bottom: 12px; display: flex; justify-content: space-between;">
+          Notifications <span style="font-size: 11px; color: var(--maroon); cursor: pointer;" onclick="clearNotifications()">Mark all as read</span>
+        </h4>
+        <div id="notif-list" style="display: flex; flex-direction: column; gap: 12px;">
+          <!-- Injected by JS -->
+        </div>
+      </div>
+    </div>
+  `;
+
+  // Find the bell emoji and replace it
+  const topbarRightChildren = Array.from(topbarRight.children);
+  const bellElement = topbarRightChildren.find(el => el.textContent.includes('🔔'));
+  if (bellElement) {
+    bellElement.outerHTML = bellHTML;
+  }
+
+  // Attach click event to toggle dropdown
+  document.getElementById('notif-bell').addEventListener('click', (e) => {
+    e.stopPropagation();
+    const dropdown = document.getElementById('notif-dropdown');
+    dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
+  });
+
+  // 2. Generate actual notification data from the database
+  generateNotifications();
+}
+
+function generateNotifications() {
+  // Check if we already marked them read in this session
+  const isRead = sessionStorage.getItem('notifs-read') === 'true';
+  
+  // Get verified households (since they need revalidation)
+  let all = [];
+  if (typeof households !== 'undefined') {
+    for (const key in households) all.push(households[key]);
+  }
+  const custom = JSON.parse(localStorage.getItem('custom_households')) || {};
+  for (const key in custom) all.push(custom[key]);
+  
+  const verified = all.filter(hh => (localStorage.getItem(`record_${hh.id}`) || "Unverified") === 'Verified');
+
+  const listEl = document.getElementById('notif-list');
+  const badge = document.getElementById('notif-badge');
+
+  if (verified.length === 0) {
+    listEl.innerHTML = `<div style="font-size: 13px; color: var(--text-muted); text-align: center; padding: 20px 0;">You're all caught up!</div>`;
+    if (badge) badge.style.display = 'none';
+  } else {
+    if (!isRead && badge) badge.style.display = 'block';
+
+    listEl.innerHTML = `
+      <div style="background: #FEF3C7; border: 1px solid #FCD34D; padding: 12px; border-radius: 6px; cursor: pointer;" onclick="window.location.href='revalidation.html'">
+        <div style="font-size: 13px; font-weight: 600; color: #92400E; margin-bottom: 4px;">Revalidation Due</div>
+        <div style="font-size: 12px; color: #92400E;">${verified.length} verified households are due for review.</div>
+        <div style="font-size: 11px; color: #92400E; margin-top: 8px; text-decoration: underline;">Open work queue →</div>
+      </div>
+    `;
+  }
+}
+
+function clearNotifications() {
+  sessionStorage.setItem('notifs-read', 'true');
+  const badge = document.getElementById('notif-badge');
+  if (badge) badge.style.display = 'none';
+  document.getElementById('notif-dropdown').style.display = 'none';
+}
 
 // =========================================
 // SESSION TERMINATION LISTENER
 // =========================================
 window.addEventListener('storage', (e) => {
-  // If the sessions list changes in another tab...
   if (e.key === 'relay-active-sessions') {
     const sessions = JSON.parse(e.newValue) || {};
     const currentSessionId = sessionStorage.getItem('relay-session-id');
-    
-    // Check if THIS tab's session was deleted from the list
     if (currentSessionId && !sessions[currentSessionId]) {
       alert("⚠️ Your session has been terminated by an administrator or another device.");
       localStorage.removeItem('relay-user');
