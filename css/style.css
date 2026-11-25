@@ -373,7 +373,7 @@ tr:last-child td { border-bottom: none; }
    MODAL SYSTEM (Matches Figma Previews)
    ========================================= */
 .modal-overlay {
-  display: none; /* Hidden by default */
+  display: none;
   position: fixed;
   top: 0; left: 0; width: 100%; height: 100%;
   background-color: rgba(0, 0, 0, 0.4);
@@ -432,4 +432,45 @@ tr:last-child td { border-bottom: none; }
 .modal-actions {
   display: flex;
   gap: 12px;
+}
+
+/* =========================================
+   OFFLINE SYNC BANNER
+   ========================================= */
+.global-banner {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  padding: 10px 16px;
+  text-align: center;
+  font-size: 13px;
+  font-weight: 600;
+  z-index: 9999;
+  display: none;
+  transition: all 0.3s;
+}
+
+.global-banner.offline {
+  background-color: #FEF3C7;
+  color: #92400E;
+  border-bottom: 1px solid #FCD34D;
+  display: block;
+}
+
+.global-banner.online {
+  background-color: #D1FAE5;
+  color: #065F46;
+  border-bottom: 1px solid #10B981;
+  display: block;
+}
+
+body.has-banner {
+  padding-top: 40px;
+}
+
+button[disabled], .btn[disabled] {
+  opacity: 0.5;
+  cursor: not-allowed !important;
+  pointer-events: none;
 }
