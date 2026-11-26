@@ -6,23 +6,18 @@
   <title>Relay - Reports & Exports</title>
   <link rel="stylesheet" href="css/style.css">
   <style>
-    .report-grid { display: grid; grid-template-columns: 1fr 2fr; gap: 24px; }
-    .form-field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
+    .report-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; }
+    .form-field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
     .form-field label { font-size: 12px; font-weight: 600; }
     .form-field select { padding: 10px 12px; border: 1px solid var(--border); border-radius: 6px; font-family: inherit; font-size: 13px; background: var(--white); }
-    .preview-box { background: var(--white); border: 1px solid var(--border); border-radius: 8px; padding: 24px; }
-    .preview-header { display: flex; justify-content: space-between; align-items: flex-start; border-bottom: 1px solid var(--border); padding-bottom: 16px; margin-bottom: 20px; }
-    .preview-header h2 { font-size: 18px; margin-bottom: 4px; }
-    .preview-header p { font-size: 12px; color: var(--text-muted); }
-    .preview-stats { display: grid; grid-template-columns: repeat(3, 1fr); gap: 16px; margin-bottom: 24px; }
-    .stat-box { background: var(--cream); padding: 16px; border-radius: 6px; }
-    .stat-box .label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; font-weight: 600; margin-bottom: 4px; }
-    .stat-box .val { font-size: 24px; font-weight: 700; color: var(--maroon); }
-    .disclaimer { font-size: 11px; color: var(--text-muted); margin-top: 24px; padding-top: 16px; border-top: 1px solid var(--border); }
-    .status-evacuated { background: #D1FAE5; color: #065F46; }
-    .status-at-home { background: #FEE2E2; color: #991B1B; }
-    .status-en-route { background: #FEF3C7; color: #92400E; }
-    .status-unaccounted { background: #F3F4F6; color: #374151; }
+    .summary-metrics { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-top: 12px; }
+    .metric-box { background: var(--cream); border: 1px solid var(--border); border-radius: 8px; padding: 14px; }
+    .metric-box .m-label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; font-weight: 600; margin-bottom: 4px; }
+    .metric-box .m-val { font-size: 20px; font-weight: 700; color: var(--text-main); }
+    @media (max-width: 900px) {
+      .report-grid { grid-template-columns: 1fr; }
+      .summary-metrics { grid-template-columns: 1fr; }
+    }
   </style>
 </head>
 <body>
@@ -43,6 +38,7 @@
       <nav class="sidebar-nav" style="margin-top: 12px;"><a href="settings.html"><span class="nav-icon">⚙</span> Settings</a><a href="help.html"><span class="nav-icon">?</span> Help & support</a></nav>
     </div>
   </aside>
+
   <main class="main-content">
     <header class="topbar">
       <div class="topbar-left">
@@ -54,255 +50,156 @@
         <div class="user-profile"><div class="user-info"><div class="user-name">Loading...</div><div class="user-role">Loading...</div></div></div>
       </div>
     </header>
+
     <div class="page-header">
-      <div><h1>Reports & exports</h1><p>Prepare verified household records and affected-area maps for your response plan. Downloads are restricted to authorized users and areas.</p></div>
-      <div><button class="btn btn-secondary" onclick="window.location.href='preparedness.html'">Open offline packages</button></div>
+      <div><h1>Reports & exports</h1><p>Generate and download structured snapshots for your active workspace.</p></div>
+      <div><button type="button" class="btn btn-primary" onclick="triggerReportExport()">Export report</button></div>
     </div>
+
     <div class="page-body">
       <div class="report-grid">
-        <div class="card" style="height: fit-content;">
-          <h3 style="font-size: 15px; margin-bottom: 4px;">Configure report</h3>
-          <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 20px;">Choose a report and filter set before exporting.</p>
-          <div class="form-field">
-            <label>Report type</label>
-            <select id="report-type" onchange="renderReportPreview()">
-              <option value="vulnerable">Vulnerable residents per purok</option>
-              <option value="priority">Priority list</option>
-              <option value="evacuation">Evacuation status summary</option>
-              <option value="pending">Records pending validation</option>
-            </select>
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Report configuration</div>
           </div>
           <div class="form-field">
-            <label>Purok</label>
-            <select id="report-purok" onchange="renderReportPreview()">
-              <option value="All">All puroks</option>
-              <option value="Purok 1">Purok 1</option>
-              <option value="Purok 2">Purok 2</option>
-              <option value="Purok 3">Purok 3</option>
-              <option value="Purok 4">Purok 4</option>
-              <option value="Purok 5">Purok 5</option>
+            <label for="report-type">Report dataset</label>
+            <select id="report-type" onchange="renderReportsPage()">
+              <option value="Household & Evacuation Report">Household & Evacuation Report</option>
+              <option value="Verification & Revalidation Summary">Verification & Revalidation Summary</option>
             </select>
           </div>
-          <div class="form-field"><label>Format</label><select id="report-format"><option value="PDF">PDF summary (.pdf)</option><option value="CSV">CSV spreadsheet (.csv)</option></select></div>
-          <button class="btn btn-primary" style="width: 100%; justify-content: center; margin-top: 8px;" onclick="prepareExport()">Export report</button>
+          <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 16px;">
+            Clicking <strong>Export report</strong> opens a confirmation dialog before downloading the CSV for your active workspace.
+          </p>
+          <button type="button" class="btn btn-primary" onclick="triggerReportExport()">Export report</button>
         </div>
-        <div class="preview-box">
-          <div class="preview-header">
-            <div><h2 id="preview-title">Vulnerable residents per purok</h2><p id="preview-meta">Verified records · Barangay San Miguel · Generated 24 Oct 2026</p></div>
-            <span class="pill pill-verified" id="preview-scope-pill">Verified</span>
+
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Current workspace snapshot</div>
           </div>
-          <div class="preview-stats">
-            <div class="stat-box"><div class="label" id="stat-1-label">Matching records</div><div class="val" id="stat-1-val">0</div></div>
-            <div class="stat-box"><div class="label" id="stat-2-label">Vulnerable members</div><div class="val" id="stat-2-val">0</div></div>
-            <div class="stat-box"><div class="label" id="stat-3-label">Recorded needs</div><div class="val" id="stat-3-val">0</div></div>
+          <div class="summary-metrics">
+            <div class="metric-box">
+              <div class="m-label">Scoped Records</div>
+              <div class="m-val" id="rep-total">0</div>
+            </div>
+            <div class="metric-box">
+              <div class="m-label">Verified</div>
+              <div class="m-val" id="rep-verified">0</div>
+            </div>
+            <div class="metric-box">
+              <div class="m-label">Revalidated</div>
+              <div class="m-val" id="rep-revalidated">0</div>
+            </div>
           </div>
-          <h4 style="font-size: 13px; font-weight: 600; margin-bottom: 12px;" id="preview-table-heading">Report preview</h4>
-          <div class="table-container">
-            <table><thead><tr id="preview-thead-row"></tr></thead><tbody id="preview-tbody"></tbody></table>
-          </div>
-          <div class="disclaimer"><strong>Privacy & authorization notice:</strong> Exports include only fields permitted for your role and assigned area, and are recorded in the audit log.</div>
+        </div>
+      </div>
+
+      <div class="card" style="padding: 0; overflow: hidden;">
+        <div class="card-header" style="padding: 20px 24px 14px 24px; margin-bottom: 0;">
+          <div class="card-title">Export preview</div>
+        </div>
+        <div class="table-container">
+          <table>
+            <thead style="background: #F9FAFB;">
+              <tr>
+                <th style="padding-left: 24px;">Household / ID</th>
+                <th>Purok</th>
+                <th>Verification</th>
+                <th>Evacuation</th>
+              </tr>
+            </thead>
+            <tbody id="reports-preview-body"></tbody>
+          </table>
         </div>
       </div>
     </div>
   </main>
-
-  <div id="modal-export" class="modal-overlay">
-    <div class="modal-box">
-      <div class="modal-eyebrow">Interactive Preview</div>
-      <div class="modal-title">Export preview</div>
-      <div class="modal-desc" id="export-modal-desc"></div>
-      <div class="modal-footer">
-        <div class="modal-footer-text">Sample interaction · No real records are changed.</div>
-        <div class="modal-actions">
-          <button class="btn btn-primary" onclick="hideModal('modal-export'); window.location.href='preparedness.html';">Open offline packages</button>
-          <button class="btn btn-secondary" onclick="hideModal('modal-export')">Close</button>
-        </div>
-      </div>
-    </div>
-  </div>
 
   <script src="js/database.js"></script>
   <script src="js/app.js"></script>
   <script>
     function escapeRepHtml(value) {
       return String(value ?? '')
-        .replace(/&/g, '&')
-        .replace(/</g, '<')
-        .replace(/>/g, '>')
-        .replace(/"/g, '"')
-        .replace(/'/g, ''');
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
     }
 
-    function getFilteredScopedHouseholds() {
-      const all = typeof getScopedHouseholds === 'function'
+    function triggerReportExport() {
+      const reportType = document.getElementById('report-type')?.value || 'Household & Evacuation Report';
+      openExportConfirmModal(reportType, () => {
+        const scoped = typeof getScopedHouseholds === 'function' && typeof households !== 'undefined'
+          ? getScopedHouseholds(households)
+          : [];
+        const evacMap = JSON.parse(localStorage.getItem('evacuation_statuses') || '{}');
+        const revalMap = JSON.parse(localStorage.getItem('revalidated_households') || '{}');
+        const rows = [
+          ['ID', 'Household Head', 'Barangay', 'Purok', 'Address', 'Verification Status', 'Evacuation Status', 'Revalidation'],
+          ...scoped.map(hh => [
+            hh.id,
+            hh.head,
+            hh.barangay || 'San Miguel',
+            hh.purok || '',
+            hh.address || '',
+            localStorage.getItem(`record_${hh.id}`) || 'Unverified',
+            evacMap[hh.id] || 'At Home',
+            (revalMap[hh.id] && revalMap[hh.id].status) || 'Due'
+          ])
+        ];
+        downloadRelayCsv('relay-disaster-report.csv', rows);
+      });
+    }
+
+    function renderReportsPage() {
+      const scoped = typeof getScopedHouseholds === 'function' && typeof households !== 'undefined'
         ? getScopedHouseholds(households)
-        : Object.values(households || {});
-      const purokFilter = document.getElementById('report-purok').value;
-      if (purokFilter === 'All') return all;
-      return all.filter(hh => String(hh.purok || '').includes(purokFilter));
-    }
+        : Object.values(typeof households !== 'undefined' ? households : {});
 
-    function getVulnerableMembers(hh) {
-      if (!Array.isArray(hh.members)) return [];
-      return hh.members.filter(m => m.category && m.category !== 'None');
-    }
+      const evacMap = JSON.parse(localStorage.getItem('evacuation_statuses') || '{}');
+      const revalMap = JSON.parse(localStorage.getItem('revalidated_households') || '{}');
 
-    function getRecordedNeedsCount(hh) {
-      if (!Array.isArray(hh.members)) return 0;
-      return hh.members.filter(m => m.needs && m.needs !== 'None' && m.needs !== 'None reported').length;
-    }
+      let verifiedCount = 0;
+      let revalidatedCount = 0;
 
-    function renderReportPreview() {
-      const reportType = document.getElementById('report-type').value;
-      const purokFilter = document.getElementById('report-purok').value;
-      const activeBarangay = typeof getActiveBarangayName === 'function' ? getActiveBarangayName() : 'San Miguel';
-      const areaLabel = activeBarangay ? `Barangay ${activeBarangay}` : 'City-Wide';
-      const filtered = getFilteredScopedHouseholds();
-      const verified = filtered.filter(hh => (localStorage.getItem(`record_${hh.id}`) || 'Unverified') === 'Verified');
-      const savedEvacs = JSON.parse(localStorage.getItem('evacuation_statuses')) || {};
+      scoped.forEach(hh => {
+        if ((localStorage.getItem(`record_${hh.id}`) || 'Unverified') === 'Verified') verifiedCount++;
+        if (revalMap[hh.id] && revalMap[hh.id].status === 'Revalidated') revalidatedCount++;
+      });
 
-      const titleEl = document.getElementById('preview-title');
-      const metaEl = document.getElementById('preview-meta');
-      const pillEl = document.getElementById('preview-scope-pill');
-      const theadRow = document.getElementById('preview-thead-row');
-      const tbody = document.getElementById('preview-tbody');
+      document.getElementById('rep-total').textContent = scoped.length;
+      document.getElementById('rep-verified').textContent = verifiedCount;
+      document.getElementById('rep-revalidated').textContent = revalidatedCount;
 
-      if (reportType === 'vulnerable') {
-        titleEl.textContent = 'Vulnerable residents per purok';
-        metaEl.textContent = `Verified records · ${areaLabel} · ${purokFilter} · Generated 24 Oct 2026`;
-        pillEl.className = 'pill pill-verified';
-        pillEl.textContent = 'Verified';
+      const tbody = document.getElementById('reports-preview-body');
+      if (!tbody) return;
 
-        const vulnMembers = verified.flatMap(hh => getVulnerableMembers(hh));
-        const needsCount = verified.reduce((sum, hh) => sum + getRecordedNeedsCount(hh), 0);
-
-        document.getElementById('stat-1-label').textContent = 'Verified households';
-        document.getElementById('stat-1-val').textContent = verified.length;
-        document.getElementById('stat-2-label').textContent = 'Vulnerable residents';
-        document.getElementById('stat-2-val').textContent = vulnMembers.length;
-        document.getElementById('stat-3-label').textContent = 'Recorded needs';
-        document.getElementById('stat-3-val').textContent = needsCount;
-
-        theadRow.innerHTML = '<th>Household</th><th>Purok</th><th>Vulnerable members</th><th>Assistance needs</th>';
-        if (verified.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding: 20px;">No verified households for this selection.</td></tr>';
-        } else {
-          tbody.innerHTML = verified.map(hh => {
-            const members = getVulnerableMembers(hh);
-            const names = members.length > 0 ? members.map(m => `${m.name} (${m.category})`).join(', ') : 'None flagged';
-            const needs = members.map(m => m.needs).filter(n => n && n !== 'None' && n !== 'None reported');
-            return `<tr><td><strong>${escapeRepHtml(hh.head)}</strong><br><span style="font-size:11px; color:var(--text-muted);">${escapeRepHtml(hh.id)}</span></td><td>${escapeRepHtml(hh.purok)}</td><td>${escapeRepHtml(names)}</td><td>${escapeRepHtml(needs.length > 0 ? needs.join(', ') : 'None reported')}</td></tr>`;
-          }).join('');
-        }
-      } else if (reportType === 'priority') {
-        titleEl.textContent = 'Priority list';
-        metaEl.textContent = `Decision support · ${areaLabel} · ${purokFilter} · Generated 24 Oct 2026`;
-        pillEl.className = 'pill pill-verified';
-        pillEl.textContent = 'Priority view';
-
-        const ranked = [...verified].sort((a, b) => getRecordedNeedsCount(b) - getRecordedNeedsCount(a));
-        const totalNeeds = ranked.reduce((sum, hh) => sum + getRecordedNeedsCount(hh), 0);
-
-        document.getElementById('stat-1-label').textContent = 'Prioritized households';
-        document.getElementById('stat-1-val').textContent = ranked.length;
-        document.getElementById('stat-2-label').textContent = 'High-need records';
-        document.getElementById('stat-2-val').textContent = ranked.filter(hh => getRecordedNeedsCount(hh) > 0).length;
-        document.getElementById('stat-3-label').textContent = 'Assistance items';
-        document.getElementById('stat-3-val').textContent = totalNeeds;
-
-        theadRow.innerHTML = '<th>Order</th><th>Household</th><th>Purok</th><th>Recorded assistance needs</th>';
-        if (ranked.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding: 20px;">No verified households in priority list.</td></tr>';
-        } else {
-          tbody.innerHTML = ranked.map((hh, idx) => {
-            const needs = (Array.isArray(hh.members) ? hh.members : [])
-              .map(m => m.needs)
-              .filter(n => n && n !== 'None' && n !== 'None reported');
-            return `<tr><td>${String(idx + 1).padStart(2, '0')}</td><td><strong>${escapeRepHtml(hh.head)}</strong><br><span style="font-size:11px; color:var(--text-muted);">${escapeRepHtml(hh.id)}</span></td><td>${escapeRepHtml(hh.purok)}</td><td>${escapeRepHtml(needs.length > 0 ? needs.join(', ') : 'None reported')}</td></tr>`;
-          }).join('');
-        }
-      } else if (reportType === 'evacuation') {
-        titleEl.textContent = 'Evacuation status summary';
-        metaEl.textContent = `Response summary · ${areaLabel} · ${purokFilter} · Generated 24 Oct 2026`;
-        pillEl.className = 'pill pill-verified';
-        pillEl.textContent = 'Evacuation';
-
-        const evacuatedCount = verified.filter(hh => {
-          const st = savedEvacs[hh.id] || 'At Home';
-          return st === 'Assisted' || st === 'In Evacuation Center' || st === 'Pre-emptively Evacuated';
-        }).length;
-        const unaccountedCount = verified.filter(hh => (savedEvacs[hh.id] || 'At Home') === 'Unaccounted For').length;
-
-        document.getElementById('stat-1-label').textContent = 'Tracked households';
-        document.getElementById('stat-1-val').textContent = verified.length;
-        document.getElementById('stat-2-label').textContent = 'Evacuated / Assisted';
-        document.getElementById('stat-2-val').textContent = evacuatedCount;
-        document.getElementById('stat-3-label').textContent = 'Unaccounted for';
-        document.getElementById('stat-3-val').textContent = unaccountedCount;
-
-        theadRow.innerHTML = '<th>Household</th><th>Purok</th><th>Evacuation status</th><th>Sync state</th>';
-        if (verified.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding: 20px;">No verified households for evacuation summary.</td></tr>';
-        } else {
-          tbody.innerHTML = verified.map(hh => {
-            const status = savedEvacs[hh.id] || 'At Home';
-            let pillClass = 'status-en-route';
-            if (status === 'Assisted' || status === 'In Evacuation Center' || status === 'Pre-emptively Evacuated') pillClass = 'status-evacuated';
-            if (status === 'At Home') pillClass = 'status-at-home';
-            if (status === 'Unaccounted For') pillClass = 'status-unaccounted';
-            return `<tr><td><strong>${escapeRepHtml(hh.head)}</strong><br><span style="font-size:11px; color:var(--text-muted);">${escapeRepHtml(hh.id)}</span></td><td>${escapeRepHtml(hh.purok)}</td><td><span class="pill ${pillClass}">${escapeRepHtml(status)}</span></td><td>Synced</td></tr>`;
-          }).join('');
-        }
-      } else {
-        titleEl.textContent = 'Records pending validation';
-        metaEl.textContent = `Validation queue · ${areaLabel} · ${purokFilter} · Generated 24 Oct 2026`;
-        pillEl.className = 'pill pill-unverified';
-        pillEl.textContent = 'Pending';
-
-        const pending = filtered.filter(hh => {
-          const st = localStorage.getItem(`record_${hh.id}`) || 'Unverified';
-          return st === 'Unverified' || st === 'Needs Correction';
-        });
-        const needsCorr = pending.filter(hh => (localStorage.getItem(`record_${hh.id}`) || 'Unverified') === 'Needs Correction').length;
-
-        document.getElementById('stat-1-label').textContent = 'Pending records';
-        document.getElementById('stat-1-val').textContent = pending.length;
-        document.getElementById('stat-2-label').textContent = 'Unverified';
-        document.getElementById('stat-2-val').textContent = pending.length - needsCorr;
-        document.getElementById('stat-3-label').textContent = 'Needs correction';
-        document.getElementById('stat-3-val').textContent = needsCorr;
-
-        theadRow.innerHTML = '<th>Household</th><th>Purok</th><th>Members</th><th>Verification status</th>';
-        if (pending.length === 0) {
-          tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding: 20px;">No records pending validation for this selection.</td></tr>';
-        } else {
-          tbody.innerHTML = pending.map(hh => {
-            const st = localStorage.getItem(`record_${hh.id}`) || 'Unverified';
-            const pillClass = st === 'Needs Correction' ? 'pill-needs' : 'pill-unverified';
-            const count = Array.isArray(hh.members) ? hh.members.length : 0;
-            return `<tr><td><strong>${escapeRepHtml(hh.head)}</strong><br><span style="font-size:11px; color:var(--text-muted);">${escapeRepHtml(hh.id)}</span></td><td>${escapeRepHtml(hh.purok)}</td><td>${count}</td><td><span class="pill ${pillClass}">${escapeRepHtml(st)}</span></td></tr>`;
-          }).join('');
-        }
+      if (scoped.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding: 20px; color: var(--text-muted);">No records available for export.</td></tr>';
+        return;
       }
+
+      tbody.innerHTML = scoped.map(hh => {
+        const verStatus = localStorage.getItem(`record_${hh.id}`) || 'Unverified';
+        const evacStatus = evacMap[hh.id] || localStorage.getItem(`evac_${hh.id}`) || 'At Home';
+        return `
+          <tr>
+            <td style="padding-left: 24px;">
+              <strong>${escapeRepHtml(hh.head)} household</strong><br>
+              <span style="font-size: 11px; color: var(--text-muted);">${escapeRepHtml(hh.id)}</span>
+            </td>
+            <td>${escapeRepHtml(hh.purok || '')}</td>
+            <td><span class="pill ${verStatus === 'Verified' ? 'pill-verified' : 'pill-unverified'}">${escapeRepHtml(verStatus)}</span></td>
+            <td>${escapeRepHtml(evacStatus)}</td>
+          </tr>
+        `;
+      }).join('');
     }
 
-    function prepareExport() {
-      const reportName = document.getElementById('report-type').options[document.getElementById('report-type').selectedIndex].text;
-      const formatText = document.getElementById('report-format').options[document.getElementById('report-format').selectedIndex].text;
-      const purokText = document.getElementById('report-purok').options[document.getElementById('report-purok').selectedIndex].text;
-      const activeBarangay = typeof getActiveBarangayName === 'function' ? getActiveBarangayName() : 'San Miguel';
-      const areaLabel = activeBarangay ? `Barangay ${activeBarangay}` : 'City-Wide';
-
-      document.getElementById('export-modal-desc').innerHTML = `
-        <strong>${escapeRepHtml(reportName)}</strong> (${escapeRepHtml(areaLabel)} · ${escapeRepHtml(purokText)}) would be generated as <strong>${escapeRepHtml(formatText)}</strong>.
-        <br><br>
-        The export would be recorded in the audit log and include only fields permitted for your role.
-      `;
-
-      showModal('modal-export');
-    }
-
-    document.addEventListener('DOMContentLoaded', renderReportPreview);
+    document.addEventListener('DOMContentLoaded', renderReportsPage);
   </script>
 </body>
 </html>
