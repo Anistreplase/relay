@@ -18,6 +18,7 @@
     .status-evacuated { background: #D1FAE5; color: #065F46; }
     .status-en-route { background: #FEF3C7; color: #92400E; }
     .status-unaccounted { background: #F3F4F6; color: #374151; }
+    .unconfirmed-box { background: #FFFDF5; border: 1px solid #FCD34D; border-radius: 8px; padding: 14px 16px; margin-top: 12px; font-size: 12px; color: #92400E; }
   </style>
 </head>
 <body>
@@ -62,6 +63,7 @@
               <div style="font-size: 11px; color: var(--text-muted);" id="map-count">📍 0 areas mapped</div>
             </div>
             <div id="map" class="map-container"></div>
+            <div id="unconfirmed-locations-panel" class="unconfirmed-box" style="display: none;"></div>
           </div>
           <div class="card" style="padding: 0; overflow: hidden;">
             <div class="card-header" style="padding: 20px 24px 16px 24px; border-bottom: none;">
@@ -181,6 +183,21 @@
         });
       }
 
+      const unconfirmedPanel = document.getElementById('unconfirmed-locations-panel');
+      const unconfirmedList = verified.filter(hh => hh.locationConfirmed === false);
+      if (unconfirmedPanel) {
+        if (unconfirmedList.length > 0) {
+          unconfirmedPanel.style.display = 'block';
+          const itemsText = unconfirmedList
+            .map(hh => `${escapePrepHtml(hh.head)} (${escapePrepHtml(hh.purok || '')}${hh.landmark ? ' · ' + escapePrepHtml(hh.landmark) : ''})`)
+            .join(', ');
+          unconfirmedPanel.innerHTML = `<strong>Unconfirmed pin locations (UC-03 / UC-08):</strong> ${itemsText}`;
+        } else {
+          unconfirmedPanel.style.display = 'none';
+          unconfirmedPanel.innerHTML = '';
+        }
+      }
+
       const mapEl = document.getElementById('map');
       if (!mapEl) return;
 
@@ -210,16 +227,34 @@
         iconAnchor: [8, 8]
       });
 
+      const amberIcon = L.divIcon({
+        className: 'custom-marker',
+        html: '<div style="background-color: #D97706; width: 16px; height: 16px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.4);"></div>',
+        iconSize: [16, 16],
+        iconAnchor: [8, 8]
+      });
+
       if (verified.length === 0) {
         L.marker(center, { icon: redIcon })
           .addTo(relayMarkerLayer)
           .bindPopup(`No verified households in ${escapePrepHtml(activeBarangay || 'selected area')}.`);
       } else {
         verified.forEach((hh, idx) => {
-          const [dLat, dLng] = getDeterministicOffset(String(hh.id || hh.head || idx), idx);
-          L.marker([center[0] + dLat, center[1] + dLng], { icon: redIcon })
+          const hasExplicitCoords = typeof hh.lat === 'number' && typeof hh.lng === 'number' && !Number.isNaN(hh.lat) && !Number.isNaN(hh.lng);
+          let lat, lng;
+          if (hasExplicitCoords) {
+            lat = hh.lat;
+            lng = hh.lng;
+          } else {
+            const [dLat, dLng] = getDeterministicOffset(String(hh.id || hh.head || idx), idx);
+            lat = center[0] + dLat;
+            lng = center[1] + dLng;
+          }
+          const markerIcon = hh.locationConfirmed === false ? amberIcon : redIcon;
+          const pinStatusLabel = hh.locationConfirmed === false ? 'Unconfirmed pin' : 'Confirmed pin';
+          L.marker([lat, lng], { icon: markerIcon })
             .addTo(relayMarkerLayer)
-            .bindPopup(`<b>${escapePrepHtml(hh.head)} household</b><br>${escapePrepHtml(hh.id)} · ${escapePrepHtml(hh.purok || '')}`);
+            .bindPopup(`<b>${escapePrepHtml(hh.head)} household</b><br>${escapePrepHtml(hh.id)} · ${escapePrepHtml(hh.purok || '')}<br><span style="font-size:11px;">${pinStatusLabel}</span>`);
         });
       }
 
