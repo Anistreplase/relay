@@ -125,6 +125,81 @@ function resolveHouseholdBarangay(selectedBarangayValue) {
 }
 
 // =========================================
+// USER ACCOUNTS SEED & HELPER
+// =========================================
+const DEFAULT_RELAY_USERS = [
+  {
+    id: 'USR-01',
+    name: 'M. Santos',
+    email: 'official@sanmiguel.gov.ph',
+    role: 'Barangay Official',
+    workspace: 'Barangay San Miguel',
+    barangay: 'San Miguel',
+    purok: 'Purok 3',
+    status: 'Active'
+  },
+  {
+    id: 'USR-02',
+    name: 'J. Reyes',
+    email: 'purok3@sanmiguel.gov.ph',
+    role: 'Purok Officer',
+    workspace: 'Barangay San Miguel',
+    barangay: 'San Miguel',
+    purok: 'Purok 3',
+    status: 'Active'
+  },
+  {
+    id: 'USR-03',
+    name: 'R. Mendoza',
+    email: 'official@tibanga.gov.ph',
+    role: 'Barangay Official',
+    workspace: 'Barangay Tibanga',
+    barangay: 'Tibanga',
+    purok: 'Purok 2',
+    status: 'Active'
+  },
+  {
+    id: 'USR-04',
+    name: 'T. Odicta',
+    email: 'purok2@tibanga.gov.ph',
+    role: 'Purok Officer',
+    workspace: 'Barangay Tibanga',
+    barangay: 'Tibanga',
+    purok: 'Purok 2',
+    status: 'Active'
+  },
+  {
+    id: 'USR-05',
+    name: 'K. Lim',
+    email: 'official@saray.gov.ph',
+    role: 'Barangay Official',
+    workspace: 'Barangay Saray',
+    barangay: 'Saray',
+    purok: 'Purok 4',
+    status: 'Active'
+  },
+  {
+    id: 'USR-06',
+    name: 'E. Ramos',
+    email: 'purok4@saray.gov.ph',
+    role: 'Purok Officer',
+    workspace: 'Barangay Saray',
+    barangay: 'Saray',
+    purok: 'Purok 4',
+    status: 'Active'
+  }
+];
+
+function getRelayUsers() {
+  const saved = JSON.parse(localStorage.getItem('relay_users'));
+  if (Array.isArray(saved) && saved.length > 0) {
+    return saved;
+  }
+  localStorage.setItem('relay_users', JSON.stringify(DEFAULT_RELAY_USERS));
+  return [...DEFAULT_RELAY_USERS];
+}
+
+// =========================================
 // SMART LOGIN LOGIC
 // =========================================
 function simulateLogin(event) {
