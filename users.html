@@ -193,6 +193,7 @@
 
       tbody.innerHTML = filtered.map(u => {
         const isActive = (u.status || 'Active') === 'Active';
+        const wsLabel = u.workspace || (u.barangay ? `Barangay ${u.barangay}` : 'Barangay San Miguel');
         return `
           <tr>
             <td style="padding-left: 24px;">
@@ -200,7 +201,7 @@
               <span style="font-size: 11px; color: var(--text-muted);">${escapeUserHtml(u.email)} · ${escapeUserHtml(u.id)}</span>
             </td>
             <td>${escapeUserHtml(u.role)}</td>
-            <td>${escapeUserHtml(u.workspace)}</td>
+            <td>${escapeUserHtml(wsLabel)}</td>
             <td>${escapeUserHtml(u.purok)}</td>
             <td><span class="pill ${isActive ? 'status-active' : 'status-inactive'}">${escapeUserHtml(u.status || 'Active')}</span></td>
             <td>
@@ -255,7 +256,7 @@
 
     function resetDefaultUsers() {
       if (typeof DEFAULT_RELAY_USERS !== 'undefined') {
-        localStorage.setItem('relay_users', JSON.stringify(DEFAULT_RELAY_USERS));
+        localStorage.setItem('relay_users', JSON.stringify(DEFAULT_RELAY_USERS.map(u => ({ ...u }))));
         loadUsers();
       }
     }
