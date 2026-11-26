@@ -136,9 +136,9 @@
 
     function handleDeleteRecord(hhId) {
       if (typeof deleteHouseholdRecord === 'function') {
-        if (deleteHouseholdRecord(hhId)) {
+        deleteHouseholdRecord(hhId, () => {
           renderHouseholdRecords();
-        }
+        });
       }
     }
 
