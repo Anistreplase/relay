@@ -6,15 +6,28 @@
   <title>Relay - Overview</title>
   <link rel="stylesheet" href="css/style.css">
   <style>
-    .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
-    .stat-card { background: var(--white); border: 1px solid var(--border); border-radius: 8px; padding: 20px; }
-    .stat-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); font-weight: 600; margin-bottom: 8px; }
-    .stat-num { font-size: 28px; font-weight: 700; color: var(--text-main); margin-bottom: 4px; }
-    .stat-sub { font-size: 12px; color: var(--text-muted); }
-    .dash-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 24px; }
+    .dash-grid { display: grid; grid-template-columns: 1.75fr 1fr; gap: 24px; align-items: start; }
+    .dash-left-col, .dash-right-col { display: flex; flex-direction: column; gap: 24px; }
     .flag-text { font-size: 12px; color: var(--text-muted); }
+    .prep-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 14px; }
+    .prep-kpis { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 16px; }
+    .prep-kpi-num { font-size: 24px; font-weight: 700; color: var(--text-main); line-height: 1.2; }
+    .prep-kpi-label { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
+    .progress-track { width: 100%; height: 6px; background: #E5E7EB; border-radius: 999px; overflow: hidden; margin-bottom: 10px; }
+    .progress-fill-green { height: 100%; background: #10B981; border-radius: 999px; transition: width 0.25s ease; }
+    .prep-foot { display: flex; justify-content: space-between; align-items: center; font-size: 12px; color: var(--text-muted); gap: 8px; }
+    .prep-foot a { color: var(--red); font-weight: 600; }
+    .offline-callout { background: #FFFDF5; border: 1px solid #FCD34D; border-radius: 8px; padding: 22px; }
+    .offline-callout h3 { font-size: 16px; font-weight: 700; color: var(--text-main); margin-bottom: 6px; }
+    .offline-callout p { font-size: 12px; color: var(--text-muted); line-height: 1.45; margin-bottom: 14px; }
+    .offline-verified-note { font-size: 12px; color: var(--text-main); margin-bottom: 16px; line-height: 1.45; }
+    .offline-verified-note strong { display: block; margin-bottom: 2px; }
+    .breakdown-row { display: grid; grid-template-columns: 110px 1fr 48px; align-items: center; gap: 14px; padding: 10px 0; }
+    .breakdown-label { font-size: 13px; color: var(--text-main); }
+    .breakdown-track { width: 100%; height: 6px; background: #F3F4F6; border-radius: 999px; overflow: hidden; }
+    .breakdown-fill { height: 100%; border-radius: 999px; transition: width 0.25s ease; }
+    .breakdown-val { font-size: 13px; font-weight: 600; color: var(--text-main); text-align: right; }
     @media (max-width: 1000px) {
-      .stats-grid { grid-template-columns: repeat(2, 1fr); }
       .dash-grid { grid-template-columns: 1fr; }
     }
   </style>
@@ -59,59 +72,73 @@
     </div>
 
     <div class="page-body">
-      <div class="stats-grid">
-        <div class="stat-card">
-          <div class="stat-label">Total Households</div>
-          <div class="stat-num" id="dash-total-hh">0</div>
-          <div class="stat-sub">Active scoped records</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-label">Verified</div>
-          <div class="stat-num" id="dash-verified-hh">0</div>
-          <div class="stat-sub">Ready for coordination</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-label">Pending Verification</div>
-          <div class="stat-num" id="dash-pending-hh">0</div>
-          <div class="stat-sub">Awaiting validation</div>
-        </div>
-        <div class="stat-card">
-          <div class="stat-label">Evacuated / Assisted</div>
-          <div class="stat-num" id="dash-evac-hh">0</div>
-          <div class="stat-sub">Accounted movement</div>
-        </div>
-      </div>
-
       <div class="dash-grid">
-        <div class="card" style="padding: 0; overflow: hidden;">
-          <div class="card-header" style="padding: 20px 24px 14px 24px; margin-bottom: 0;">
-            <div class="card-title">Verification work queue</div>
-            <a href="verify.html" style="font-size: 12px; color: var(--red); font-weight: 600;">View all →</a>
+        <div class="dash-left-col">
+          <div class="card" style="padding: 0; overflow: hidden;">
+            <div class="card-header" style="padding: 20px 24px 14px 24px; margin-bottom: 0;">
+              <div class="card-title">Verification work queue</div>
+              <a href="verify.html" style="font-size: 12px; color: var(--red); font-weight: 600;">View all →</a>
+            </div>
+            <div class="table-container">
+              <table>
+                <thead style="background: #F9FAFB;">
+                  <tr>
+                    <th style="padding-left: 24px;">Household</th>
+                    <th>Status</th>
+                    <th>Flag</th>
+                    <th>Action</th>
+                  </tr>
+                </thead>
+                <tbody id="dash-queue-body"></tbody>
+              </table>
+            </div>
           </div>
-          <div class="table-container">
-            <table>
-              <thead style="background: #F9FAFB;">
-                <tr>
-                  <th style="padding-left: 24px;">Household</th>
-                  <th>Status</th>
-                  <th>Flag</th>
-                  <th>Action</th>
-                </tr>
-              </thead>
-              <tbody id="dash-queue-body"></tbody>
-            </table>
+
+          <div class="card">
+            <div class="card-header" style="border-bottom: none; padding-bottom: 0; margin-bottom: 12px;">
+              <div class="card-title">Every record, accounted for</div>
+              <span style="font-size: 12px; color: var(--text-muted);" id="dash-accounted-sub">Verification status · 0 households</span>
+            </div>
+            <div id="dash-breakdown-rows"></div>
           </div>
         </div>
 
-        <div class="card">
-          <div class="card-header">
-            <div class="card-title">Quick shortcuts</div>
+        <div class="dash-right-col">
+          <div class="card">
+            <div class="prep-head">
+              <div class="card-title">Preparedness & evacuation</div>
+            </div>
+            <div class="prep-kpis">
+              <div>
+                <div class="prep-kpi-num" id="dash-prep-verified">0</div>
+                <div class="prep-kpi-label">Verified households</div>
+              </div>
+              <div>
+                <div class="prep-kpi-num" id="dash-prep-priority">0</div>
+                <div class="prep-kpi-label">Priority households</div>
+              </div>
+              <div>
+                <div class="prep-kpi-num" id="dash-prep-evacuated">0</div>
+                <div class="prep-kpi-label">Evacuated so far</div>
+              </div>
+            </div>
+            <div class="progress-track">
+              <div class="progress-fill-green" id="dash-evac-progress-bar" style="width: 0%;"></div>
+            </div>
+            <div class="prep-foot">
+              <span id="dash-evac-progress-text">0 of 0 households evacuated: 0%</span>
+              <a href="evacuation.html">Open tracking →</a>
+            </div>
           </div>
-          <div style="display: flex; flex-direction: column; gap: 10px;">
-            <a href="preparedness.html" class="btn btn-secondary" style="justify-content: space-between;">Preparedness & offline map <span>→</span></a>
-            <a href="evacuation.html" class="btn btn-secondary" style="justify-content: space-between;">Evacuation tracking <span>→</span></a>
-            <a href="revalidation.html" class="btn btn-secondary" style="justify-content: space-between;">Revalidation queue <span>→</span></a>
-            <a href="reports.html" class="btn btn-secondary" style="justify-content: space-between;">Reports & exports <span>→</span></a>
+
+          <div class="offline-callout">
+            <h3>Ready beyond the connection</h3>
+            <p>Download verified household records and area maps before deployment.</p>
+            <div class="offline-verified-note">
+              <strong>Verified records only</strong>
+              City responders may access the latest officer data. Only the records are made visible.
+            </div>
+            <a href="preparedness.html" class="btn btn-yellow">Prepare offline package</a>
           </div>
         </div>
       </div>
@@ -151,30 +178,50 @@
       });
     }
 
+    function getQueueFlagLabel(hh, status) {
+      if (hh.flag) return hh.flag;
+      if (status === 'Needs Correction') return 'Address correction';
+      if (hh.locationConfirmed === false) return 'Confirmation pending';
+      return 'Office confirmed';
+    }
+
     function renderDashboardPage() {
       const scoped = typeof getScopedHouseholds === 'function' && typeof households !== 'undefined'
         ? getScopedHouseholds(households)
         : Object.values(typeof households !== 'undefined' ? households : {});
 
       const evacMap = JSON.parse(localStorage.getItem('evacuation_statuses') || '{}');
+
       let verifiedCount = 0;
-      let pendingCount = 0;
-      let evacCount = 0;
+      let unverifiedCount = 0;
+      let needsCorrectionCount = 0;
+      let unableCount = 0;
+      let priorityCount = 0;
+      let evacuatedCount = 0;
 
       const queueRows = [];
 
       scoped.forEach(hh => {
         const status = localStorage.getItem(`record_${hh.id}`) || 'Unverified';
         if (status === 'Verified') verifiedCount++;
-        else pendingCount++;
+        else if (status === 'Needs Correction') needsCorrectionCount++;
+        else if (status === 'Unable to Verify') unableCount++;
+        else unverifiedCount++;
+
+        const firstMember = Array.isArray(hh.members) && hh.members[0] ? hh.members[0] : null;
+        const hasNeed = firstMember && firstMember.needs && firstMember.needs !== 'None' && firstMember.needs !== 'None reported';
+        if (status === 'Verified' && hasNeed) {
+          priorityCount++;
+        }
 
         const evacStatus = evacMap[hh.id] || localStorage.getItem(`evac_${hh.id}`) || 'At Home';
         if (
-          evacStatus === 'In Evacuation Center' ||
-          evacStatus === 'Pre-emptively Evacuated' ||
-          evacStatus === 'Assisted'
+          status === 'Verified' &&
+          (evacStatus === 'In Evacuation Center' ||
+            evacStatus === 'Pre-emptively Evacuated' ||
+            evacStatus === 'Assisted')
         ) {
-          evacCount++;
+          evacuatedCount++;
         }
 
         if (status !== 'Verified') {
@@ -182,10 +229,38 @@
         }
       });
 
-      document.getElementById('dash-total-hh').textContent = scoped.length;
-      document.getElementById('dash-verified-hh').textContent = verifiedCount;
-      document.getElementById('dash-pending-hh').textContent = pendingCount;
-      document.getElementById('dash-evac-hh').textContent = evacCount;
+      document.getElementById('dash-prep-verified').textContent = verifiedCount;
+      document.getElementById('dash-prep-priority').textContent = priorityCount;
+      document.getElementById('dash-prep-evacuated').textContent = evacuatedCount;
+
+      const pct = verifiedCount > 0 ? Math.round((evacuatedCount / verifiedCount) * 100) : 0;
+      document.getElementById('dash-evac-progress-bar').style.width = `${pct}%`;
+      document.getElementById('dash-evac-progress-text').textContent =
+        `${evacuatedCount} of ${verifiedCount} households evacuated: ${pct}%`;
+
+      document.getElementById('dash-accounted-sub').textContent =
+        `Verification status · ${scoped.length} households`;
+
+      const maxBar = Math.max(1, scoped.length);
+      const breakdownItems = [
+        { label: 'Verified', count: verifiedCount, color: '#10B981' },
+        { label: 'Unverified', count: unverifiedCount, color: '#64748B' },
+        { label: 'Needs Correction', count: needsCorrectionCount, color: '#F59E0B' },
+        { label: 'Unable to Verify', count: unableCount, color: '#EF4444' }
+      ];
+
+      document.getElementById('dash-breakdown-rows').innerHTML = breakdownItems.map(item => {
+        const widthPct = Math.round((item.count / maxBar) * 100);
+        return `
+          <div class="breakdown-row">
+            <div class="breakdown-label">${escapeDashHtml(item.label)}</div>
+            <div class="breakdown-track">
+              <div class="breakdown-fill" style="width: ${widthPct}%; background: ${item.color};"></div>
+            </div>
+            <div class="breakdown-val">${item.count}</div>
+          </div>
+        `;
+      }).join('');
 
       const tbody = document.getElementById('dash-queue-body');
       if (!tbody) return;
@@ -200,7 +275,7 @@
           hh.status === 'Needs Correction' ? 'pill-needs' :
           hh.status === 'Unable to Verify' ? 'pill-unable' :
           'pill-unverified';
-        const flagLabel = hh.locationConfirmed === false ? 'Unconfirmed pin' : 'Office confirmed';
+        const flagLabel = getQueueFlagLabel(hh, hh.status);
         const purokShort = String(hh.purok || '').split(',')[0];
 
         return `
