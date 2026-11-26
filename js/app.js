@@ -91,18 +91,75 @@ function getActiveBarangayName() {
 function getScopedHouseholds(householdsObj) {
   const activeBarangay = getActiveBarangayName();
   const custom = JSON.parse(localStorage.getItem('custom_households')) || {};
+  const deleted = JSON.parse(localStorage.getItem('deleted_households')) || {};
+
   const combined = [
     ...Object.values(householdsObj || {}),
     ...Object.values(custom)
-  ].map(hh => ({
-    ...hh,
-    barangay: hh.barangay || 'San Miguel'
-  }));
+  ]
+    .filter(hh => hh && hh.id && !deleted[hh.id])
+    .map(hh => ({
+      ...hh,
+      barangay: hh.barangay || 'San Miguel'
+    }));
 
   if (!activeBarangay) {
     return combined;
   }
   return combined.filter(hh => String(hh.barangay || '').toLowerCase() === activeBarangay.toLowerCase());
+}
+
+function canDeleteHouseholdRecord(hh) {
+  const role = localStorage.getItem('relay-role') || 'Barangay Official';
+  const workspace = localStorage.getItem('relay-workspace') || 'Barangay San Miguel';
+  if (role === 'Admin') {
+    return true;
+  }
+  const activeBarangay = getActiveBarangayName() || workspace.replace(/^Barangay\s+/i, '').trim();
+  const recordBarangay = String((hh && hh.barangay) || 'San Miguel').replace(/^Barangay\s+/i, '').trim();
+  return activeBarangay.toLowerCase() === recordBarangay.toLowerCase();
+}
+
+function deleteHouseholdRecord(hhId) {
+  if (!hhId) return false;
+  const custom = JSON.parse(localStorage.getItem('custom_households')) || {};
+  const recordObj = custom[hhId] || (typeof households !== 'undefined' ? households[hhId] : null);
+
+  if (!canDeleteHouseholdRecord(recordObj)) {
+    alert('You can only delete household records within your assigned barangay workspace.');
+    return false;
+  }
+
+  const confirmed = confirm(`Remove duplicate household record ${hhId}? This cannot be undone.`);
+  if (!confirmed) return false;
+
+  if (custom[hhId]) {
+    delete custom[hhId];
+    localStorage.setItem('custom_households', JSON.stringify(custom));
+  }
+
+  const deleted = JSON.parse(localStorage.getItem('deleted_households')) || {};
+  deleted[hhId] = Date.now();
+  localStorage.setItem('deleted_households', JSON.stringify(deleted));
+  localStorage.removeItem(`record_${hhId}`);
+
+  if (localStorage.getItem('selected_household') === hhId) {
+    localStorage.removeItem('selected_household');
+  }
+
+  sessionStorage.removeItem('notifs-read');
+
+  if (!navigator.onLine) {
+    const offlineQueue = JSON.parse(localStorage.getItem('offline_queue')) || [];
+    offlineQueue.push({ id: hhId, action: 'delete', timestamp: Date.now() });
+    localStorage.setItem('offline_queue', JSON.stringify(offlineQueue));
+  }
+
+  if (typeof generateNotifications === 'function') {
+    generateNotifications();
+  }
+
+  return true;
 }
 
 function resolveHouseholdBarangay(selectedBarangayValue) {
