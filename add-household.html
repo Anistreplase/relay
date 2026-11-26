@@ -13,6 +13,7 @@
     .form-field label { font-size: 12px; font-weight: 600; }
     .form-field input, .form-field select { padding: 10px 12px; border: 1px solid var(--border); border-radius: 6px; font-family: inherit; font-size: 13px; background: var(--white); }
     .error-msg { color: #991B1B; background: #FEE2E2; border: 1px solid #FCA5A5; padding: 10px 12px; border-radius: 6px; font-size: 12px; margin-bottom: 14px; display: none; }
+    .dup-warning-box { color: #92400E; background: #FEF3C7; border: 1px solid #F59E0B; padding: 12px 14px; border-radius: 6px; font-size: 12px; margin-bottom: 14px; display: none; line-height: 1.5; }
     .pin-map { height: 280px; width: 100%; border-radius: 8px; border: 1px solid var(--border); background: #e5e5e5; z-index: 1; position: relative; }
     .pin-meta { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px; margin-top: 8px; font-size: 12px; color: var(--text-muted); }
     .fallback-box { background: var(--cream); border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; margin-bottom: 16px; }
@@ -54,14 +55,15 @@
     <div class="page-body">
       <form class="form-card" id="add-hh-form" onsubmit="handleAddHousehold(event)">
         <div id="hh-error" class="error-msg"></div>
+        <div id="hh-dup-warning" class="dup-warning-box"></div>
         <div class="form-grid">
           <div class="form-field">
             <label for="hh-head">Household head surname / name *</label>
-            <input type="text" id="hh-head" required placeholder="e.g. Santos">
+            <input type="text" id="hh-head" required placeholder="e.g. Santos" oninput="checkPotentialDuplicatesWhileTyping()">
           </div>
           <div class="form-field" id="barangay-field-wrap" style="display: none;">
             <label for="hh-barangay">Barangay (Required for City-Wide Admin) *</label>
-            <select id="hh-barangay" onchange="centerPinMapForSelection()">
+            <select id="hh-barangay" onchange="centerPinMapForSelection(); checkPotentialDuplicatesWhileTyping();">
               <option value="">-- Select Barangay --</option>
               <option value="San Miguel">San Miguel</option>
               <option value="Tibanga">Tibanga</option>
@@ -72,7 +74,7 @@
         <div class="form-grid">
           <div class="form-field">
             <label for="hh-purok">Purok *</label>
-            <select id="hh-purok" required onchange="centerPinMapForSelection()">
+            <select id="hh-purok" required onchange="centerPinMapForSelection(); checkPotentialDuplicatesWhileTyping();">
               <option value="Purok 1">Purok 1</option>
               <option value="Purok 2">Purok 2</option>
               <option value="Purok 3">Purok 3</option>
@@ -82,7 +84,7 @@
           </div>
           <div class="form-field">
             <label for="hh-address">Street / Sitio address *</label>
-            <input type="text" id="hh-address" required placeholder="e.g. 14 Riverside Street">
+            <input type="text" id="hh-address" required placeholder="e.g. 14 Riverside Street" oninput="checkPotentialDuplicatesWhileTyping()">
           </div>
         </div>
 
@@ -152,6 +154,79 @@
     let pickedLng = null;
     let locationConfirmed = false;
 
+    function escapeAddHtml(value) {
+      return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function getEffectiveBarangaySelection() {
+      const role = localStorage.getItem('relay-role') || 'Barangay Official';
+      const workspace = localStorage.getItem('relay-workspace') || 'Barangay San Miguel';
+      const isCityWideAdmin = role === 'Admin' && workspace === 'City-Wide Administration';
+      if (isCityWideAdmin) {
+        return (document.getElementById('hh-barangay')?.value || '').replace(/^Barangay\s+/i, '').trim();
+      }
+      return workspace.replace(/^Barangay\s+/i, '').trim();
+    }
+
+    function checkPotentialDuplicatesWhileTyping() {
+      const warnEl = document.getElementById('hh-dup-warning');
+      if (!warnEl) return;
+
+      const headRaw = (document.getElementById('hh-head')?.value || '').trim();
+      const purokRaw = (document.getElementById('hh-purok')?.value || '').trim();
+      const addrRaw = (document.getElementById('hh-address')?.value || '').trim();
+      const brgyRaw = getEffectiveBarangaySelection();
+
+      if (!headRaw || typeof normalizeDupKeyPart !== 'function') {
+        warnEl.style.display = 'none';
+        warnEl.innerHTML = '';
+        return;
+      }
+
+      const pool = typeof getAllActiveHouseholds === 'function' && typeof households !== 'undefined'
+        ? getAllActiveHouseholds(households)
+        : [];
+
+      const targetHead = normalizeDupKeyPart(headRaw);
+      const targetBrgy = normalizeDupKeyPart(brgyRaw);
+      const targetPurok = normalizeDupKeyPart(purokRaw);
+      const targetAddr = normalizeDupKeyPart(addrRaw);
+
+      const matches = pool.filter(other => {
+        if (!other) return false;
+        const otherHead = normalizeDupKeyPart(other.head);
+        const otherBrgy = normalizeDupKeyPart(other.barangay);
+        const otherPurok = normalizeDupKeyPart(other.purok);
+        const otherAddr = normalizeDupKeyPart(other.address);
+
+        if (!targetHead || otherHead !== targetHead) return false;
+        const sameBrgy = !targetBrgy || !otherBrgy || otherBrgy === targetBrgy;
+        const sameLocation =
+          (targetAddr && otherAddr && otherAddr === targetAddr) ||
+          (targetPurok && otherPurok && otherPurok === targetPurok);
+
+        return sameBrgy && sameLocation;
+      });
+
+      if (matches.length === 0) {
+        warnEl.style.display = 'none';
+        warnEl.innerHTML = '';
+        return;
+      }
+
+      const summary = matches
+        .map(m => `${escapeAddHtml(m.head || 'Household')} (${escapeAddHtml(m.id)} · ${escapeAddHtml(m.purok || m.barangay || '')})`)
+        .join(', ');
+
+      warnEl.style.display = 'block';
+      warnEl.innerHTML = `<strong>Possible duplicate found:</strong> ${summary}. Review existing records if needed, or continue if this is a separate household.`;
+    }
+
     function getBaseCoordsForBarangay(brgyName) {
       const key = String(brgyName || '').toLowerCase();
       if (key === 'tibanga') return [8.2345, 124.2368];
@@ -219,12 +294,7 @@
         if (!locationConfirmed) clearPinLocation();
         return;
       }
-      const role = localStorage.getItem('relay-role') || 'Barangay Official';
-      const workspace = localStorage.getItem('relay-workspace') || 'Barangay San Miguel';
-      const isCityWideAdmin = role === 'Admin' && workspace === 'City-Wide Administration';
-      const brgy = isCityWideAdmin
-        ? (document.getElementById('hh-barangay')?.value || 'San Miguel')
-        : workspace.replace(/^Barangay\s+/i, '').trim();
+      const brgy = getEffectiveBarangaySelection() || 'San Miguel';
       const purok = document.getElementById('hh-purok')?.value || 'Purok 1';
 
       const base = getBaseCoordsForBarangay(brgy);
@@ -234,12 +304,7 @@
 
     function centerPinMapForSelection() {
       if (!pinMap) return;
-      const role = localStorage.getItem('relay-role') || 'Barangay Official';
-      const workspace = localStorage.getItem('relay-workspace') || 'Barangay San Miguel';
-      const isCityWideAdmin = role === 'Admin' && workspace === 'City-Wide Administration';
-      const brgy = isCityWideAdmin
-        ? (document.getElementById('hh-barangay')?.value || 'San Miguel')
-        : workspace.replace(/^Barangay\s+/i, '').trim();
+      const brgy = getEffectiveBarangaySelection() || 'San Miguel';
       const base = getBaseCoordsForBarangay(brgy);
       if (!pinMarker) {
         pinMap.setView(base, 15);
@@ -249,17 +314,13 @@
     function initPinPickerMap() {
       const mapContainer = document.getElementById('pin-map');
       if (!mapContainer || typeof L === 'undefined') return;
-      const role = localStorage.getItem('relay-role') || 'Barangay Official';
-      const workspace = localStorage.getItem('relay-workspace') || 'Barangay San Miguel';
-      const brgy = role === 'Admin' && workspace === 'City-Wide Administration'
-        ? 'San Miguel'
-        : workspace.replace(/^Barangay\s+/i, '').trim();
+      const brgy = getEffectiveBarangaySelection() || 'San Miguel';
       const center = getBaseCoordsForBarangay(brgy);
 
       if (!pinMap) {
         pinMap = L.map('pin-map').setView(center, 15);
         L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          attribution: '© OpenStreetMap contributors',
+          attribution: '&copy; OpenStreetMap contributors',
           maxZoom: 19
         }).addTo(pinMap);
 
@@ -338,6 +399,7 @@
 
       localStorage.setItem('custom_households', JSON.stringify(custom));
       localStorage.setItem(`record_${newId}`, 'Unverified');
+      sessionStorage.removeItem('notifs-read');
       window.location.href = 'records.html';
     }
   </script>
