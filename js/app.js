@@ -89,7 +89,7 @@ function simulateLogin(event) {
 }
 
 // =========================================
-// USER PROFILE & STRICT ROLE PERMISSIONS
+// USER PROFILE & DYNAMIC SIDEBAR INJECTION
 // =========================================
 function updateUserProfile() {
   const savedRole = localStorage.getItem('relay-role') || 'Barangay Official';
@@ -98,9 +98,30 @@ function updateUserProfile() {
   const nameEl = document.querySelector('.user-name');
   const roleEl = document.querySelector('.user-role');
   const workspaceSelector = document.getElementById('workspace-selector');
-  const navUsers = document.getElementById('nav-users');
 
-  // Helper to show/hide sidebar links
+  // 1. DYNAMICALLY INSERT "MANAGE USERS" LINK IF IT DOESN'T EXIST
+  let navUsers = document.getElementById('nav-users');
+  if (!navUsers) {
+    const footerNav = document.querySelector('.sidebar-footer .sidebar-nav');
+    if (footerNav) {
+      // Create the link element
+      navUsers = document.createElement('a');
+      navUsers.href = 'users.html';
+      navUsers.id = 'nav-users';
+      navUsers.innerHTML = '<span class="nav-icon">👤</span> Manage Users';
+      navUsers.style.display = 'none';
+      
+      // Insert it before the Settings link
+      const settingsLink = footerNav.querySelector('a[href="settings.html"]');
+      if (settingsLink) {
+        footerNav.insertBefore(navUsers, settingsLink);
+      } else {
+        footerNav.prepend(navUsers);
+      }
+    }
+  }
+
+  // Helper to show/hide regular sidebar links
   const setNav = (href, visible) => {
     const link = document.querySelector(`.sidebar-nav a[href="${href}"]`);
     if (link) link.style.display = visible ? 'flex' : 'none';
@@ -132,6 +153,8 @@ function updateUserProfile() {
       setNav('evacuation.html', true);
       setNav('revalidation.html', true);
       setNav('reports.html', true);
+      
+      // Show the Manage Users link
       if (navUsers) navUsers.style.display = 'flex';
 
     } 
@@ -154,6 +177,7 @@ function updateUserProfile() {
       setNav('evacuation.html', false);
       setNav('revalidation.html', true); 
       setNav('reports.html', false);
+      
       if (navUsers) navUsers.style.display = 'none';
 
     } 
@@ -173,9 +197,10 @@ function updateUserProfile() {
       setNav('records.html', true);
       setNav('verify.html', true);
       setNav('preparedness.html', true);
-      setNav('evacuation.html', true); // NOW VISIBLE
+      setNav('evacuation.html', true); 
       setNav('revalidation.html', true);
       setNav('reports.html', true);
+      
       if (navUsers) navUsers.style.display = 'none';
     }
   }
