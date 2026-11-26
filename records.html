@@ -16,7 +16,9 @@
     .filter-input { background: var(--white); border: 1px solid var(--border); border-radius: 6px; padding: 10px 14px; font-size: 13px; color: var(--text-main); }
     .filter-input:focus { outline: none; border-color: var(--red); }
     .search-input { flex-grow: 1; min-width: 240px; }
-    .action-group { display: inline-flex; align-items: center; gap: 8px; }
+    .action-group { display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .btn-dup-hh { background: #FEF3C7; color: #92400E; border: 1px solid #F59E0B; padding: 6px 10px; border-radius: 6px; font-size: 12px; font-weight: 600; }
+    .btn-dup-hh:hover { background: #FDE68A; }
     .btn-delete-hh { background: #FEE2E2; color: #991B1B; border: 1px solid #FCA5A5; padding: 6px 10px; border-radius: 6px; font-size: 12px; font-weight: 600; }
     .btn-delete-hh:hover { background: #FCA5A5; }
   </style>
@@ -53,8 +55,9 @@
     </header>
 
     <div class="page-header">
-      <div><h1>Household records</h1><p>Search, filter, import, and manage household records across your active workspace.</p></div>
+      <div><h1>Household records</h1><p>Search, filter, import, resolve duplicates, and manage household records across your active workspace.</p></div>
       <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+        <button type="button" class="btn btn-secondary" onclick="openDuplicateCenterModal(renderRecordsPage)">Duplicates (<span id="dup-pair-count">0</span>)</button>
         <button type="button" class="btn btn-secondary" onclick="openImportRecordsModal()">Import records</button>
         <button type="button" class="btn btn-primary btn-add-action">+ Add household</button>
       </div>
@@ -121,14 +124,29 @@
       renderRecordsPage();
     }
 
+    function resolveRowDuplicates(hhId) {
+      const rec = typeof getLatestRecordById === 'function' ? getLatestRecordById(hhId) : null;
+      const dups = rec && typeof findDuplicateHouseholds === 'function' ? findDuplicateHouseholds(rec) : [];
+      if (rec && dups.length > 0 && typeof openDuplicateResolveModal === 'function') {
+        openDuplicateResolveModal(rec, dups, renderRecordsPage);
+      } else {
+        alert('No duplicate matches found for this record.');
+      }
+    }
+
     function renderRecordsPage() {
       const scoped = typeof getScopedHouseholds === 'function' && typeof households !== 'undefined'
         ? getScopedHouseholds(households)
         : Object.values(typeof households !== 'undefined' ? households : {});
 
+      const allPairs = typeof findAllDuplicatePairsInScope === 'function' ? findAllDuplicatePairsInScope() : [];
+      const dupCountEl = document.getElementById('dup-pair-count');
+      if (dupCountEl) dupCountEl.textContent = allPairs.length;
+
       const enriched = scoped.map(hh => ({
         ...hh,
-        verStatus: localStorage.getItem(`record_${hh.id}`) || 'Unverified'
+        verStatus: localStorage.getItem(`record_${hh.id}`) || 'Unverified',
+        dupMatches: typeof findDuplicateHouseholds === 'function' ? findDuplicateHouseholds(hh) : []
       }));
 
       document.getElementById('count-all').textContent = enriched.length;
@@ -169,12 +187,16 @@
           'pill-unverified';
 
         const sourceMeta = hh.importSource ? ` · Source: ${escapeRecHtml(hh.importSource)}` : '';
+        const hasDups = Array.isArray(hh.dupMatches) && hh.dupMatches.length > 0;
+        const dupBadge = hasDups
+          ? ` · <span style="color:#92400E; font-weight:600;">Possible dup (${hh.dupMatches.length})</span>`
+          : '';
 
         return `
           <tr data-id="${escapeRecHtml(hh.id)}">
             <td style="padding-left: 24px;">
               <strong>${escapeRecHtml(hh.head)} household</strong><br>
-              <span style="font-size: 11px; color: var(--text-muted);">${escapeRecHtml(hh.id)}${sourceMeta}</span>
+              <span style="font-size: 11px; color: var(--text-muted);">${escapeRecHtml(hh.id)}${sourceMeta}${dupBadge}</span>
             </td>
             <td>${escapeRecHtml(hh.purok || '')}</td>
             <td><span class="pill ${pillClass}">${escapeRecHtml(hh.verStatus)}</span></td>
@@ -182,6 +204,7 @@
             <td>
               <div class="action-group">
                 <button type="button" class="btn btn-secondary btn-verify-action" style="padding: 6px 12px; font-size: 12px;">Review</button>
+                ${hasDups ? `<button type="button" class="btn-dup-hh" onclick="resolveRowDuplicates('${escapeRecHtml(hh.id)}')">Resolve dup</button>` : ''}
                 <button type="button" class="btn-delete-hh" onclick="deleteHouseholdRecord('${escapeRecHtml(hh.id)}', renderRecordsPage)">Delete</button>
               </div>
             </td>
