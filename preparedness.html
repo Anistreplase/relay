@@ -16,9 +16,12 @@
     .priority-table td { font-size: 13px; }
     .status-at-home { background: #FEE2E2; color: #991B1B; }
     .status-evacuated { background: #D1FAE5; color: #065F46; }
+    .status-preemptive { background: #E0F2FE; color: #075985; }
+    .status-assisted { background: #EDE9FE; color: #5B21B6; }
     .status-en-route { background: #FEF3C7; color: #92400E; }
     .status-unaccounted { background: #F3F4F6; color: #374151; }
     .unconfirmed-box { background: #FFFDF5; border: 1px solid #FCD34D; border-radius: 8px; padding: 14px 16px; margin-top: 12px; font-size: 12px; color: #92400E; }
+    @media (max-width: 960px) { .prep-grid { grid-template-columns: 1fr; } }
   </style>
 </head>
 <body>
@@ -198,9 +201,11 @@
         verified.forEach((hh, index) => {
           const evacStatus = getEvacuationStatusForHousehold(hh.id);
           let pillClass = 'status-en-route';
-          if (evacStatus === 'Assisted' || evacStatus === 'In Evacuation Center' || evacStatus === 'Pre-emptively Evacuated') pillClass = 'status-evacuated';
-          if (evacStatus === 'Unaccounted For') pillClass = 'status-unaccounted';
-          if (evacStatus === 'At Home') pillClass = 'status-at-home';
+          if (evacStatus === 'In Evacuation Center') pillClass = 'status-evacuated';
+          else if (evacStatus === 'Pre-emptively Evacuated') pillClass = 'status-preemptive';
+          else if (evacStatus === 'Assisted') pillClass = 'status-assisted';
+          else if (evacStatus === 'Unaccounted For') pillClass = 'status-unaccounted';
+          else if (evacStatus === 'At Home') pillClass = 'status-at-home';
 
           const firstMember = Array.isArray(hh.members) && hh.members[0] ? hh.members[0] : { needs: 'None reported' };
           const hasNeed = firstMember.needs && firstMember.needs !== 'None' && firstMember.needs !== 'None reported';
