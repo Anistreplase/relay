@@ -6,14 +6,20 @@ document.addEventListener('DOMContentLoaded', () => {
   const currentPath = window.location.pathname.split('/').pop() || 'index.html';
   document.querySelectorAll('.sidebar-nav a').forEach(link => {
     const href = link.getAttribute('href');
-    if (href === currentPath || (currentPath === 'user.html' && href === 'users.html') || (currentPath === 'users.html' && href === 'user.html')) {
+    if (
+      href === currentPath ||
+      (currentPath === 'user.html' && href === 'users.html') ||
+      (currentPath === 'users.html' && href === 'user.html')
+    ) {
       link.classList.add('active');
     }
   });
 
+  removeDemoBadge();
   updateUserProfile();
   initNetworkListener();
   initNotifications();
+  initGlobalSearch();
 
   const sidebarLogo = document.querySelector('.sidebar-logo');
   if (sidebarLogo) {
@@ -57,8 +63,18 @@ document.addEventListener('DOMContentLoaded', () => {
     if (dropdown && dropdown.style.display === 'block' && !e.target.closest('#notif-container')) {
       dropdown.style.display = 'none';
     }
+
+    const searchWrap = document.getElementById('global-search-container');
+    const searchResults = document.getElementById('global-search-results');
+    if (searchResults && searchWrap && !searchWrap.contains(e.target)) {
+      searchResults.style.display = 'none';
+    }
   });
 });
+
+function removeDemoBadge() {
+  document.querySelectorAll('.demo-badge').forEach(badge => badge.remove());
+}
 
 // =========================================
 // WORKSPACE & RECORD HELPERS
@@ -130,6 +146,7 @@ function simulateLogin(event) {
 function updateUserProfile() {
   const savedRole = localStorage.getItem('relay-role') || 'Barangay Official';
   let savedWorkspace = localStorage.getItem('relay-workspace') || 'Barangay San Miguel';
+
   if (savedRole !== 'Admin' && savedWorkspace === 'City-Wide Administration') {
     savedWorkspace = 'Barangay San Miguel';
     localStorage.setItem('relay-workspace', savedWorkspace);
@@ -197,11 +214,13 @@ function updateUserProfile() {
         navUsers.style.display = 'flex';
       }
     } else if (savedRole === 'Purok Officer') {
-      nameEl.textContent = `${savedWorkspace.replace(/^Barangay\s+/i, '')} Purok Officer`;
+      const barangayShort = savedWorkspace.replace(/^Barangay\s+/i, '');
+      nameEl.textContent = `${barangayShort} Purok Officer`;
       roleEl.textContent = 'Data collection & updates';
 
       if (workspaceSelector) {
-        workspaceSelector.innerHTML = `<option value="${savedWorkspace}">${savedWorkspace}</option>`;
+        workspaceSelector.innerHTML = `<option value="${savedWorkspace}" selected>${savedWorkspace}</option>`;
+        workspaceSelector.value = savedWorkspace;
         workspaceSelector.disabled = true;
         workspaceSelector.style.cursor = 'not-allowed';
       }
@@ -218,11 +237,13 @@ function updateUserProfile() {
         navUsers.style.display = 'none';
       }
     } else {
-      nameEl.textContent = `${savedWorkspace.replace(/^Barangay\s+/i, '')} Official`;
+      const barangayShort = savedWorkspace.replace(/^Barangay\s+/i, '');
+      nameEl.textContent = `${barangayShort} Official`;
       roleEl.textContent = 'Review & coordination';
 
       if (workspaceSelector) {
-        workspaceSelector.innerHTML = `<option value="${savedWorkspace}">${savedWorkspace}</option>`;
+        workspaceSelector.innerHTML = `<option value="${savedWorkspace}" selected>${savedWorkspace}</option>`;
+        workspaceSelector.value = savedWorkspace;
         workspaceSelector.disabled = true;
         workspaceSelector.style.cursor = 'not-allowed';
       }
@@ -240,6 +261,103 @@ function updateUserProfile() {
       }
     }
   }
+}
+
+// =========================================
+// TOPBAR SEARCH
+// =========================================
+function escapeSearchHtml(value) {
+  return String(value ?? '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+function initGlobalSearch() {
+  const searchBar = document.querySelector('.topbar-left .search-bar');
+  if (!searchBar) return;
+
+  const currentPath = window.location.pathname.split('/').pop() || '';
+  const isUserPage = currentPath === 'user.html' || currentPath === 'users.html';
+
+  searchBar.id = 'global-search-container';
+  searchBar.innerHTML = `
+    <span>🔍</span>
+    <input
+      type="text"
+      id="global-search-input"
+      class="global-search-input"
+      placeholder="${isUserPage ? 'Search users, emails, workspaces...' : 'Search households, puroks, records...'}"
+      autocomplete="off"
+    >
+    <div id="global-search-results" class="global-search-results"></div>
+  `;
+
+  const input = document.getElementById('global-search-input');
+  const resultsBox = document.getElementById('global-search-results');
+  if (!input || !resultsBox) return;
+
+  const runSearch = () => {
+    const query = input.value.trim().toLowerCase();
+
+    if (isUserPage && typeof loadUsers === 'function') {
+      const pageUserSearch = document.getElementById('user-search');
+      if (pageUserSearch) {
+        pageUserSearch.value = input.value;
+        loadUsers();
+      }
+    }
+
+    if (!query) {
+      resultsBox.style.display = 'none';
+      resultsBox.innerHTML = '';
+      return;
+    }
+
+    const scoped = typeof households !== 'undefined' ? getScopedHouseholds(households) : [];
+    const matches = scoped.filter(hh => {
+      const memberNames = Array.isArray(hh.members)
+        ? hh.members.map(m => `${m.name || ''} ${m.category || ''} ${m.needs || ''}`).join(' ')
+        : '';
+      const haystack = `${hh.id || ''} ${hh.head || ''} ${hh.purok || ''} ${hh.barangay || ''} ${hh.address || ''} ${memberNames}`.toLowerCase();
+      return haystack.includes(query);
+    });
+
+    if (matches.length === 0) {
+      resultsBox.innerHTML = `<div class="global-search-item" style="cursor:default; color:var(--text-muted); font-size:12px;">No matching households found for "${escapeSearchHtml(input.value)}".</div>`;
+      resultsBox.style.display = 'block';
+      return;
+    }
+
+    resultsBox.innerHTML = matches.slice(0, 8).map(hh => {
+      const status = localStorage.getItem(`record_${hh.id}`) || 'Unverified';
+      return `
+        <div class="global-search-item" data-hh-id="${escapeSearchHtml(hh.id)}">
+          <div>
+            <div style="font-size:13px; font-weight:600;">${escapeSearchHtml(hh.head)} household</div>
+            <div style="font-size:11px; color:var(--text-muted);">${escapeSearchHtml(hh.id)} · ${escapeSearchHtml(hh.purok || '')}${hh.barangay ? ', ' + escapeSearchHtml(hh.barangay) : ''}</div>
+          </div>
+          <span class="pill pill-unverified" style="font-size:10px;">${escapeSearchHtml(status)}</span>
+        </div>
+      `;
+    }).join('');
+
+    resultsBox.style.display = 'block';
+  };
+
+  input.addEventListener('input', runSearch);
+  input.addEventListener('focus', () => {
+    if (input.value.trim()) runSearch();
+  });
+
+  resultsBox.addEventListener('click', (e) => {
+    const item = e.target.closest('.global-search-item[data-hh-id]');
+    if (!item) return;
+    localStorage.setItem('selected_household', item.getAttribute('data-hh-id'));
+    window.location.href = 'review.html';
+  });
 }
 
 // =========================================
