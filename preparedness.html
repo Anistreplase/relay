@@ -129,6 +129,35 @@
         .replace(/'/g, '&#39;');
     }
 
+    function getEvacuationStatusForHousehold(hhId) {
+      const candidateKeys = [
+        'evacuation_statuses',
+        'relay_evacuation_statuses',
+        'relay-evacuation-statuses',
+        'evac_statuses',
+        'relay_evac_status'
+      ];
+
+      let rawStatus = null;
+      for (const key of candidateKeys) {
+        const parsed = JSON.parse(localStorage.getItem(key) || 'null');
+        if (parsed && typeof parsed === 'object' && parsed[hhId]) {
+          rawStatus = typeof parsed[hhId] === 'object' ? parsed[hhId].status : parsed[hhId];
+          break;
+        }
+      }
+
+      if (!rawStatus) {
+        rawStatus = localStorage.getItem(`evac_${hhId}`) || localStorage.getItem(`evacuation_${hhId}`) || 'At Home';
+      }
+
+      const normalized = String(rawStatus).trim();
+      if (normalized === 'Evacuated') return 'In Evacuation Center';
+      if (normalized === 'En Route') return 'En Route to Evacuation';
+      if (normalized === 'Unaccounted') return 'Unaccounted For';
+      return normalized || 'At Home';
+    }
+
     function getBarangayCenter(activeBarangay) {
       const key = String(activeBarangay || '').toLowerCase();
       if (key === 'tibanga') return [8.2345, 124.2368];
@@ -153,7 +182,6 @@
         ? getScopedHouseholds(households)
         : Object.values(households || {});
       const verified = all.filter(hh => (localStorage.getItem(`record_${hh.id}`) || 'Unverified') === 'Verified');
-      const savedEvacs = JSON.parse(localStorage.getItem('evacuation_statuses')) || {};
 
       document.getElementById('map-count').textContent = `📍 ${verified.length} areas mapped`;
       document.getElementById('priority-count').textContent = `${verified.length} households`;
@@ -168,7 +196,7 @@
       } else {
         priorityBody.innerHTML = '';
         verified.forEach((hh, index) => {
-          const evacStatus = savedEvacs[hh.id] || 'At Home';
+          const evacStatus = getEvacuationStatusForHousehold(hh.id);
           let pillClass = 'status-en-route';
           if (evacStatus === 'Assisted' || evacStatus === 'In Evacuation Center' || evacStatus === 'Pre-emptively Evacuated') pillClass = 'status-evacuated';
           if (evacStatus === 'Unaccounted For') pillClass = 'status-unaccounted';
@@ -265,6 +293,10 @@
 
     document.addEventListener('DOMContentLoaded', renderPreparednessPage);
     window.addEventListener('load', renderPreparednessPage);
+    document.addEventListener('visibilitychange', () => {
+      if (!document.hidden) renderPreparednessPage();
+    });
+    window.addEventListener('storage', renderPreparednessPage);
   </script>
 </body>
 </html>
