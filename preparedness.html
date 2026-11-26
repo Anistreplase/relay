@@ -14,13 +14,8 @@
     .checklist-item strong { color: var(--text-main); display: block; margin-bottom: 4px; }
     .priority-table th { text-align: left; }
     .priority-table td { font-size: 13px; }
-    .status-at-home { background: #FEE2E2; color: #991B1B; }
-    .status-evacuated { background: #D1FAE5; color: #065F46; }
-    .status-preemptive { background: #E0F2FE; color: #075985; }
-    .status-assisted { background: #EDE9FE; color: #5B21B6; }
-    .status-en-route { background: #FEF3C7; color: #92400E; }
-    .status-unaccounted { background: #F3F4F6; color: #374151; }
     .unconfirmed-box { background: #FFFDF5; border: 1px solid #FCD34D; border-radius: 8px; padding: 14px 16px; margin-top: 12px; font-size: 12px; color: #92400E; }
+    .offline-status-note { margin-top: 10px; font-size: 11px; color: var(--text-muted); line-height: 1.4; }
     @media (max-width: 960px) { .prep-grid { grid-template-columns: 1fr; } }
   </style>
 </head>
@@ -88,7 +83,8 @@
             <div class="checklist-item"><div><strong id="record-count-text">📄 0 household records</strong> Verified records and assistance needs.</div></div>
             <div class="checklist-item"><div><strong>🗺️ 3 area maps</strong> Purok boundaries and evacuation routes.</div></div>
             <div class="checklist-item"><div><strong id="priority-count-text">📋 0 priority households</strong> Outreach plan and assigned teams.</div></div>
-            <button class="btn btn-primary" onclick="showModal('modal-offline')" style="width: 100%; justify-content: center; margin-top: 12px;">Download records & maps</button>
+            <button type="button" class="btn btn-primary" onclick="openOfflinePackageModal()" style="width: 100%; justify-content: center; margin-top: 12px;">Download records & maps</button>
+            <div class="offline-status-note" id="offline-package-status">No offline package saved on this device yet.</div>
           </div>
           <div class="offline-card" style="background: #FFFDF5; border-color: #FCD34D;">
             <h3 style="font-size: 15px; margin-bottom: 16px; color: #92400E;">Before you go offline</h3>
@@ -103,14 +99,18 @@
 
   <div id="modal-offline" class="modal-overlay">
     <div class="modal-box">
-      <div class="modal-eyebrow">Interactive Preview</div>
-      <div class="modal-title">Offline package preview</div>
-      <div class="modal-desc"><span id="modal-record-count">0</span> verified household records, 3 area maps, and <span id="modal-priority-count">0</span> priority households would be stored on this device for use in the field.<br><br>The update would wait on this device until a connection returns.</div>
+      <div class="modal-eyebrow">Offline Package Confirmation</div>
+      <div class="modal-title">Download records & maps?</div>
+      <div class="modal-desc">
+        Save <strong id="modal-record-count">0</strong> verified household records, <strong>3 area maps</strong>, and <strong id="modal-priority-count">0</strong> priority households to this device and download a backup JSON bundle for field use.
+        <br><br>
+        Field updates stay on this device until a connection returns and you synchronize.
+      </div>
       <div class="modal-footer">
-        <div class="modal-footer-text">Sample interaction · No real records are changed.</div>
+        <div class="modal-footer-text" id="modal-offline-scope">Verified records only</div>
         <div class="modal-actions">
-          <button class="btn btn-primary" onclick="hideModal('modal-offline'); window.location.href='evacuation.html';">Open field tracking</button>
-          <button class="btn btn-secondary" onclick="hideModal('modal-offline')">Close</button>
+          <button type="button" class="btn btn-secondary" onclick="hideModal('modal-offline')">Cancel</button>
+          <button type="button" class="btn btn-primary" onclick="confirmOfflinePackageDownload()">Download package</button>
         </div>
       </div>
     </div>
@@ -122,6 +122,7 @@
   <script>
     let relayMapInstance = null;
     let relayMarkerLayer = null;
+    let currentVerifiedRecords = [];
 
     function escapePrepHtml(value) {
       return String(value ?? '')
@@ -161,6 +162,82 @@
       return normalized || 'At Home';
     }
 
+    function openOfflinePackageModal() {
+      if (!navigator.onLine) {
+        alert('You are currently offline. Connect to the internet to download a fresh offline package.');
+        return;
+      }
+      const workspace = localStorage.getItem('relay-workspace') || 'Barangay San Miguel';
+      const scopeEl = document.getElementById('modal-offline-scope');
+      if (scopeEl) scopeEl.textContent = `Workspace: ${workspace} · Verified records only`;
+      showModal('modal-offline');
+    }
+
+    function updateOfflinePackageStatusLabel() {
+      const statusEl = document.getElementById('offline-package-status');
+      if (!statusEl) return;
+      const savedPkg = JSON.parse(localStorage.getItem('relay_offline_package') || 'null');
+      if (savedPkg && savedPkg.savedAt) {
+        const dt = new Date(savedPkg.savedAt);
+        const timeStr = dt.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' });
+        statusEl.textContent = `Saved locally at ${timeStr} (${savedPkg.recordCount || 0} records, 3 area maps).`;
+      } else {
+        statusEl.textContent = 'No offline package saved on this device yet.';
+      }
+    }
+
+    function confirmOfflinePackageDownload() {
+      const activeBarangay = typeof getActiveBarangayName === 'function' ? getActiveBarangayName() : 'San Miguel';
+      const workspace = localStorage.getItem('relay-workspace') || 'Barangay San Miguel';
+      const center = getBarangayCenter(activeBarangay);
+
+      const recordsSnapshot = currentVerifiedRecords.map((hh, index) => {
+        const firstMember = Array.isArray(hh.members) && hh.members[0] ? hh.members[0] : { needs: 'None reported' };
+        const hasNeed = firstMember.needs && firstMember.needs !== 'None' && firstMember.needs !== 'None reported';
+        return {
+          order: index + 1,
+          id: hh.id,
+          head: hh.head,
+          barangay: hh.barangay || activeBarangay || 'San Miguel',
+          purok: hh.purok || '',
+          address: hh.address || '',
+          assistanceNeed: hasNeed ? firstMember.needs : 'None reported',
+          evacuationStatus: getEvacuationStatusForHousehold(hh.id),
+          lat: typeof hh.lat === 'number' ? hh.lat : null,
+          lng: typeof hh.lng === 'number' ? hh.lng : null
+        };
+      });
+
+      const offlinePackage = {
+        savedAt: new Date().toISOString(),
+        workspace,
+        barangay: activeBarangay || 'All Barangays',
+        recordCount: recordsSnapshot.length,
+        priorityCount: recordsSnapshot.length,
+        areaMaps: [
+          { id: 'MAP-01', name: 'Purok Boundaries', center },
+          { id: 'MAP-02', name: 'Primary Evacuation Routes', center },
+          { id: 'MAP-03', name: 'Shelter & Hazard Zones', center }
+        ],
+        households: recordsSnapshot
+      };
+
+      localStorage.setItem('relay_offline_package', JSON.stringify(offlinePackage));
+      updateOfflinePackageStatusLabel();
+
+      const blob = new Blob([JSON.stringify(offlinePackage, null, 2)], { type: 'application/json;charset=utf-8;' });
+      const url = URL.createObjectURL(blob);
+      const link = document.createElement('a');
+      link.href = url;
+      link.setAttribute('download', 'relay-offline-package.json');
+      document.body.appendChild(link);
+      link.click();
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+
+      hideModal('modal-offline');
+    }
+
     function getBarangayCenter(activeBarangay) {
       const key = String(activeBarangay || '').toLowerCase();
       if (key === 'tibanga') return [8.2345, 124.2368];
@@ -185,6 +262,7 @@
         ? getScopedHouseholds(households)
         : Object.values(households || {});
       const verified = all.filter(hh => (localStorage.getItem(`record_${hh.id}`) || 'Unverified') === 'Verified');
+      currentVerifiedRecords = verified;
 
       document.getElementById('map-count').textContent = `📍 ${verified.length} areas mapped`;
       document.getElementById('priority-count').textContent = `${verified.length} households`;
@@ -192,6 +270,7 @@
       document.getElementById('priority-count-text').textContent = `📋 ${verified.length} priority households`;
       document.getElementById('modal-record-count').textContent = verified.length;
       document.getElementById('modal-priority-count').textContent = verified.length;
+      updateOfflinePackageStatusLabel();
 
       const priorityBody = document.getElementById('priority-body');
       if (verified.length === 0) {
