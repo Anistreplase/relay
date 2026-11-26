@@ -6,10 +6,17 @@
   <title>Relay - Overview</title>
   <link rel="stylesheet" href="css/style.css">
   <style>
+    .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+    .stat-card { background: var(--white); border: 1px solid var(--border); border-radius: 8px; padding: 20px; }
+    .stat-label { font-size: 12px; color: var(--text-muted); font-weight: 500; margin-bottom: 8px; }
+    .stat-num { font-size: 28px; font-weight: 700; color: var(--text-main); margin-bottom: 4px; line-height: 1.15; }
+    .stat-sub { font-size: 11px; color: var(--text-muted); }
     .dash-grid { display: grid; grid-template-columns: 1.75fr 1fr; gap: 24px; align-items: start; }
     .dash-left-col, .dash-right-col { display: flex; flex-direction: column; gap: 24px; }
     .flag-text { font-size: 12px; color: var(--text-muted); }
-    .prep-head { display: flex; justify-content: space-between; align-items: flex-start; gap: 12px; margin-bottom: 14px; }
+    .prep-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; margin-bottom: 4px; }
+    .forecast-pill { background: #D1FAE5; color: #065F46; font-size: 11px; font-weight: 600; padding: 4px 10px; border-radius: 999px; white-space: nowrap; }
+    .prep-sub { font-size: 12px; color: var(--text-muted); margin-bottom: 18px; }
     .prep-kpis { display: grid; grid-template-columns: repeat(3, 1fr); gap: 12px; margin-bottom: 16px; }
     .prep-kpi-num { font-size: 24px; font-weight: 700; color: var(--text-main); line-height: 1.2; }
     .prep-kpi-label { font-size: 11px; color: var(--text-muted); margin-top: 2px; }
@@ -22,12 +29,13 @@
     .offline-callout p { font-size: 12px; color: var(--text-muted); line-height: 1.45; margin-bottom: 14px; }
     .offline-verified-note { font-size: 12px; color: var(--text-main); margin-bottom: 16px; line-height: 1.45; }
     .offline-verified-note strong { display: block; margin-bottom: 2px; }
-    .breakdown-row { display: grid; grid-template-columns: 110px 1fr 48px; align-items: center; gap: 14px; padding: 10px 0; }
+    .breakdown-row { display: grid; grid-template-columns: 115px 1fr 56px; align-items: center; gap: 14px; padding: 10px 0; }
     .breakdown-label { font-size: 13px; color: var(--text-main); }
     .breakdown-track { width: 100%; height: 6px; background: #F3F4F6; border-radius: 999px; overflow: hidden; }
     .breakdown-fill { height: 100%; border-radius: 999px; transition: width 0.25s ease; }
     .breakdown-val { font-size: 13px; font-weight: 600; color: var(--text-main); text-align: right; }
-    @media (max-width: 1000px) {
+    @media (max-width: 1050px) {
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
       .dash-grid { grid-template-columns: 1fr; }
     }
   </style>
@@ -72,6 +80,29 @@
     </div>
 
     <div class="page-body">
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-label">Total households</div>
+          <div class="stat-num" id="dash-total-hh">0</div>
+          <div class="stat-sub">Across 5 puroks</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Verified records</div>
+          <div class="stat-num" id="dash-verified-hh">0</div>
+          <div class="stat-sub">Available to authorized responders</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Awaiting review</div>
+          <div class="stat-num" id="dash-pending-hh">0</div>
+          <div class="stat-sub">Sent for verification</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Needs correction</div>
+          <div class="stat-num" id="dash-correction-hh">0</div>
+          <div class="stat-sub" id="dash-correction-sub">0 unable to verify</div>
+        </div>
+      </div>
+
       <div class="dash-grid">
         <div class="dash-left-col">
           <div class="card" style="padding: 0; overflow: hidden;">
@@ -107,7 +138,9 @@
           <div class="card">
             <div class="prep-head">
               <div class="card-title">Preparedness & evacuation</div>
+              <span class="forecast-pill">Forecast active</span>
             </div>
+            <div class="prep-sub">Flood preparedness · Puroks 2, 3 & 5</div>
             <div class="prep-kpis">
               <div>
                 <div class="prep-kpi-num" id="dash-prep-verified">0</div>
@@ -228,6 +261,12 @@
           queueRows.push({ ...hh, status });
         }
       });
+
+      document.getElementById('dash-total-hh').textContent = scoped.length;
+      document.getElementById('dash-verified-hh').textContent = verifiedCount;
+      document.getElementById('dash-pending-hh').textContent = unverifiedCount;
+      document.getElementById('dash-correction-hh').textContent = needsCorrectionCount;
+      document.getElementById('dash-correction-sub').textContent = `${unableCount} unable to verify`;
 
       document.getElementById('dash-prep-verified').textContent = verifiedCount;
       document.getElementById('dash-prep-priority').textContent = priorityCount;
