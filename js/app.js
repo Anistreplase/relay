@@ -94,12 +94,34 @@ function getScopedHouseholds(householdsObj) {
   const combined = [
     ...Object.values(householdsObj || {}),
     ...Object.values(custom)
-  ];
+  ].map(hh => ({
+    ...hh,
+    barangay: hh.barangay || 'San Miguel'
+  }));
 
   if (!activeBarangay) {
     return combined;
   }
-  return combined.filter(hh => hh.barangay === activeBarangay);
+  return combined.filter(hh => String(hh.barangay || '').toLowerCase() === activeBarangay.toLowerCase());
+}
+
+function resolveHouseholdBarangay(selectedBarangayValue) {
+  const role = localStorage.getItem('relay-role') || 'Barangay Official';
+  const workspace = localStorage.getItem('relay-workspace') || 'Barangay San Miguel';
+  const isCityWideAdmin = role === 'Admin' && workspace === 'City-Wide Administration';
+
+  if (isCityWideAdmin) {
+    const chosen = String(selectedBarangayValue || '').trim();
+    if (!chosen) {
+      return { ok: false, error: 'Barangay is required for City-Wide Administration accounts.' };
+    }
+    return { ok: true, barangay: chosen.replace(/^Barangay\s+/i, '').trim() };
+  }
+
+  return {
+    ok: true,
+    barangay: workspace.replace(/^Barangay\s+/i, '').trim()
+  };
 }
 
 // =========================================
@@ -268,11 +290,11 @@ function updateUserProfile() {
 // =========================================
 function escapeSearchHtml(value) {
   return String(value ?? '')
-    .replace(/&/g, '&amp;')
-    .replace(/</g, '&lt;')
-    .replace(/>/g, '&gt;')
-    .replace(/"/g, '&quot;')
-    .replace(/'/g, '&#39;');
+    .replace(/&/g, '&')
+    .replace(/</g, '<')
+    .replace(/>/g, '>')
+    .replace(/"/g, '"')
+    .replace(/'/g, ''');
 }
 
 function initGlobalSearch() {
