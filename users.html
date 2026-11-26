@@ -27,13 +27,13 @@
     <div class="sidebar-footer">
       <div class="status-card"><div class="status-title"><div class="status-dot"></div> System operational</div>Last synced at 09:42<br>Household records up to date</div>
       <nav class="sidebar-nav" style="margin-top: 12px;">
-        <a href="users.html" class="active" id="nav-users"><span class="nav-icon">👤</span> Manage Users</a>
+        <a href="user.html" class="active" id="nav-users"><span class="nav-icon">👤</span> Manage Users</a>
         <a href="settings.html"><span class="nav-icon">⚙</span> Settings</a>
         <a href="help.html"><span class="nav-icon">?</span> Help & support</a>
       </nav>
     </div>
   </aside>
-  
+
   <main class="main-content">
     <header class="topbar">
       <div class="topbar-left">
@@ -45,16 +45,27 @@
         <div class="user-profile"><div class="user-info"><div class="user-name">Loading...</div><div class="user-role">Loading...</div></div></div>
       </div>
     </header>
-    
+
     <div class="page-header">
       <div><h1>Manage Users</h1><p>Create, edit, and deactivate user accounts for the system.</p></div>
       <div><button class="btn btn-primary" onclick="showModal('modal-add-user')">+ Create Account</button></div>
     </div>
-    
+
     <div class="page-body">
       <div class="filters-row">
-        <input type="text" class="filter-input search-input" placeholder="Search by name or email...">
-        <select class="filter-input"><option>All Roles</option><option>Barangay Official</option><option>Purok Officer</option></select>
+        <input type="text" id="user-search" class="filter-input search-input" placeholder="Search by name, email, or barangay..." oninput="loadUsers()">
+        <select id="role-filter" class="filter-input" onchange="loadUsers()">
+          <option value="All">All Roles</option>
+          <option value="Barangay Official">Barangay Official</option>
+          <option value="Purok Officer">Purok Officer</option>
+        </select>
+        <select id="workspace-filter" class="filter-input" onchange="loadUsers()">
+          <option value="All">All Workspaces</option>
+          <option value="City-Wide">City-Wide</option>
+          <option value="San Miguel">San Miguel</option>
+          <option value="Tibanga">Tibanga</option>
+          <option value="Saray">Saray</option>
+        </select>
       </div>
 
       <div class="card" style="padding: 0; overflow: hidden;">
@@ -81,13 +92,21 @@
       </div>
       <div class="form-group" style="margin-bottom: 16px;">
         <label style="font-size:12px; font-weight:600; display:block; margin-bottom:6px;">Work Email</label>
-        <input type="email" id="new-user-email" placeholder="e.g. maria@g.msuiit.edu.ph" style="width:100%; padding:10px; border:1px solid var(--border); border-radius:6px;">
+        <input type="email" id="new-user-email" placeholder="e.g. official@tibanga.gov.ph" style="width:100%; padding:10px; border:1px solid var(--border); border-radius:6px;">
       </div>
       <div class="form-group" style="margin-bottom: 16px;">
         <label style="font-size:12px; font-weight:600; display:block; margin-bottom:6px;">Role</label>
         <select id="new-user-role" style="width:100%; padding:10px; border:1px solid var(--border); border-radius:6px;">
           <option value="Barangay Official">Barangay DRRM Official</option>
           <option value="Purok Officer">Purok Officer</option>
+        </select>
+      </div>
+      <div class="form-group" style="margin-bottom: 16px;">
+        <label style="font-size:12px; font-weight:600; display:block; margin-bottom:6px;">Barangay Workspace</label>
+        <select id="new-user-workspace" style="width:100%; padding:10px; border:1px solid var(--border); border-radius:6px;">
+          <option value="San Miguel">San Miguel</option>
+          <option value="Tibanga">Tibanga</option>
+          <option value="Saray">Saray</option>
         </select>
       </div>
       <div class="modal-footer">
@@ -101,38 +120,87 @@
   </div>
 
   <script>
+    const DEFAULT_USERS = [
+      { name: 'City DRRM Admin', email: 'admin@citydrrm.gov.ph', role: 'Admin', workspace: 'City-Wide', status: 'Active' },
+      { name: 'San Miguel Official', email: 'official@sanmiguel.gov.ph', role: 'Barangay Official', workspace: 'San Miguel', status: 'Active' },
+      { name: 'San Miguel Purok Officer', email: 'purok@sanmiguel.gov.ph', role: 'Purok Officer', workspace: 'San Miguel', status: 'Active' },
+      { name: 'Tibanga Official', email: 'official@tibanga.gov.ph', role: 'Barangay Official', workspace: 'Tibanga', status: 'Active' },
+      { name: 'Tibanga Purok Officer', email: 'purok@tibanga.gov.ph', role: 'Purok Officer', workspace: 'Tibanga', status: 'Active' },
+      { name: 'Saray Official', email: 'official@saray.gov.ph', role: 'Barangay Official', workspace: 'Saray', status: 'Active' },
+      { name: 'Saray Purok Officer', email: 'purok@saray.gov.ph', role: 'Purok Officer', workspace: 'Saray', status: 'Active' }
+    ];
+
+    function escapeHtml(value) {
+      return String(value ?? '')
+        .replace(/&/g, '&')
+        .replace(/</g, '<')
+        .replace(/>/g, '>')
+        .replace(/"/g, '"')
+        .replace(/'/g, ''');
+    }
+
+    function getUsersList() {
+      const saved = JSON.parse(localStorage.getItem('relay-users'));
+      if (!Array.isArray(saved) || saved.length === 0) {
+        return DEFAULT_USERS.map(u => ({ ...u }));
+      }
+      return saved.map(u => {
+        if (u.email === 'admin@g.msuiit.edu.ph') {
+          return { ...u, name: 'City DRRM Admin', email: 'admin@citydrrm.gov.ph' };
+        }
+        return u;
+      });
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
       const role = localStorage.getItem('relay-role');
       if (role !== 'Admin') {
-        alert("Access denied. Only System Administrators can manage users.");
+        alert('Access denied. Only System Administrators can manage users.');
         window.location.href = 'dashboard.html';
         return;
       }
+      localStorage.setItem('relay-users', JSON.stringify(getUsersList()));
       loadUsers();
     });
 
     function loadUsers() {
-      let users = JSON.parse(localStorage.getItem('relay-users')) || [
-        { name: 'System Admin', email: 'admin@g.citydrrm.edu.ph', role: 'Admin', workspace: 'City-Wide', status: 'Active' },
-        { name: 'Barangay Official', email: 'official@sanmiguel.gov.ph', role: 'Barangay Official', workspace: 'San Miguel', status: 'Active' },
-        { name: 'Purok Officer', email: 'purok@sanmiguel.gov.ph', role: 'Purok Officer', workspace: 'San Miguel', status: 'Active' }
-      ];
-      
+      const users = getUsersList();
+      const query = (document.getElementById('user-search')?.value || '').toLowerCase().trim();
+      const roleFilter = document.getElementById('role-filter')?.value || 'All';
+      const workspaceFilter = document.getElementById('workspace-filter')?.value || 'All';
+
+      const filtered = users.filter(user => {
+        const matchesQuery =
+          !query ||
+          user.name.toLowerCase().includes(query) ||
+          user.email.toLowerCase().includes(query) ||
+          user.workspace.toLowerCase().includes(query);
+        const matchesRole = roleFilter === 'All' || user.role === roleFilter;
+        const matchesWorkspace = workspaceFilter === 'All' || user.workspace === workspaceFilter;
+        return matchesQuery && matchesRole && matchesWorkspace;
+      });
+
       const tbody = document.getElementById('users-body');
       tbody.innerHTML = '';
 
-      users.forEach((user, index) => {
-        let statusPill = user.status === 'Active' ? 'pill-verified' : 'pill-unable';
+      if (filtered.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding:24px; color:var(--text-muted);">No matching user accounts found.</td></tr>';
+        return;
+      }
+
+      filtered.forEach(user => {
+        const realIndex = users.findIndex(u => u.email === user.email && u.name === user.name);
+        const statusPill = user.status === 'Active' ? 'pill-verified' : 'pill-unable';
         tbody.innerHTML += `
           <tr>
             <td style="padding-left: 24px;">
-              <strong>${user.name}</strong><br><span style="color:var(--text-muted); font-size:11px;">${user.email}</span>
+              <strong>${escapeHtml(user.name)}</strong><br><span style="color:var(--text-muted); font-size:11px;">${escapeHtml(user.email)}</span>
             </td>
-            <td>${user.role}</td>
-            <td>${user.workspace}</td>
-            <td><span class="pill ${statusPill}">${user.status}</span></td>
+            <td>${escapeHtml(user.role)}</td>
+            <td>${escapeHtml(user.workspace)}</td>
+            <td><span class="pill ${statusPill}">${escapeHtml(user.status)}</span></td>
             <td>
-              <button class="btn btn-secondary" style="padding: 4px 8px; font-size: 11px;" onclick="toggleUser(${index})">${user.status === 'Active' ? 'Deactivate' : 'Reactivate'}</button>
+              <button class="btn btn-secondary" style="padding: 4px 8px; font-size: 11px;" onclick="toggleUser(${realIndex})">${user.status === 'Active' ? 'Deactivate' : 'Reactivate'}</button>
             </td>
           </tr>
         `;
@@ -140,27 +208,30 @@
     }
 
     function createUser() {
-      const name = document.getElementById('new-user-name').value;
-      const email = document.getElementById('new-user-email').value;
+      const name = document.getElementById('new-user-name').value.trim();
+      const email = document.getElementById('new-user-email').value.trim();
       const role = document.getElementById('new-user-role').value;
+      const workspace = document.getElementById('new-user-workspace').value;
 
-      if (!name || !email) { alert("Please fill in all fields."); return; }
+      if (!name || !email) {
+        alert('Please fill in all fields.');
+        return;
+      }
 
-      let users = JSON.parse(localStorage.getItem('relay-users')) || [
-        { name: 'System Admin', email: 'admin@g.msuiit.edu.ph', role: 'Admin', workspace: 'City-Wide', status: 'Active' },
-        { name: 'Barangay Official', email: 'official@sanmiguel.gov.ph', role: 'Barangay Official', workspace: 'San Miguel', status: 'Active' },
-        { name: 'Purok Officer', email: 'purok@sanmiguel.gov.ph', role: 'Purok Officer', workspace: 'San Miguel', status: 'Active' }
-      ];
-
-      users.push({ name: name, email: email, role: role, workspace: 'San Miguel', status: 'Active' });
+      const users = getUsersList();
+      users.push({ name, email, role, workspace, status: 'Active' });
       localStorage.setItem('relay-users', JSON.stringify(users));
-      
+
+      document.getElementById('new-user-name').value = '';
+      document.getElementById('new-user-email').value = '';
       hideModal('modal-add-user');
       loadUsers();
     }
 
     function toggleUser(index) {
-      let users = JSON.parse(localStorage.getItem('relay-users'));
+      if (index < 0) return;
+      const users = getUsersList();
+      if (!users[index]) return;
       users[index].status = users[index].status === 'Active' ? 'Deactivated' : 'Active';
       localStorage.setItem('relay-users', JSON.stringify(users));
       loadUsers();
