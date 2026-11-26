@@ -122,7 +122,6 @@ function updateUserProfile() {
       if (navUsers) navUsers.style.display = 'flex';
 
     } else {
-      // Barangay Official or Purok Officer
       nameEl.textContent = savedRole === 'Purok Officer' ? 'Purok Officer' : 'Barangay Official'; 
       roleEl.textContent = savedRole === 'Purok Officer' ? 'Data collection & updates' : 'Review & coordination';
       
