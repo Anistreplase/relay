@@ -5,6 +5,8 @@
 let pendingDeleteHouseholdId = null;
 let pendingDeleteCallback = null;
 let pendingExportCallback = null;
+let parsedImportRows = [];
+let pendingImportFileName = '';
 
 document.addEventListener('DOMContentLoaded', () => {
   const currentPath = window.location.pathname.split('/').pop() || 'index.html';
@@ -26,6 +28,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initGlobalSearch();
   ensureDeleteRecordModal();
   ensureExportConfirmModal();
+  ensureImportRecordsModal();
 
   const sidebarLogo = document.querySelector('.sidebar-logo');
   if (sidebarLogo) {
@@ -369,6 +372,319 @@ function downloadRelayCsv(filename, rows) {
   link.click();
   document.body.removeChild(link);
   URL.revokeObjectURL(url);
+}
+
+// =========================================
+// IMPORT EXISTING RECORDS (UC-14 / FRQ-14)
+// =========================================
+function ensureImportRecordsModal() {
+  if (document.getElementById('modal-import-records')) return;
+
+  const wrapper = document.createElement('div');
+  wrapper.innerHTML = `
+    <div id="modal-import-records" class="modal-overlay">
+      <div class="modal-box" style="max-width: 620px;">
+        <div class="modal-eyebrow">UC-14 · Import Existing Records</div>
+        <div class="modal-title">Import household records</div>
+        <div class="modal-desc">
+          Upload a CSV or JSON file. Records are previewed for missing fields and possible duplicates, tagged with their source, and saved as <strong>Unverified</strong>.
+        </div>
+
+        <div style="display: flex; flex-direction: column; gap: 12px; margin-bottom: 16px;">
+          <div>
+            <label for="import-file-input" style="display:block; font-size:12px; font-weight:600; margin-bottom:6px;">Select CSV or JSON file</label>
+            <input type="file" id="import-file-input" accept=".csv,.json,text/csv,application/json" onchange="handleImportFileSelected(event)" style="font-size:12px; width:100%;">
+          </div>
+          <div>
+            <label for="import-source-label" style="display:block; font-size:12px; font-weight:600; margin-bottom:6px;">Source tag (e.g. PWD List, Senior List, CBMS)</label>
+            <input type="text" id="import-source-label" placeholder="e.g., Senior Citizens / PWD Registry" style="width:100%; padding:8px 12px; border:1px solid var(--border); border-radius:6px; font-size:13px; font-family:inherit;">
+          </div>
+          <div id="import-error-msg" style="display:none; background:#FEE2E2; border:1px solid #EF4444; color:#991B1B; padding:10px 12px; border-radius:6px; font-size:12px;"></div>
+          <div id="import-preview-box" style="display:none; max-height:220px; overflow-y:auto; border:1px solid var(--border); border-radius:6px; background:#F9FAFB; padding:12px; font-size:12px;"></div>
+        </div>
+
+        <div class="modal-footer">
+          <div class="modal-footer-text" id="import-summary-text">No file selected yet.</div>
+          <div class="modal-actions">
+            <button type="button" class="btn btn-secondary" onclick="closeImportRecordsModal()">Cancel</button>
+            <button type="button" class="btn btn-primary" id="btn-confirm-import" onclick="confirmImportRecords()" disabled>Import as Unverified</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(wrapper.firstElementChild);
+}
+
+function openImportRecordsModal() {
+  if (!navigator.onLine) {
+    alert('You are currently offline. Connect to import record files.');
+    return;
+  }
+  ensureImportRecordsModal();
+  parsedImportRows = [];
+  pendingImportFileName = '';
+
+  const fileInput = document.getElementById('import-file-input');
+  const sourceInput = document.getElementById('import-source-label');
+  const errBox = document.getElementById('import-error-msg');
+  const previewBox = document.getElementById('import-preview-box');
+  const summaryText = document.getElementById('import-summary-text');
+  const confirmBtn = document.getElementById('btn-confirm-import');
+
+  if (fileInput) fileInput.value = '';
+  if (sourceInput) sourceInput.value = '';
+  if (errBox) {
+    errBox.style.display = 'none';
+    errBox.textContent = '';
+  }
+  if (previewBox) {
+    previewBox.style.display = 'none';
+    previewBox.innerHTML = '';
+  }
+  if (summaryText) summaryText.textContent = 'No file selected yet.';
+  if (confirmBtn) confirmBtn.disabled = true;
+
+  showModal('modal-import-records');
+}
+
+function closeImportRecordsModal() {
+  parsedImportRows = [];
+  pendingImportFileName = '';
+  hideModal('modal-import-records');
+}
+
+function parseCsvLine(line) {
+  const result = [];
+  let current = '';
+  let inQuotes = false;
+
+  for (let i = 0; i < line.length; i++) {
+    const ch = line[i];
+    if (ch === '"') {
+      if (inQuotes && line[i + 1] === '"') {
+        current += '"';
+        i++;
+      } else {
+        inQuotes = !inQuotes;
+      }
+    } else if (ch === ',' && !inQuotes) {
+      result.push(current.trim());
+      current = '';
+    } else {
+      current += ch;
+    }
+  }
+  result.push(current.trim());
+  return result;
+}
+
+function parseImportFileText(text, ext) {
+  if (ext === 'json') {
+    const parsed = JSON.parse(text);
+    const list = Array.isArray(parsed) ? parsed : (Array.isArray(parsed.households) ? parsed.households : []);
+    if (!Array.isArray(list) || list.length === 0) {
+      throw new Error('JSON must contain a non-empty array of household records.');
+    }
+    return list;
+  }
+
+  const lines = text
+    .split(/\r?\n/)
+    .map(l => l.trim())
+    .filter(Boolean);
+
+  if (lines.length < 2) {
+    throw new Error('CSV must include a header row and at least one record row.');
+  }
+
+  const headers = parseCsvLine(lines[0]).map(h => h.toLowerCase().replace(/[^a-z0-9]/g, ''));
+  return lines.slice(1).map(line => {
+    const cols = parseCsvLine(line);
+    const obj = {};
+    headers.forEach((key, idx) => {
+      obj[key] = cols[idx] ?? '';
+    });
+    return {
+      head: obj.head || obj.householdhead || obj.name || '',
+      purok: obj.purok || '',
+      address: obj.address || '',
+      barangay: obj.barangay || '',
+      contact: obj.contact || obj.contactno || obj.phone || '',
+      tenure: obj.tenure || 'Owner',
+      needs: obj.needs || obj.assistanceneeds || obj.need || 'None reported'
+    };
+  });
+}
+
+function handleImportFileSelected(event) {
+  const file = event.target && event.target.files ? event.target.files[0] : null;
+  const errBox = document.getElementById('import-error-msg');
+  const previewBox = document.getElementById('import-preview-box');
+  const summaryText = document.getElementById('import-summary-text');
+  const confirmBtn = document.getElementById('btn-confirm-import');
+
+  parsedImportRows = [];
+  if (errBox) {
+    errBox.style.display = 'none';
+    errBox.textContent = '';
+  }
+  if (confirmBtn) confirmBtn.disabled = true;
+
+  if (!file) {
+    if (summaryText) summaryText.textContent = 'No file selected yet.';
+    return;
+  }
+
+  const lowerName = file.name.toLowerCase();
+  const ext = lowerName.endsWith('.json') ? 'json' : (lowerName.endsWith('.csv') ? 'csv' : '');
+  if (!ext) {
+    if (errBox) {
+      errBox.style.display = 'block';
+      errBox.textContent = 'Unsupported file format. Please upload a .csv or .json file.';
+    }
+    return;
+  }
+
+  pendingImportFileName = file.name;
+  const sourceInput = document.getElementById('import-source-label');
+  if (sourceInput && !sourceInput.value.trim()) {
+    sourceInput.value = file.name;
+  }
+
+  const reader = new FileReader();
+  reader.onload = () => {
+    try {
+      const rawItems = parseImportFileText(String(reader.result || ''), ext);
+      const resolved = resolveHouseholdBarangay('');
+      const defaultBrgy = resolved.ok && resolved.barangay ? resolved.barangay : 'San Miguel';
+
+      parsedImportRows = rawItems.map((item, index) => {
+        const head = String(item.head || '').trim();
+        const purok = String(item.purok || '').trim();
+        const barangay = String(item.barangay || '').trim() || defaultBrgy;
+        const address = String(item.address || '').trim();
+        const missing = [];
+        if (!head) missing.push('Household Head');
+        if (!purok) missing.push('Purok');
+
+        const candidate = {
+          id: `IMP-PREVIEW-${index + 1}`,
+          head,
+          barangay,
+          purok,
+          address
+        };
+        const dups = head ? findDuplicateHouseholds(candidate) : [];
+
+        return {
+          head,
+          purok,
+          barangay,
+          address,
+          contact: String(item.contact || '').trim(),
+          tenure: String(item.tenure || 'Owner').trim() || 'Owner',
+          needs: String(item.needs || 'None reported').trim() || 'None reported',
+          missing,
+          duplicates: dups
+        };
+      });
+
+      const validCount = parsedImportRows.filter(r => r.missing.length === 0).length;
+      const dupCount = parsedImportRows.filter(r => r.duplicates.length > 0).length;
+
+      if (previewBox) {
+        previewBox.style.display = 'block';
+        previewBox.innerHTML = parsedImportRows.map((row, idx) => {
+          const badges = [];
+          if (row.missing.length > 0) {
+            badges.push(`<span style="color:#991B1B; font-weight:600;">Missing: ${escapeSearchHtml(row.missing.join(', '))}</span>`);
+          } else {
+            badges.push('<span style="color:#065F46; font-weight:600;">Ready (Unverified)</span>');
+          }
+          if (row.duplicates.length > 0) {
+            badges.push(`<span style="color:#92400E; font-weight:600;">Possible duplicate (${row.duplicates.length})</span>`);
+          }
+          return `<div style="padding:6px 0; border-bottom:1px solid #E5E7EB;">
+            <strong>#${idx + 1} ${escapeSearchHtml(row.head || '(Unnamed Head)')}</strong> · ${escapeSearchHtml(row.purok || 'No Purok')} (${escapeSearchHtml(row.barangay)})<br>
+            ${badges.join(' · ')}
+          </div>`;
+        }).join('');
+      }
+
+      if (summaryText) {
+        summaryText.textContent = `${validCount} valid of ${parsedImportRows.length} row(s) · ${dupCount} with possible duplicate(s)`;
+      }
+      if (confirmBtn) {
+        confirmBtn.disabled = validCount === 0;
+      }
+    } catch (err) {
+      if (errBox) {
+        errBox.style.display = 'block';
+        errBox.textContent = err.message || 'Could not parse the selected file.';
+      }
+      if (previewBox) {
+        previewBox.style.display = 'none';
+        previewBox.innerHTML = '';
+      }
+    }
+  };
+  reader.readAsText(file);
+}
+
+function confirmImportRecords() {
+  const validRows = parsedImportRows.filter(r => r.missing.length === 0);
+  if (validRows.length === 0) return;
+
+  const sourceInput = document.getElementById('import-source-label');
+  const sourceTag = (sourceInput && sourceInput.value.trim()) || pendingImportFileName || 'Imported List';
+  const custom = JSON.parse(localStorage.getItem('custom_households')) || {};
+  const todayStr = new Date().toISOString().slice(0, 10);
+
+  let importedCount = 0;
+  validRows.forEach((row, i) => {
+    const uniqueId = `HH-IMP-${Date.now().toString().slice(-6)}-${i + 1}`;
+    custom[uniqueId] = {
+      id: uniqueId,
+      head: row.head,
+      barangay: row.barangay,
+      purok: row.purok,
+      address: row.address || row.purok,
+      contact: row.contact,
+      tenure: row.tenure,
+      importSource: sourceTag,
+      lastUpdated: todayStr,
+      locationConfirmed: false,
+      members: [
+        {
+          name: row.head,
+          category: 'Imported Resident',
+          needs: row.needs
+        }
+      ]
+    };
+    localStorage.setItem(`record_${uniqueId}`, 'Unverified');
+    importedCount++;
+  });
+
+  localStorage.setItem('custom_households', JSON.stringify(custom));
+  sessionStorage.removeItem('notifs-read');
+
+  const importLogs = JSON.parse(localStorage.getItem('relay_import_batches')) || [];
+  importLogs.unshift({
+    importedAt: new Date().toISOString(),
+    fileName: pendingImportFileName || 'import',
+    source: sourceTag,
+    count: importedCount
+  });
+  localStorage.setItem('relay_import_batches', JSON.stringify(importLogs));
+
+  closeImportRecordsModal();
+  if (typeof renderRecordsPage === 'function') {
+    renderRecordsPage();
+  } else {
+    window.location.reload();
+  }
 }
 
 function resolveHouseholdBarangay(selectedBarangayValue) {
