@@ -16,6 +16,9 @@
     .form-field input, .form-field select { padding: 9px 12px; border: 1px solid var(--border); border-radius: 6px; font-family: inherit; font-size: 13px; background: var(--white); }
     .status-active { background: #D1FAE5; color: #065F46; }
     .status-inactive { background: #F3F4F6; color: #374151; }
+    .user-actions { display: inline-flex; align-items: center; gap: 8px; flex-wrap: wrap; }
+    .btn-delete-user { background: #FEE2E2; color: #991B1B; border: 1px solid #FCA5A5; padding: 5px 10px; border-radius: 6px; font-size: 12px; font-weight: 600; cursor: pointer; }
+    .btn-delete-user:hover { background: #FCA5A5; }
   </style>
 </head>
 <body>
@@ -34,7 +37,7 @@
     <div class="sidebar-footer">
       <div class="status-card"><div class="status-title"><div class="status-dot"></div> System operational</div>Last synced at 09:42<br>Household records up to date</div>
       <nav class="sidebar-nav" style="margin-top: 12px;">
-        <a href="user.html" id="nav-users" class="active"><span class="nav-icon">👤</span> Manage Users</a>
+        <a href="users.html" id="nav-users" class="active"><span class="nav-icon">👤</span> Manage Users</a>
         <a href="settings.html"><span class="nav-icon">⚙</span> Settings</a>
         <a href="help.html"><span class="nav-icon">?</span> Help & support</a>
       </nav>
@@ -54,8 +57,8 @@
     <div class="page-header">
       <div><h1>Manage users</h1><p>Assign roles, barangay workspaces, and puroks across authorized personnel.</p></div>
       <div style="display: flex; gap: 10px;">
-        <button class="btn btn-secondary" onclick="resetDefaultUsers()">Reset default 6 users</button>
-        <button class="btn btn-primary" onclick="showModal('modal-add-user')">Add user</button>
+        <button type="button" class="btn btn-secondary" onclick="resetDefaultUsers()">Reset default 6 users</button>
+        <button type="button" class="btn btn-primary" onclick="showModal('modal-add-user')">Add user</button>
       </div>
     </div>
     <div class="page-body">
@@ -149,9 +152,28 @@
     </div>
   </div>
 
+  <div id="modal-delete-user" class="modal-overlay">
+    <div class="modal-box" style="max-width: 460px;">
+      <div class="modal-eyebrow">Account Removal</div>
+      <div class="modal-title">Delete user account?</div>
+      <div class="modal-desc" id="delete-user-desc">
+        Remove this user account from the local prototype user list? This cannot be undone.
+      </div>
+      <div class="modal-footer">
+        <div class="modal-footer-text">Action applies to prototype accounts.</div>
+        <div class="modal-actions">
+          <button type="button" class="btn btn-secondary" onclick="cancelDeleteUser()">Cancel</button>
+          <button type="button" class="btn btn-primary" onclick="confirmDeleteUser()">Delete user</button>
+        </div>
+      </div>
+    </div>
+  </div>
+
   <script src="js/database.js"></script>
   <script src="js/app.js"></script>
   <script>
+    let pendingDeleteUserId = null;
+
     function escapeUserHtml(value) {
       return String(value ?? '')
         .replace(/&/g, '&amp;')
@@ -205,9 +227,14 @@
             <td>${escapeUserHtml(u.purok)}</td>
             <td><span class="pill ${isActive ? 'status-active' : 'status-inactive'}">${escapeUserHtml(u.status || 'Active')}</span></td>
             <td>
-              <button class="btn btn-secondary" style="padding: 5px 10px; font-size: 12px;" onclick="toggleUserStatus('${escapeUserHtml(u.id)}')">
-                ${isActive ? 'Deactivate' : 'Activate'}
-              </button>
+              <div class="user-actions">
+                <button type="button" class="btn btn-secondary" style="padding: 5px 10px; font-size: 12px;" onclick="toggleUserStatus('${escapeUserHtml(u.id)}')">
+                  ${isActive ? 'Deactivate' : 'Activate'}
+                </button>
+                <button type="button" class="btn-delete-user" onclick="openDeleteUserModal('${escapeUserHtml(u.id)}')">
+                  Delete
+                </button>
+              </div>
             </td>
           </tr>
         `;
@@ -223,6 +250,48 @@
         return u;
       });
       localStorage.setItem('relay_users', JSON.stringify(updated));
+      loadUsers();
+    }
+
+    function openDeleteUserModal(userId) {
+      const list = typeof getRelayUsers === 'function' ? getRelayUsers() : [];
+      const target = list.find(u => u.id === userId);
+      if (!target) return;
+
+      const activeUserEmail = (localStorage.getItem('relay-user') || '').trim().toLowerCase();
+      const isCurrentUser =
+        activeUserEmail && String(target.email || '').trim().toLowerCase() === activeUserEmail;
+
+      if (isCurrentUser) {
+        if (typeof openNoticeModal === 'function') {
+          openNoticeModal(
+            'Action Blocked',
+            `You cannot delete the currently signed-in account (${target.email}). Sign in with another administrator account first.`,
+            'Account Protection'
+          );
+        }
+        return;
+      }
+
+      pendingDeleteUserId = userId;
+      const descEl = document.getElementById('delete-user-desc');
+      if (descEl) {
+        descEl.textContent = `Remove ${target.name} (${target.email} · ${target.id})? This cannot be undone.`;
+      }
+      showModal('modal-delete-user');
+    }
+
+    function cancelDeleteUser() {
+      pendingDeleteUserId = null;
+      hideModal('modal-delete-user');
+    }
+
+    function confirmDeleteUser() {
+      if (!pendingDeleteUserId) return;
+      const list = typeof getRelayUsers === 'function' ? getRelayUsers() : [];
+      const remaining = list.filter(u => u.id !== pendingDeleteUserId);
+      localStorage.setItem('relay_users', JSON.stringify(remaining));
+      cancelDeleteUser();
       loadUsers();
     }
 
