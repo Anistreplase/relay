@@ -50,7 +50,7 @@
       </div>
     </header>
     <div class="page-header">
-      <div><h1 id="dash-title">San Miguel dashboard</h1><p id="dash-subtitle">Iligan City · Household readiness · 24 October 2026</p></div>
+      <div><h1 id="dash-title">Dashboard</h1><p id="dash-subtitle">Iligan City · Household readiness · 24 October 2026</p></div>
       <div style="display: flex; gap: 12px;">
         <button class="btn btn-secondary btn-export-action">Export summary</button>
         <button class="btn btn-primary btn-add-action">Add household</button>
@@ -110,18 +110,28 @@
   <script>
     function escapeDashHtml(value) {
       return String(value ?? '')
-        .replace(/&/g, '&')
-        .replace(/</g, '<')
-        .replace(/>/g, '>')
-        .replace(/"/g, '"')
-        .replace(/'/g, ''');
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
     }
 
     document.addEventListener('DOMContentLoaded', () => {
       const activeBarangay = typeof getActiveBarangayName === 'function' ? getActiveBarangayName() : 'San Miguel';
+      const role = localStorage.getItem('relay-role') || 'Barangay Official';
       const titleEl = document.getElementById('dash-title');
+      const subtitleEl = document.getElementById('dash-subtitle');
+
       if (titleEl) {
-        titleEl.textContent = activeBarangay ? `${activeBarangay} dashboard` : 'City-Wide dashboard';
+        titleEl.textContent = activeBarangay
+          ? `${activeBarangay} · ${role} dashboard`
+          : `City-Wide · ${role} dashboard`;
+      }
+
+      if (subtitleEl) {
+        const areaText = activeBarangay ? `Barangay ${activeBarangay}` : 'City-Wide Administration';
+        subtitleEl.textContent = `${areaText}, Iligan City · ${role} view · 24 October 2026`;
       }
 
       const all = typeof getScopedHouseholds === 'function'
