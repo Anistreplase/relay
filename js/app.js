@@ -192,11 +192,29 @@ const DEFAULT_RELAY_USERS = [
 
 function getRelayUsers() {
   const saved = JSON.parse(localStorage.getItem('relay_users'));
-  if (Array.isArray(saved) && saved.length > 0) {
-    return saved;
+  if (!Array.isArray(saved) || saved.length === 0) {
+    const fresh = DEFAULT_RELAY_USERS.map(u => ({ ...u }));
+    localStorage.setItem('relay_users', JSON.stringify(fresh));
+    return fresh;
   }
-  localStorage.setItem('relay_users', JSON.stringify(DEFAULT_RELAY_USERS));
-  return [...DEFAULT_RELAY_USERS];
+
+  const defaultById = Object.fromEntries(DEFAULT_RELAY_USERS.map(u => [u.id, u]));
+  const merged = saved.map(u => {
+    if (defaultById[u.id]) {
+      const def = defaultById[u.id];
+      return {
+        ...def,
+        ...u,
+        workspace: u.workspace && u.workspace !== 'Barangay San Miguel' ? u.workspace : def.workspace,
+        barangay: u.barangay && u.barangay !== 'San Miguel' ? u.barangay : def.barangay,
+        purok: u.purok || def.purok
+      };
+    }
+    return u;
+  });
+
+  localStorage.setItem('relay_users', JSON.stringify(merged));
+  return merged;
 }
 
 // =========================================
