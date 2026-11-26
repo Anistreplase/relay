@@ -129,8 +129,12 @@
       const dups = rec && typeof findDuplicateHouseholds === 'function' ? findDuplicateHouseholds(rec) : [];
       if (rec && dups.length > 0 && typeof openDuplicateResolveModal === 'function') {
         openDuplicateResolveModal(rec, dups, renderRecordsPage);
-      } else {
-        alert('No duplicate matches found for this record.');
+      } else if (typeof openNoticeModal === 'function') {
+        openNoticeModal(
+          'No duplicate matches',
+          'No duplicate matches were found for this record.',
+          'UC-06 · Duplicate Check'
+        );
       }
     }
 
