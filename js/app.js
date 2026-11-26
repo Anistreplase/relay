@@ -7,6 +7,7 @@ let pendingDeleteCallback = null;
 let pendingExportCallback = null;
 let parsedImportRows = [];
 let pendingImportFileName = '';
+let activeDuplicateContext = null;
 
 document.addEventListener('DOMContentLoaded', () => {
   const currentPath = window.location.pathname.split('/').pop() || 'index.html';
@@ -29,6 +30,7 @@ document.addEventListener('DOMContentLoaded', () => {
   ensureDeleteRecordModal();
   ensureExportConfirmModal();
   ensureImportRecordsModal();
+  ensureDuplicateResolveModal();
 
   const sidebarLogo = document.querySelector('.sidebar-logo');
   if (sidebarLogo) {
@@ -131,8 +133,22 @@ function normalizeDupKeyPart(val) {
     .trim();
 }
 
-function findDuplicateHouseholds(targetHh) {
+function getDuplicateDismissedMap() {
+  return JSON.parse(localStorage.getItem('relay_not_duplicates')) || {};
+}
+
+function makeDuplicatePairKey(idA, idB) {
+  return [String(idA || ''), String(idB || '')].sort().join('__');
+}
+
+function isMarkedNotDuplicate(idA, idB) {
+  const map = getDuplicateDismissedMap();
+  return Boolean(map[makeDuplicatePairKey(idA, idB)]);
+}
+
+function findDuplicateHouseholds(targetHh, options = {}) {
   if (!targetHh || !targetHh.id) return [];
+  const includeDismissed = Boolean(options.includeDismissed);
   const pool = typeof households !== 'undefined'
     ? getAllActiveHouseholds(households)
     : getAllActiveHouseholds({});
@@ -141,21 +157,434 @@ function findDuplicateHouseholds(targetHh) {
   const targetBrgy = normalizeDupKeyPart(targetHh.barangay);
   const targetPurok = normalizeDupKeyPart(targetHh.purok);
   const targetAddr = normalizeDupKeyPart(targetHh.address);
+  const targetContact = normalizeDupKeyPart(targetHh.contact || targetHh.contactNo);
 
   return pool.filter(other => {
     if (!other || other.id === targetHh.id) return false;
+    if (!includeDismissed && isMarkedNotDuplicate(targetHh.id, other.id)) return false;
+
     const otherHead = normalizeDupKeyPart(other.head);
     const otherBrgy = normalizeDupKeyPart(other.barangay);
     const otherPurok = normalizeDupKeyPart(other.purok);
     const otherAddr = normalizeDupKeyPart(other.address);
+    const otherContact = normalizeDupKeyPart(other.contact || other.contactNo);
 
-    if (!targetHead || otherHead !== targetHead) return false;
+    const sameHead = Boolean(targetHead && otherHead && otherHead === targetHead);
+    const sameContact = Boolean(targetContact && otherContact && otherContact === targetContact);
     const sameBrgy = !targetBrgy || !otherBrgy || otherBrgy === targetBrgy;
     const sameLocation =
       (targetAddr && otherAddr && otherAddr === targetAddr) ||
       (targetPurok && otherPurok && otherPurok === targetPurok);
 
-    return sameBrgy && sameLocation;
+    return (sameHead && sameBrgy && sameLocation) || (sameContact && sameHead);
+  });
+}
+
+function findAllDuplicatePairsInScope() {
+  const pool = typeof households !== 'undefined'
+    ? getScopedHouseholds(households)
+    : getAllActiveHouseholds({});
+
+  const pairs = [];
+  const seen = new Set();
+
+  for (let i = 0; i < pool.length; i++) {
+    const a = pool[i];
+    const matches = findDuplicateHouseholds(a);
+    matches.forEach(b => {
+      const key = makeDuplicatePairKey(a.id, b.id);
+      if (!seen.has(key)) {
+        seen.add(key);
+        pairs.push({ recordA: a, recordB: b });
+      }
+    });
+  }
+
+  return pairs;
+}
+
+function appendRecordHistory(hhId, entry) {
+  if (!hhId) return;
+  const historyMap = JSON.parse(localStorage.getItem('relay_record_history')) || {};
+  const list = Array.isArray(historyMap[hhId]) ? historyMap[hhId] : [];
+  list.unshift({
+    ...entry,
+    timestamp: new Date().toISOString(),
+    actor: localStorage.getItem('relay-user') || (document.querySelector('.user-name')?.textContent || 'Barangay Official')
+  });
+  historyMap[hhId] = list;
+  localStorage.setItem('relay_record_history', JSON.stringify(historyMap));
+}
+
+function logDuplicateAudit(resolution, recordAId, recordBId, extra = {}) {
+  const logs = JSON.parse(localStorage.getItem('relay_audit_logs')) || [];
+  logs.unshift({
+    action: `DUPLICATE_${String(resolution || '').toUpperCase().replace(/\s+/g, '_')}`,
+    recordAId,
+    recordBId,
+    timestamp: new Date().toISOString(),
+    actor: localStorage.getItem('relay-user') || 'Barangay Official',
+    ...extra
+  });
+  localStorage.setItem('relay_audit_logs', JSON.stringify(logs));
+}
+
+// =========================================
+// FULL DUPLICATE RESOLUTION MODAL (UC-06)
+// =========================================
+function ensureDuplicateResolveModal() {
+  if (document.getElementById('modal-duplicate-resolve')) return;
+
+  const wrapper = document.createElement('div');
+  wrapper.innerHTML = `
+    <div id="modal-duplicate-resolve" class="modal-overlay">
+      <div class="modal-box" style="max-width: 720px; max-height: 90vh; overflow-y: auto;">
+        <div class="modal-eyebrow">UC-06 · Detect & Resolve Duplicate Records</div>
+        <div class="modal-title" id="dup-modal-title">Side-by-side duplicate comparison</div>
+        <div class="modal-desc" id="dup-modal-desc" style="margin-bottom: 12px;">
+          Compare conflicting fields between records. Choose which value to keep when merging, or select Keep Both, Not a Duplicate, or Flag For Validation.
+        </div>
+
+        <div id="dup-pair-switcher" style="display:none; margin-bottom: 12px; gap: 8px; align-items: center; flex-wrap: wrap;">
+          <label for="dup-pair-select" style="font-size: 12px; font-weight: 600;">Detected pair:</label>
+          <select id="dup-pair-select" onchange="switchDuplicatePair(this.value)" style="padding: 6px 10px; border: 1px solid var(--border); border-radius: 6px; font-size: 12px; background: var(--white);"></select>
+        </div>
+
+        <div id="dup-cross-brgy-banner" style="display:none; background:#FEF3C7; border:1px solid #F59E0B; color:#92400E; padding:10px 12px; border-radius:6px; font-size:12px; margin-bottom:14px; line-height:1.45;"></div>
+
+        <div id="dup-comparison-table" style="border: 1px solid var(--border); border-radius: 8px; overflow: hidden; margin-bottom: 16px;"></div>
+
+        <div class="modal-footer" style="flex-direction: column; align-items: stretch; gap: 12px;">
+          <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+            <div class="modal-footer-text" id="dup-modal-status">Select a resolution action below.</div>
+            <div class="modal-actions" style="flex-wrap: wrap;">
+              <button type="button" class="btn btn-secondary" onclick="closeDuplicateResolveModal()">Close</button>
+              <button type="button" class="btn btn-secondary" onclick="resolveDuplicateFlagForValidation()">Flag For Validation</button>
+              <button type="button" class="btn btn-secondary" onclick="resolveDuplicateNotDuplicate()">Not a Duplicate</button>
+              <button type="button" class="btn btn-secondary" onclick="resolveDuplicateKeepBoth()">Keep Both</button>
+              <button type="button" class="btn btn-primary" onclick="resolveDuplicateMerge()">Merge Records</button>
+            </div>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(wrapper.firstElementChild);
+}
+
+function getLatestRecordById(hhId) {
+  if (!hhId) return null;
+  const deleted = JSON.parse(localStorage.getItem('deleted_households')) || {};
+  if (deleted[hhId]) return null;
+  const custom = JSON.parse(localStorage.getItem('custom_households')) || {};
+  if (custom[hhId]) return { ...custom[hhId], barangay: custom[hhId].barangay || 'San Miguel' };
+  if (typeof households !== 'undefined' && households[hhId]) {
+    return { ...households[hhId], barangay: households[hhId].barangay || 'San Miguel' };
+  }
+  return null;
+}
+
+function openDuplicateResolveModal(primaryHh, candidates = [], onResolved = null) {
+  ensureDuplicateResolveModal();
+
+  const list = Array.isArray(candidates) && candidates.length > 0 ? candidates : [];
+  if (!primaryHh || list.length === 0) {
+    alert('No duplicate candidate records found for this household.');
+    return;
+  }
+
+  activeDuplicateContext = {
+    primaryId: primaryHh.id,
+    candidates: list,
+    selectedIndex: 0,
+    onResolved: typeof onResolved === 'function' ? onResolved : null
+  };
+
+  const switcher = document.getElementById('dup-pair-switcher');
+  const selectEl = document.getElementById('dup-pair-select');
+  if (switcher && selectEl) {
+    if (list.length > 1) {
+      switcher.style.display = 'flex';
+      selectEl.innerHTML = list
+        .map((c, idx) => `<option value="${idx}">${escapeSearchHtml(c.head || c.id)} (${escapeSearchHtml(c.id)} · ${escapeSearchHtml(c.purok || c.barangay || '')})</option>`)
+        .join('');
+      selectEl.value = '0';
+    } else {
+      switcher.style.display = 'none';
+    }
+  }
+
+  renderDuplicateComparisonView();
+  showModal('modal-duplicate-resolve');
+}
+
+function openDuplicateCenterModal(onResolved = null) {
+  const pairs = findAllDuplicatePairsInScope();
+  if (pairs.length === 0) {
+    alert('No active possible duplicate pairs detected in your current workspace.');
+    return;
+  }
+
+  ensureDuplicateResolveModal();
+  activeDuplicateContext = {
+    mode: 'center',
+    pairs,
+    selectedIndex: 0,
+    onResolved: typeof onResolved === 'function' ? onResolved : null
+  };
+
+  const switcher = document.getElementById('dup-pair-switcher');
+  const selectEl = document.getElementById('dup-pair-select');
+  if (switcher && selectEl) {
+    switcher.style.display = 'flex';
+    selectEl.innerHTML = pairs
+      .map((p, idx) => `<option value="${idx}">Pair ${idx + 1}: ${escapeSearchHtml(p.recordA.head)} (${escapeSearchHtml(p.recordA.id)}) vs ${escapeSearchHtml(p.recordB.head)} (${escapeSearchHtml(p.recordB.id)})</option>`)
+      .join('');
+    selectEl.value = '0';
+  }
+
+  renderDuplicateComparisonView();
+  showModal('modal-duplicate-resolve');
+}
+
+function switchDuplicatePair(indexVal) {
+  if (!activeDuplicateContext) return;
+  const idx = Number(indexVal) || 0;
+  activeDuplicateContext.selectedIndex = idx;
+  renderDuplicateComparisonView();
+}
+
+function getActiveDuplicatePair() {
+  if (!activeDuplicateContext) return null;
+  if (activeDuplicateContext.mode === 'center') {
+    const pair = activeDuplicateContext.pairs[activeDuplicateContext.selectedIndex] || activeDuplicateContext.pairs[0];
+    if (!pair) return null;
+    const recA = getLatestRecordById(pair.recordA.id) || pair.recordA;
+    const recB = getLatestRecordById(pair.recordB.id) || pair.recordB;
+    return { recA, recB };
+  }
+
+  const recA = getLatestRecordById(activeDuplicateContext.primaryId);
+  const candRaw = activeDuplicateContext.candidates[activeDuplicateContext.selectedIndex] || activeDuplicateContext.candidates[0];
+  const recB = candRaw ? (getLatestRecordById(candRaw.id) || candRaw) : null;
+  if (!recA || !recB) return null;
+  return { recA, recB };
+}
+
+function renderDuplicateComparisonView() {
+  const pairData = getActiveDuplicatePair();
+  const tableContainer = document.getElementById('dup-comparison-table');
+  const bannerEl = document.getElementById('dup-cross-brgy-banner');
+  const statusEl = document.getElementById('dup-modal-status');
+
+  if (!pairData || !tableContainer) return;
+  const { recA, recB } = pairData;
+
+  const brgyA = String(recA.barangay || 'San Miguel').trim();
+  const brgyB = String(recB.barangay || 'San Miguel').trim();
+
+  if (bannerEl) {
+    if (brgyA.toLowerCase() !== brgyB.toLowerCase()) {
+      bannerEl.style.display = 'block';
+      bannerEl.innerHTML = `<strong>Cross-Barangay Match:</strong> Record <strong>${escapeSearchHtml(recA.id)}</strong> belongs to <strong>${escapeSearchHtml(brgyA)}</strong> and <strong>${escapeSearchHtml(recB.id)}</strong> belongs to <strong>${escapeSearchHtml(brgyB)}</strong>. Coordinating officials from both barangays should confirm which record is current before merging.`;
+    } else {
+      bannerEl.style.display = 'none';
+      bannerEl.innerHTML = '';
+    }
+  }
+
+  const getPrimaryNeed = (hh) => {
+    if (!Array.isArray(hh.members) || hh.members.length === 0) return 'None reported';
+    const needs = hh.members
+      .map(m => m && m.needs)
+      .filter(n => n && n !== 'None' && n !== 'None reported');
+    return needs.length > 0 ? needs.join(', ') : 'None reported';
+  };
+
+  const fields = [
+    { key: 'head', label: 'Household Head', valA: recA.head || '', valB: recB.head || '' },
+    { key: 'barangay', label: 'Barangay', valA: brgyA, valB: brgyB },
+    { key: 'purok', label: 'Purok', valA: recA.purok || '', valB: recB.purok || '' },
+    { key: 'address', label: 'Address', valA: recA.address || '', valB: recB.address || '' },
+    { key: 'contact', label: 'Contact No.', valA: recA.contact || recA.contactNo || 'Not provided', valB: recB.contact || recB.contactNo || 'Not provided' },
+    { key: 'tenure', label: 'Tenure', valA: recA.tenure || 'Owner', valB: recB.tenure || 'Owner' },
+    { key: 'needs', label: 'Assistance Needs', valA: getPrimaryNeed(recA), valB: getPrimaryNeed(recB) }
+  ];
+
+  tableContainer.innerHTML = `
+    <table style="width:100%; border-collapse:collapse; font-size:12px;">
+      <thead style="background:#F9FAFB;">
+        <tr>
+          <th style="padding:10px 12px; width:140px;">Field</th>
+          <th style="padding:10px 12px;">Record A (${escapeSearchHtml(recA.id)})</th>
+          <th style="padding:10px 12px;">Record B (${escapeSearchHtml(recB.id)})</th>
+        </tr>
+      </thead>
+      <tbody>
+        ${fields.map(f => {
+          const differs = normalizeDupKeyPart(f.valA) !== normalizeDupKeyPart(f.valB);
+          return `
+            <tr style="${differs ? 'background:#FFFDF5;' : ''}">
+              <td style="padding:10px 12px; font-weight:600; border-bottom:1px solid var(--border);">${escapeSearchHtml(f.label)}</td>
+              <td style="padding:10px 12px; border-bottom:1px solid var(--border);">
+                <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+                  <input type="radio" name="dup_field_${escapeSearchHtml(f.key)}" value="A" checked>
+                  <span>${escapeSearchHtml(f.valA)}</span>
+                </label>
+              </td>
+              <td style="padding:10px 12px; border-bottom:1px solid var(--border);">
+                <label style="display:flex; align-items:center; gap:8px; cursor:pointer;">
+                  <input type="radio" name="dup_field_${escapeSearchHtml(f.key)}" value="B">
+                  <span>${escapeSearchHtml(f.valB)}</span>
+                </label>
+              </td>
+            </tr>
+          `;
+        }).join('')}
+      </tbody>
+    </table>
+  `;
+
+  if (statusEl) {
+    statusEl.textContent = `Comparing ${recA.id} and ${recB.id}`;
+  }
+}
+
+function closeDuplicateResolveModal() {
+  activeDuplicateContext = null;
+  hideModal('modal-duplicate-resolve');
+}
+
+function finishDuplicateResolution(refreshFn) {
+  const cb = activeDuplicateContext && activeDuplicateContext.onResolved;
+  closeDuplicateResolveModal();
+  if (typeof refreshFn === 'function') refreshFn();
+  if (typeof cb === 'function') cb();
+}
+
+function resolveDuplicateMerge() {
+  const pairData = getActiveDuplicatePair();
+  if (!pairData) return;
+  const { recA, recB } = pairData;
+
+  const pickField = (key, fallbackA, fallbackB) => {
+    const checked = document.querySelector(`input[name="dup_field_${key}"]:checked`);
+    return checked && checked.value === 'B' ? fallbackB : fallbackA;
+  };
+
+  const needA = Array.isArray(recA.members) && recA.members[0] ? (recA.members[0].needs || 'None reported') : 'None reported';
+  const needB = Array.isArray(recB.members) && recB.members[0] ? (recB.members[0].needs || 'None reported') : 'None reported';
+
+  const mergedHead = pickField('head', recA.head, recB.head);
+  const mergedBarangay = pickField('barangay', recA.barangay || 'San Miguel', recB.barangay || 'San Miguel');
+  const mergedPurok = pickField('purok', recA.purok || '', recB.purok || '');
+  const mergedAddress = pickField('address', recA.address || '', recB.address || '');
+  const mergedContact = pickField('contact', recA.contact || recA.contactNo || '', recB.contact || recB.contactNo || '');
+  const mergedTenure = pickField('tenure', recA.tenure || 'Owner', recB.tenure || 'Owner');
+  const mergedNeed = pickField('needs', needA, needB);
+
+  const custom = JSON.parse(localStorage.getItem('custom_households')) || {};
+  const mergedMembers = Array.isArray(recA.members) && recA.members.length > 0
+    ? recA.members.map((m, i) => i === 0 ? { ...m, needs: mergedNeed } : m)
+    : [{ name: mergedHead, category: 'Household Head', needs: mergedNeed }];
+
+  custom[recA.id] = {
+    ...recA,
+    head: mergedHead,
+    barangay: mergedBarangay,
+    purok: mergedPurok,
+    address: mergedAddress,
+    contact: mergedContact,
+    tenure: mergedTenure,
+    members: mergedMembers,
+    lastUpdated: new Date().toISOString().slice(0, 10),
+    mergedFrom: [recA.id, recB.id]
+  };
+  localStorage.setItem('custom_households', JSON.stringify(custom));
+
+  // Archive secondary record B and preserve history of both
+  const deleted = JSON.parse(localStorage.getItem('deleted_households')) || {};
+  deleted[recB.id] = Date.now();
+  localStorage.setItem('deleted_households', JSON.stringify(deleted));
+  localStorage.removeItem(`record_${recB.id}`);
+
+  appendRecordHistory(recA.id, {
+    action: 'MERGED_DUPLICATE',
+    mergedRecordId: recB.id,
+    previousRecordB: recB
+  });
+  logDuplicateAudit('Merged', recA.id, recB.id, { mergedInto: recA.id });
+
+  finishDuplicateResolution(() => {
+    if (typeof renderRecordsPage === 'function') renderRecordsPage();
+  });
+}
+
+function resolveDuplicateKeepBoth() {
+  const pairData = getActiveDuplicatePair();
+  if (!pairData) return;
+  const { recA, recB } = pairData;
+
+  const keptList = JSON.parse(localStorage.getItem('relay_kept_duplicates')) || [];
+  keptList.push({
+    recordAId: recA.id,
+    recordBId: recB.id,
+    timestamp: new Date().toISOString()
+  });
+  localStorage.setItem('relay_kept_duplicates', JSON.stringify(keptList));
+
+  appendRecordHistory(recA.id, { action: 'KEPT_BOTH_RECORDS', companionId: recB.id });
+  appendRecordHistory(recB.id, { action: 'KEPT_BOTH_RECORDS', companionId: recA.id });
+  logDuplicateAudit('Keep Both', recA.id, recB.id);
+
+  finishDuplicateResolution(() => {
+    if (typeof renderRecordsPage === 'function') renderRecordsPage();
+  });
+}
+
+function resolveDuplicateNotDuplicate() {
+  const pairData = getActiveDuplicatePair();
+  if (!pairData) return;
+  const { recA, recB } = pairData;
+
+  const dismissed = getDuplicateDismissedMap();
+  dismissed[makeDuplicatePairKey(recA.id, recB.id)] = Date.now();
+  localStorage.setItem('relay_not_duplicates', JSON.stringify(dismissed));
+
+  appendRecordHistory(recA.id, { action: 'MARKED_NOT_DUPLICATE', companionId: recB.id });
+  appendRecordHistory(recB.id, { action: 'MARKED_NOT_DUPLICATE', companionId: recA.id });
+  logDuplicateAudit('Not a Duplicate', recA.id, recB.id);
+
+  finishDuplicateResolution(() => {
+    if (typeof renderRecordsPage === 'function') renderRecordsPage();
+  });
+}
+
+function resolveDuplicateFlagForValidation() {
+  const pairData = getActiveDuplicatePair();
+  if (!pairData) return;
+  const { recA, recB } = pairData;
+
+  const heldMerges = JSON.parse(localStorage.getItem('relay_held_duplicate_merges')) || {};
+  heldMerges[makeDuplicatePairKey(recA.id, recB.id)] = {
+    recordAId: recA.id,
+    recordBId: recB.id,
+    status: 'For Validation',
+    flaggedAt: new Date().toISOString()
+  };
+  localStorage.setItem('relay_held_duplicate_merges', JSON.stringify(heldMerges));
+
+  localStorage.setItem(`record_${recA.id}`, 'Unverified');
+  localStorage.setItem(`record_${recB.id}`, 'Unverified');
+  sessionStorage.removeItem('notifs-read');
+
+  appendRecordHistory(recA.id, { action: 'FLAGGED_FOR_VALIDATION_MERGE_HELD', companionId: recB.id });
+  appendRecordHistory(recB.id, { action: 'FLAGGED_FOR_VALIDATION_MERGE_HELD', companionId: recA.id });
+  logDuplicateAudit('Flag For Validation', recA.id, recB.id);
+
+  finishDuplicateResolution(() => {
+    if (typeof generateNotifications === 'function') generateNotifications();
+    if (typeof renderRecordsPage === 'function') renderRecordsPage();
   });
 }
 
@@ -187,6 +616,7 @@ function ensureDeleteRecordModal() {
           <div class="modal-footer-text">Action applies to your active workspace.</div>
           <div class="modal-actions">
             <button type="button" class="btn btn-secondary" onclick="cancelDeleteHouseholdModal()">Cancel</button>
+            <button type="button" class="btn btn-secondary" id="compare-delete-dup-btn" style="display:none;" onclick="compareDetectedDuplicateFromDelete()">Compare & Resolve</button>
             <button type="button" class="btn btn-primary" id="confirm-delete-record-btn" onclick="confirmDeleteHouseholdModal()">Delete record</button>
           </div>
         </div>
@@ -194,6 +624,18 @@ function ensureDeleteRecordModal() {
     </div>
   `;
   document.body.appendChild(wrapper.firstElementChild);
+}
+
+function compareDetectedDuplicateFromDelete() {
+  const idToCheck = pendingDeleteHouseholdId;
+  const afterCb = pendingDeleteCallback;
+  if (!idToCheck) return;
+  const rec = getLatestRecordById(idToCheck);
+  const dups = rec ? findDuplicateHouseholds(rec) : [];
+  cancelDeleteHouseholdModal();
+  if (rec && dups.length > 0) {
+    openDuplicateResolveModal(rec, dups, afterCb);
+  }
 }
 
 function cancelDeleteHouseholdModal() {
@@ -249,8 +691,7 @@ function confirmDeleteHouseholdModal() {
 
 function deleteHouseholdRecord(hhId, onAfterDelete) {
   if (!hhId) return false;
-  const custom = JSON.parse(localStorage.getItem('custom_households')) || {};
-  const recordObj = custom[hhId] || (typeof households !== 'undefined' ? households[hhId] : null);
+  const recordObj = getLatestRecordById(hhId);
 
   if (!canDeleteHouseholdRecord(recordObj)) {
     alert('You can only delete household records within your assigned barangay workspace.');
@@ -266,6 +707,7 @@ function deleteHouseholdRecord(hhId, onAfterDelete) {
   const titleEl = document.getElementById('modal-delete-title');
   const warnEl = document.getElementById('modal-delete-dup-warning');
   const descEl = document.getElementById('modal-delete-record-desc');
+  const compareBtn = document.getElementById('compare-delete-dup-btn');
   const headLabel = recordObj && recordObj.head ? `${recordObj.head} household (${hhId})` : hhId;
 
   if (duplicates.length > 0) {
@@ -276,8 +718,9 @@ function deleteHouseholdRecord(hhId, onAfterDelete) {
     if (titleEl) titleEl.textContent = 'Potential duplicate detected';
     if (warnEl) {
       warnEl.style.display = 'block';
-      warnEl.innerHTML = `<strong>Warning:</strong> Matching record(s) found: ${escapeSearchHtml(dupSummary)}. Confirm below to remove the duplicate entry.`;
+      warnEl.innerHTML = `<strong>Warning:</strong> Matching record(s) found: ${escapeSearchHtml(dupSummary)}. You can compare side-by-side or remove this record below.`;
     }
+    if (compareBtn) compareBtn.style.display = 'inline-flex';
   } else {
     if (eyebrowEl) eyebrowEl.textContent = 'Duplicate Check & Removal';
     if (titleEl) titleEl.textContent = 'Delete household record?';
@@ -285,6 +728,7 @@ function deleteHouseholdRecord(hhId, onAfterDelete) {
       warnEl.style.display = 'none';
       warnEl.innerHTML = '';
     }
+    if (compareBtn) compareBtn.style.display = 'none';
   }
 
   if (descEl) {
@@ -664,6 +1108,7 @@ function confirmImportRecords() {
       ]
     };
     localStorage.setItem(`record_${uniqueId}`, 'Unverified');
+    appendRecordHistory(uniqueId, { action: 'IMPORTED_RECORD', source: sourceTag });
     importedCount++;
   });
 
