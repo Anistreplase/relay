@@ -152,7 +152,7 @@ function updateUserProfile() {
       setNav('verify.html', false);
       setNav('preparedness.html', false);
       setNav('evacuation.html', false);
-      setNav('revalidation.html', true); // They receive reminders
+      setNav('revalidation.html', true); 
       setNav('reports.html', false);
       if (navUsers) navUsers.style.display = 'none';
 
@@ -168,18 +168,19 @@ function updateUserProfile() {
         workspaceSelector.style.cursor = 'not-allowed';
       }
 
-      // Barangay Officials manage records and verify, but no Evacuation or Users
+      // Barangay Officials manage records and verify, AND see evacuation
       setNav('dashboard.html', true);
       setNav('records.html', true);
       setNav('verify.html', true);
       setNav('preparedness.html', true);
-      setNav('evacuation.html', false); // Hidden per your instruction
+      setNav('evacuation.html', true); // NOW VISIBLE
       setNav('revalidation.html', true);
       setNav('reports.html', true);
       if (navUsers) navUsers.style.display = 'none';
     }
   }
 }
+
 // =========================================
 // NOTIFICATIONS
 // =========================================
