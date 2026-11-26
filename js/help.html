@@ -1,0 +1,159 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>Relay - Help & Support</title>
+  <link rel="stylesheet" href="css/style.css">
+  <style>
+    .help-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 24px; }
+    .help-card { background: var(--white); border: 1px solid var(--border); border-radius: 8px; padding: 24px; margin-bottom: 24px; }
+    .help-card h3 { font-size: 16px; margin-bottom: 6px; }
+    .help-card p.desc { font-size: 12px; color: var(--text-muted); margin-bottom: 18px; line-height: 1.5; }
+    .guide-list { display: flex; flex-direction: column; gap: 14px; }
+    .guide-item { border: 1px solid var(--border); border-radius: 6px; padding: 14px 16px; background: var(--cream); }
+    .guide-item strong { display: block; font-size: 13px; color: var(--text-main); margin-bottom: 4px; }
+    .guide-item span { font-size: 12px; color: var(--text-muted); line-height: 1.5; display: block; }
+    .faq-item { padding: 14px 0; border-bottom: 1px solid var(--border); }
+    .faq-item:last-child { border-bottom: none; padding-bottom: 0; }
+    .faq-item strong { display: block; font-size: 13px; color: var(--text-main); margin-bottom: 4px; }
+    .faq-item p { font-size: 12px; color: var(--text-muted); line-height: 1.5; margin: 0; }
+    .scope-note { background: #FFFDF5; border: 1px solid #FCD34D; border-radius: 8px; padding: 20px; margin-bottom: 24px; }
+    .scope-note h4 { font-size: 14px; font-weight: 600; color: #92400E; margin-bottom: 10px; }
+    .scope-note p { font-size: 12px; color: #92400E; line-height: 1.5; margin-bottom: 12px; }
+    .scope-note p:last-child { margin-bottom: 0; }
+    .contact-row { display: flex; justify-content: space-between; align-items: center; padding: 10px 0; border-bottom: 1px solid var(--border); font-size: 12px; }
+    .contact-row:last-child { border-bottom: none; padding-bottom: 0; }
+    .contact-row span.label { color: var(--text-muted); }
+    .contact-row span.val { font-weight: 600; color: var(--text-main); }
+  </style>
+</head>
+<body>
+  <aside class="sidebar">
+    <div class="sidebar-logo"><div class="logo-icon">R</div> Relay</div>
+    <div class="sidebar-section-title">Response Workspace</div>
+    <nav class="sidebar-nav">
+      <a href="dashboard.html"><span class="nav-icon">◈</span> Overview</a>
+      <a href="records.html"><span class="nav-icon">👥</span> Household records</a>
+      <a href="verify.html"><span class="nav-icon">✓</span> Verification queue</a>
+      <a href="preparedness.html"><span class="nav-icon">▤</span> Preparedness & offline</a>
+      <a href="evacuation.html"><span class="nav-icon">⏱</span> Evacuation tracking</a>
+      <a href="revalidation.html"><span class="nav-icon">↻</span> Revalidation</a>
+      <a href="reports.html"><span class="nav-icon">📄</span> Reports & exports</a>
+    </nav>
+    <div class="sidebar-footer">
+      <div class="status-card"><div class="status-title"><div class="status-dot"></div> System operational</div>Last synced at 09:42<br>Household records up to date</div>
+      <nav class="sidebar-nav" style="margin-top: 12px;">
+        <a href="settings.html"><span class="nav-icon">⚙</span> Settings</a>
+        <a href="help.html" class="active"><span class="nav-icon">?</span> Help & support</a>
+      </nav>
+    </div>
+  </aside>
+
+  <main class="main-content">
+    <header class="topbar">
+      <div class="topbar-left">
+        <div class="workspace-selector"><select id="workspace-selector" style="border:none; background:transparent; font-weight:600; font-size:14px; cursor:pointer;"><option>Barangay San Miguel</option></select></div>
+        <div class="search-bar"><span>🔍</span> Search households, puroks, records...</div>
+      </div>
+      <div class="topbar-right">
+        <span>🔔</span>
+        <div class="user-profile"><div class="user-info"><div class="user-name">Loading...</div><div class="user-role">Loading...</div></div></div>
+      </div>
+    </header>
+
+    <div class="page-header">
+      <div><h1>Help & support</h1><p id="help-subtitle">Quick workflows, role responsibilities, and system boundaries for Relay.</p></div>
+      <div><a href="dashboard.html" class="btn btn-secondary">Back to overview</a></div>
+    </div>
+
+    <div class="page-body">
+      <div class="help-grid">
+        <div>
+          <div class="help-card">
+            <h3>Core operational workflows</h3>
+            <p class="desc">Step-by-step reference for maintaining vulnerable resident records before, during, and after hazard events.</p>
+            <div class="guide-list">
+              <div class="guide-item">
+                <strong>1. Household registration & duplicate check</strong>
+                <span>Register households with head details, purok, address, vulnerable members, and assistance needs. New records save as <strong>Unverified</strong> and enter the validation queue. Barangay accounts auto-assign their barangay; City-Wide Admin must select a barangay.</span>
+              </div>
+              <div class="guide-item">
+                <strong>2. Record verification</strong>
+                <span>Review submitted or updated household records and mark them <strong>Verified</strong>, <strong>Needs Correction</strong>, or <strong>Unable to Verify</strong> with remarks. Only <strong>Verified</strong> records reach city responders and partner offices.</span>
+              </div>
+              <div class="guide-item">
+                <strong>3. Offline preparedness & evacuation tracking</strong>
+                <span>Download verified records and area maps while connected, use the priority list for outreach planning, and update household evacuation statuses—queuing changes locally if connectivity drops.</span>
+              </div>
+              <div class="guide-item">
+                <strong>4. Post-event revalidation & reports</strong>
+                <span>Follow due and overdue revalidation reminders after an event to update resident conditions or transfers, and export permitted summaries (vulnerable residents per purok, priority list, evacuation status, or pending validation) as PDF or CSV.</span>
+              </div>
+            </div>
+          </div>
+
+          <div class="help-card">
+            <h3>Frequently asked questions</h3>
+            <p class="desc">Common questions about access, record visibility, and offline behavior.</p>
+            <div class="faq-item">
+              <strong>Why can I only see records from one barangay?</strong>
+              <p>Barangay-scoped accounts are restricted to their assigned barangay workspace (San Miguel, Tibanga, or Saray). City-Wide Administration accounts can switch workspaces or view across barangays.</p>
+            </div>
+            <div class="faq-item">
+              <strong>When do city responders and partner offices see a new record?</strong>
+              <p>A record must be reviewed and marked <strong>Verified</strong> first. Unverified entries and records needing correction remain in the validation workflow.</p>
+            </div>
+            <div class="faq-item">
+              <strong>What happens when internet service is lost during field updates?</strong>
+              <p>Relay enters Offline Mode so you can continue navigating and reviewing saved data. Queued updates stay on the device and synchronize once a connection returns.</p>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="help-card">
+            <h3>Active session & support</h3>
+            <p class="desc">Current workspace context and coordination contacts.</p>
+            <div class="contact-row"><span class="label">Active workspace</span><span class="val" id="help-workspace">Barangay San Miguel</span></div>
+            <div class="contact-row"><span class="label">Account role</span><span class="val" id="help-role">Barangay Official</span></div>
+            <div class="contact-row"><span class="label">City coordination</span><span class="val">ICDRRMO / CSWDO (Iligan City)</span></div>
+            <div class="contact-row"><span class="label">Data privacy basis</span><span class="val">RA 10173 & RA 10121</span></div>
+          </div>
+
+          <div class="scope-note">
+            <h4>System scope & boundaries</h4>
+            <p><strong>Information management only:</strong> Relay manages vulnerability and readiness records. It does not conduct rescue or evacuation operations, issue emergency warnings, diagnose medical conditions/disabilities, or distribute relief goods.</p>
+            <p><strong>Official intake forms:</strong> Evacuee intake on national forms (such as CSWDO intake) remains the responsibility of the designated office.</p>
+          </div>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script src="js/database.js"></script>
+  <script src="js/app.js"></script>
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      const role = localStorage.getItem('relay-role') || 'Barangay Official';
+      const userEmail = (localStorage.getItem('relay-user') || '').trim().toLowerCase();
+      let workspace = localStorage.getItem('relay-workspace') || 'Barangay San Miguel';
+
+      if (typeof inferWorkspaceFromEmail === 'function') {
+        const inferred = inferWorkspaceFromEmail(userEmail);
+        if (role !== 'Admin' && inferred) {
+          workspace = inferred;
+        }
+      }
+
+      const wsEl = document.getElementById('help-workspace');
+      const roleEl = document.getElementById('help-role');
+      const subEl = document.getElementById('help-subtitle');
+
+      if (wsEl) wsEl.textContent = workspace;
+      if (roleEl) roleEl.textContent = role;
+      if (subEl) subEl.textContent = `Quick workflows, role responsibilities, and system boundaries for ${workspace}.`;
+    });
+  </script>
+</body>
+</html>
