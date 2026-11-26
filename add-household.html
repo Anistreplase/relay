@@ -5,13 +5,17 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Relay - Add Household</title>
   <link rel="stylesheet" href="css/style.css">
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <style>
-    .form-card { background: var(--white); border: 1px solid var(--border); border-radius: 8px; padding: 24px; max-width: 820px; }
-    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 16px; }
+    .form-card { background: var(--white); border: 1px solid var(--border); border-radius: 8px; padding: 24px; max-width: 880px; }
+    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 12px; }
     .form-field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
     .form-field label { font-size: 12px; font-weight: 600; }
     .form-field input, .form-field select { padding: 10px 12px; border: 1px solid var(--border); border-radius: 6px; font-family: inherit; font-size: 13px; background: var(--white); }
     .error-msg { color: #991B1B; background: #FEE2E2; border: 1px solid #FCA5A5; padding: 10px 12px; border-radius: 6px; font-size: 12px; margin-bottom: 14px; display: none; }
+    .pin-map { height: 280px; width: 100%; border-radius: 8px; border: 1px solid var(--border); background: #e5e5e5; z-index: 1; position: relative; }
+    .pin-meta { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px; margin-top: 8px; font-size: 12px; color: var(--text-muted); }
+    .fallback-box { background: var(--cream); border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; margin-bottom: 16px; }
   </style>
 </head>
 <body>
@@ -57,7 +61,7 @@
           </div>
           <div class="form-field" id="barangay-field-wrap" style="display: none;">
             <label for="hh-barangay">Barangay (Required for City-Wide Admin) *</label>
-            <select id="hh-barangay">
+            <select id="hh-barangay" onchange="centerPinMapForSelection()">
               <option value="">-- Select Barangay --</option>
               <option value="San Miguel">San Miguel</option>
               <option value="Tibanga">Tibanga</option>
@@ -68,7 +72,7 @@
         <div class="form-grid">
           <div class="form-field">
             <label for="hh-purok">Purok *</label>
-            <select id="hh-purok" required>
+            <select id="hh-purok" required onchange="centerPinMapForSelection()">
               <option value="Purok 1">Purok 1</option>
               <option value="Purok 2">Purok 2</option>
               <option value="Purok 3">Purok 3</option>
@@ -81,6 +85,35 @@
             <input type="text" id="hh-address" required placeholder="e.g. 14 Riverside Street">
           </div>
         </div>
+
+        <div class="form-field">
+          <label>Household location pin (Click map to drop pin)</label>
+          <div id="pin-map" class="pin-map"></div>
+          <div class="pin-meta">
+            <span id="pin-coords-label">Pin: Not yet placed (click map or select landmark below)</span>
+            <button type="button" class="btn btn-secondary" style="padding: 5px 10px; font-size: 12px;" onclick="clearPinLocation()">Clear pin</button>
+          </div>
+        </div>
+
+        <div class="fallback-box">
+          <div class="form-grid" style="margin-bottom: 0;">
+            <div class="form-field" style="margin-bottom: 0;">
+              <label for="hh-landmark">Fallback landmark (if exact coordinates are unavailable)</label>
+              <select id="hh-landmark" onchange="applyLandmarkFallback()">
+                <option value="">-- None / Exact pin placed --</option>
+                <option value="Barangay Hall / Covered Court">Barangay Hall / Covered Court</option>
+                <option value="Purok Chapel / Waiting Shed">Purok Chapel / Waiting Shed</option>
+                <option value="Elementary School / Evacuation Site">Elementary School / Evacuation Site</option>
+                <option value="Main Road / Riverbank Crossing">Main Road / Riverbank Crossing</option>
+              </select>
+            </div>
+            <div class="form-field" style="margin-bottom: 0;">
+              <label>Location confirmation status</label>
+              <input type="text" id="hh-location-status" readonly value="Unconfirmed" style="background: #F9FAFB;">
+            </div>
+          </div>
+        </div>
+
         <div class="form-grid">
           <div class="form-field">
             <label for="member-name">Primary vulnerable / household member name *</label>
@@ -111,7 +144,137 @@
   </main>
   <script src="js/database.js"></script>
   <script src="js/app.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
+    let pinMap = null;
+    let pinMarker = null;
+    let pickedLat = null;
+    let pickedLng = null;
+    let locationConfirmed = false;
+
+    function getBaseCoordsForBarangay(brgyName) {
+      const key = String(brgyName || '').toLowerCase();
+      if (key === 'tibanga') return [8.2345, 124.2368];
+      if (key === 'saray') return [8.2382, 124.2535];
+      return [8.2280, 124.2452];
+    }
+
+    function getPurokOffset(purokVal) {
+      const idx = Math.max(0, ['Purok 1', 'Purok 2', 'Purok 3', 'Purok 4', 'Purok 5'].indexOf(purokVal));
+      const angle = (idx * 72 * Math.PI) / 180;
+      return [Math.sin(angle) * 0.0022, Math.cos(angle) * 0.0022];
+    }
+
+    function setMapPin(lat, lng, confirmed) {
+      pickedLat = Number(lat.toFixed(6));
+      pickedLng = Number(lng.toFixed(6));
+      locationConfirmed = !!confirmed;
+
+      const statusInput = document.getElementById('hh-location-status');
+      const coordsLabel = document.getElementById('pin-coords-label');
+      if (statusInput) {
+        statusInput.value = locationConfirmed ? 'Confirmed pin' : 'Unconfirmed (landmark fallback)';
+      }
+      if (coordsLabel) {
+        coordsLabel.textContent = `Pin: ${pickedLat}, ${pickedLng} (${locationConfirmed ? 'Confirmed' : 'Unconfirmed'})`;
+      }
+
+      if (typeof L !== 'undefined' && pinMap) {
+        const icon = L.divIcon({
+          className: 'custom-marker',
+          html: `<div style="background-color: ${locationConfirmed ? '#8B0000' : '#D97706'}; width: 16px; height: 16px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.4);"></div>`,
+          iconSize: [16, 16],
+          iconAnchor: [8, 8]
+        });
+
+        if (!pinMarker) {
+          pinMarker = L.marker([pickedLat, pickedLng], { icon }).addTo(pinMap);
+        } else {
+          pinMarker.setLatLng([pickedLat, pickedLng]);
+          pinMarker.setIcon(icon);
+        }
+        pinMap.setView([pickedLat, pickedLng], 16);
+      }
+    }
+
+    function clearPinLocation() {
+      pickedLat = null;
+      pickedLng = null;
+      locationConfirmed = false;
+      const landmarkSelect = document.getElementById('hh-landmark');
+      const statusInput = document.getElementById('hh-location-status');
+      const coordsLabel = document.getElementById('pin-coords-label');
+      if (landmarkSelect) landmarkSelect.value = '';
+      if (statusInput) statusInput.value = 'Unconfirmed';
+      if (coordsLabel) coordsLabel.textContent = 'Pin: Not yet placed (click map or select landmark below)';
+      if (pinMarker && pinMap) {
+        pinMap.removeLayer(pinMarker);
+        pinMarker = null;
+      }
+    }
+
+    function applyLandmarkFallback() {
+      const landmark = document.getElementById('hh-landmark')?.value || '';
+      if (!landmark) {
+        if (!locationConfirmed) clearPinLocation();
+        return;
+      }
+      const role = localStorage.getItem('relay-role') || 'Barangay Official';
+      const workspace = localStorage.getItem('relay-workspace') || 'Barangay San Miguel';
+      const isCityWideAdmin = role === 'Admin' && workspace === 'City-Wide Administration';
+      const brgy = isCityWideAdmin
+        ? (document.getElementById('hh-barangay')?.value || 'San Miguel')
+        : workspace.replace(/^Barangay\s+/i, '').trim();
+      const purok = document.getElementById('hh-purok')?.value || 'Purok 1';
+
+      const base = getBaseCoordsForBarangay(brgy);
+      const [dLat, dLng] = getPurokOffset(purok);
+      setMapPin(base[0] + dLat, base[1] + dLng, false);
+    }
+
+    function centerPinMapForSelection() {
+      if (!pinMap) return;
+      const role = localStorage.getItem('relay-role') || 'Barangay Official';
+      const workspace = localStorage.getItem('relay-workspace') || 'Barangay San Miguel';
+      const isCityWideAdmin = role === 'Admin' && workspace === 'City-Wide Administration';
+      const brgy = isCityWideAdmin
+        ? (document.getElementById('hh-barangay')?.value || 'San Miguel')
+        : workspace.replace(/^Barangay\s+/i, '').trim();
+      const base = getBaseCoordsForBarangay(brgy);
+      if (!pinMarker) {
+        pinMap.setView(base, 15);
+      }
+    }
+
+    function initPinPickerMap() {
+      const mapContainer = document.getElementById('pin-map');
+      if (!mapContainer || typeof L === 'undefined') return;
+      const role = localStorage.getItem('relay-role') || 'Barangay Official';
+      const workspace = localStorage.getItem('relay-workspace') || 'Barangay San Miguel';
+      const brgy = role === 'Admin' && workspace === 'City-Wide Administration'
+        ? 'San Miguel'
+        : workspace.replace(/^Barangay\s+/i, '').trim();
+      const center = getBaseCoordsForBarangay(brgy);
+
+      if (!pinMap) {
+        pinMap = L.map('pin-map').setView(center, 15);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '© OpenStreetMap contributors',
+          maxZoom: 19
+        }).addTo(pinMap);
+
+        pinMap.on('click', (e) => {
+          const landmarkSelect = document.getElementById('hh-landmark');
+          if (landmarkSelect) landmarkSelect.value = '';
+          setMapPin(e.latlng.lat, e.latlng.lng, true);
+        });
+      }
+
+      setTimeout(() => {
+        if (pinMap) pinMap.invalidateSize();
+      }, 150);
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
       const role = localStorage.getItem('relay-role') || 'Barangay Official';
       const workspace = localStorage.getItem('relay-workspace') || 'Barangay San Miguel';
@@ -122,7 +285,10 @@
         brgyWrap.style.display = 'flex';
         brgySelect.required = true;
       }
+      initPinPickerMap();
     });
+
+    window.addEventListener('load', initPinPickerMap);
 
     function showFormError(msg) {
       const errEl = document.getElementById('hh-error');
@@ -146,6 +312,7 @@
       const head = document.getElementById('hh-head').value.trim();
       const purokShort = document.getElementById('hh-purok').value.trim();
       const address = document.getElementById('hh-address').value.trim();
+      const landmark = document.getElementById('hh-landmark')?.value || '';
       const memberName = document.getElementById('member-name').value.trim();
       const category = document.getElementById('member-category').value;
       const needs = document.getElementById('member-needs').value.trim() || 'None';
@@ -160,6 +327,10 @@
         barangay: brgyResult.barangay,
         purok: `${purokShort}, Barangay ${brgyResult.barangay}`,
         address,
+        lat: pickedLat,
+        lng: pickedLng,
+        landmark: landmark || null,
+        locationConfirmed: pickedLat !== null && pickedLng !== null ? locationConfirmed : false,
         members: [
           { name: memberName, age: 40, rel: 'Member', category, needs }
         ]
