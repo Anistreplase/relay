@@ -523,24 +523,46 @@ function initNotifications() {
 function generateNotifications() {
   const isRead = sessionStorage.getItem('notifs-read') === 'true';
   const scoped = typeof households !== 'undefined' ? getScopedHouseholds(households) : [];
+  const pendingQueue = scoped.filter(hh => {
+    const status = localStorage.getItem(`record_${hh.id}`) || 'Unverified';
+    return status === 'Unverified' || status === 'Needs Correction';
+  });
   const verified = scoped.filter(hh => (localStorage.getItem(`record_${hh.id}`) || 'Unverified') === 'Verified');
   const listEl = document.getElementById('notif-list');
   const badge = document.getElementById('notif-badge');
 
   if (!listEl) return;
 
-  if (verified.length === 0) {
+  const items = [];
+
+  if (pendingQueue.length > 0) {
+    items.push(`
+      <div style="background: #FFFDF5; border: 1px solid #FCD34D; padding: 12px; border-radius: 6px; cursor: pointer;" onclick="window.location.href='verify.html'">
+        <div style="font-size: 13px; font-weight: 600; color: #92400E; margin-bottom: 4px;">Verification Queue Pending</div>
+        <div style="font-size: 12px; color: #92400E;">${pendingQueue.length} ${pendingQueue.length === 1 ? 'record is' : 'records are'} waiting for review and validation.</div>
+        <div style="font-size: 11px; color: #92400E; margin-top: 8px; text-decoration: underline;">Open verification queue →</div>
+      </div>
+    `);
+  }
+
+  if (verified.length > 0) {
+    items.push(`
+      <div style="background: #FEF3C7; border: 1px solid #FCD34D; padding: 12px; border-radius: 6px; cursor: pointer;" onclick="window.location.href='revalidation.html'">
+        <div style="font-size: 13px; font-weight: 600; color: #92400E; margin-bottom: 4px;">Revalidation Due</div>
+        <div style="font-size: 12px; color: #92400E;">${verified.length} verified ${verified.length === 1 ? 'household is' : 'households are'} due for review.</div>
+        <div style="font-size: 11px; color: #92400E; margin-top: 8px; text-decoration: underline;">Open work queue →</div>
+      </div>
+    `);
+  }
+
+  if (items.length === 0) {
     listEl.innerHTML = `<div style="font-size: 13px; color: var(--text-muted); text-align: center; padding: 20px 0;">You're all caught up!</div>`;
     if (badge) badge.style.display = 'none';
   } else {
-    if (!isRead && badge) badge.style.display = 'block';
-    listEl.innerHTML = `
-      <div style="background: #FEF3C7; border: 1px solid #FCD34D; padding: 12px; border-radius: 6px; cursor: pointer;" onclick="window.location.href='revalidation.html'">
-        <div style="font-size: 13px; font-weight: 600; color: #92400E; margin-bottom: 4px;">Revalidation Due</div>
-        <div style="font-size: 12px; color: #92400E;">${verified.length} verified households are due for review.</div>
-        <div style="font-size: 11px; color: #92400E; margin-top: 8px; text-decoration: underline;">Open work queue →</div>
-      </div>
-    `;
+    listEl.innerHTML = items.join('');
+    if (badge) {
+      badge.style.display = isRead ? 'none' : 'block';
+    }
   }
 }
 
@@ -583,6 +605,7 @@ function saveVerification() {
   const recordId = localStorage.getItem('selected_household');
 
   localStorage.setItem(`record_${recordId}`, selectedStatus);
+  sessionStorage.removeItem('notifs-read');
 
   if (!navigator.onLine) {
     const offlineQueue = JSON.parse(localStorage.getItem('offline_queue')) || [];
