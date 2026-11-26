@@ -481,3 +481,56 @@ button[disabled], .btn[disabled] {
 .sidebar-logo:hover {
   opacity: 0.8;
 }
+
+/* =========================================
+   TOPBAR GLOBAL SEARCH
+   ========================================= */
+.search-bar {
+  position: relative;
+}
+
+.global-search-input {
+  border: none;
+  background: transparent;
+  font-family: inherit;
+  font-size: 13px;
+  color: var(--text-main);
+  width: 100%;
+}
+
+.global-search-input:focus {
+  outline: none;
+}
+
+.global-search-results {
+  display: none;
+  position: absolute;
+  top: calc(100% + 6px);
+  left: 0;
+  right: 0;
+  background: var(--white);
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.12);
+  max-height: 320px;
+  overflow-y: auto;
+  z-index: 1200;
+}
+
+.global-search-item {
+  padding: 10px 14px;
+  border-bottom: 1px solid var(--border);
+  cursor: pointer;
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 8px;
+}
+
+.global-search-item:last-child {
+  border-bottom: none;
+}
+
+.global-search-item:hover {
+  background: var(--cream);
+}
