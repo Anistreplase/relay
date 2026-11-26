@@ -6,18 +6,21 @@
   <title>Relay - Evacuation Tracking</title>
   <link rel="stylesheet" href="css/style.css">
   <style>
-    .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
-    .kpi-card { background: var(--white); border: 1px solid var(--border); border-radius: 8px; padding: 20px; }
-    .kpi-card .kpi-label { font-size: 12px; color: var(--text-muted); font-weight: 600; margin-bottom: 8px; }
-    .kpi-card .kpi-value { font-size: 28px; font-weight: 700; color: var(--text-main); }
-    .update-panel { background: var(--white); border: 1px solid var(--border); border-radius: 8px; padding: 24px; height: fit-content; position: sticky; top: 80px; }
-    .form-field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 16px; }
-    .form-field label { font-size: 12px; font-weight: 600; }
-    .form-field select, .form-field textarea { padding: 10px 12px; border: 1px solid var(--border); border-radius: 6px; font-family: inherit; font-size: 13px; }
+    .evac-summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 20px; }
+    .evac-stat { background: var(--white); border: 1px solid var(--border); border-radius: 8px; padding: 16px 20px; }
+    .evac-stat .label { font-size: 11px; text-transform: uppercase; font-weight: 600; color: var(--text-muted); margin-bottom: 6px; }
+    .evac-stat .num { font-size: 24px; font-weight: 700; color: var(--text-main); }
+    .filters-row { display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
+    .filter-input { background: var(--white); border: 1px solid var(--border); border-radius: 6px; padding: 10px 14px; font-size: 13px; color: var(--text-main); }
+    .filter-input:focus { outline: none; border-color: var(--maroon); }
+    .search-input { flex-grow: 1; min-width: 240px; }
+    .status-select { padding: 7px 10px; border: 1px solid var(--border); border-radius: 6px; font-family: inherit; font-size: 12px; font-weight: 600; background: var(--white); color: var(--text-main); cursor: pointer; }
     .status-at-home { background: #FEE2E2; color: #991B1B; }
     .status-evacuated { background: #D1FAE5; color: #065F46; }
     .status-en-route { background: #FEF3C7; color: #92400E; }
     .status-unaccounted { background: #F3F4F6; color: #374151; }
+    .save-toast { display: none; position: fixed; bottom: 24px; right: 24px; background: #065F46; color: #FFFFFF; padding: 12px 16px; border-radius: 8px; font-size: 13px; font-weight: 600; box-shadow: 0 8px 20px rgba(0,0,0,0.15); z-index: 2000; }
+    @media (max-width: 900px) { .evac-summary-grid { grid-template-columns: repeat(2, 1fr); } }
   </style>
 </head>
 <body>
@@ -38,6 +41,7 @@
       <nav class="sidebar-nav" style="margin-top: 12px;"><a href="settings.html"><span class="nav-icon">⚙</span> Settings</a><a href="help.html"><span class="nav-icon">?</span> Help & support</a></nav>
     </div>
   </aside>
+
   <main class="main-content">
     <header class="topbar">
       <div class="topbar-left">
@@ -49,142 +53,198 @@
         <div class="user-profile"><div class="user-info"><div class="user-name">Loading...</div><div class="user-role">Loading...</div></div></div>
       </div>
     </header>
+
     <div class="page-header">
-      <div><h1>Evacuation tracking</h1><p id="evac-subtitle">Flood preparedness · Puroks 2, 3 & 5</p></div>
+      <div><h1>Evacuation tracking</h1><p>Track household movement and shelter status across verified records.</p></div>
+      <div><a href="preparedness.html" class="btn btn-secondary">Back to preparedness</a></div>
     </div>
+
     <div class="page-body">
-      <div class="kpi-grid">
-        <div class="kpi-card"><div class="kpi-label">Affected households</div><div class="kpi-value" id="kpi-total">0</div></div>
-        <div class="kpi-card"><div class="kpi-label">Evacuated</div><div class="kpi-value" id="kpi-evacuated" style="color: #10B981;">0</div></div>
-        <div class="kpi-card"><div class="kpi-label">Assisted en route</div><div class="kpi-value" id="kpi-enroute" style="color: #F59E0B;">0</div></div>
-        <div class="kpi-card"><div class="kpi-label">Not yet evacuated</div><div class="kpi-value" id="kpi-not-evacuated" style="color: #EF4444;">0</div></div>
+      <div class="evac-summary-grid">
+        <div class="evac-stat"><div class="label">At Home</div><div class="num" id="evac-count-home">0</div></div>
+        <div class="evac-stat"><div class="label">En Route to Evacuation</div><div class="num" id="evac-count-route">0</div></div>
+        <div class="evac-stat"><div class="label">In Evacuation Center</div><div class="num" id="evac-count-center">0</div></div>
+        <div class="evac-stat"><div class="label">Unaccounted For</div><div class="num" id="evac-count-unaccounted">0</div></div>
       </div>
-      <div style="display: grid; grid-template-columns: 2fr 1fr; gap: 24px;">
-        <div class="card" style="padding: 0; overflow: hidden; height: fit-content;">
-          <div class="card-header" style="padding: 20px 24px;"><div class="card-title">Affected households</div></div>
-          <div class="table-container">
-            <table>
-              <thead style="background: #F9FAFB;"><tr><th style="padding-left: 24px;">Household</th><th>Status</th><th>Sync state</th></tr></thead>
-              <tbody id="evac-table-body"></tbody>
-            </table>
-          </div>
-        </div>
-        <div class="update-panel">
-          <h3 style="font-size: 15px; margin-bottom: 4px;">Update evacuation status</h3>
-          <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 20px;">Select a household to update</p>
-          <div class="form-field"><label>Household</label><select id="update-hh-select"></select></div>
-          <div class="form-field"><label>New evacuation status</label><select id="update-status-select"><option>At Home</option><option>Pre-emptively Evacuated</option><option>In Evacuation Center</option><option>Assisted</option><option>Unaccounted For</option></select></div>
-          <div class="form-field"><label>Field note (optional)</label><textarea rows="3" id="update-note" placeholder="e.g. Transport required..."></textarea></div>
-          <button class="btn btn-primary" style="width: 100%; justify-content: center;" onclick="prepareEvacUpdate()">Save update on this device</button>
+
+      <div class="filters-row">
+        <input type="text" id="evac-search" class="filter-input search-input" placeholder="Search by household head, ID, or purok..." oninput="renderEvacuationPage()">
+        <select id="filter-evac-status" class="filter-input" onchange="renderEvacuationPage()">
+          <option value="All">All statuses</option>
+          <option value="At Home">At Home</option>
+          <option value="En Route to Evacuation">En Route to Evacuation</option>
+          <option value="In Evacuation Center">In Evacuation Center</option>
+          <option value="Pre-emptively Evacuated">Pre-emptively Evacuated</option>
+          <option value="Assisted">Assisted</option>
+          <option value="Unaccounted For">Unaccounted For</option>
+        </select>
+      </div>
+
+      <div class="card" style="padding: 0; overflow: hidden;">
+        <div class="table-container">
+          <table>
+            <thead style="background: #F9FAFB;">
+              <tr>
+                <th style="padding-left: 24px;">Household / ID</th>
+                <th>Purok / Assistance Need</th>
+                <th>Current Status</th>
+                <th>Update Status</th>
+              </tr>
+            </thead>
+            <tbody id="evac-table-body"></tbody>
+          </table>
         </div>
       </div>
     </div>
   </main>
 
-  <div id="modal-evac" class="modal-overlay">
-    <div class="modal-box">
-      <div class="modal-eyebrow">Interactive Preview</div>
-      <div class="modal-title">Field update preview</div>
-      <div class="modal-desc" id="evac-modal-desc"></div>
-      <div class="modal-footer">
-        <div class="modal-footer-text">Sample interaction · No real records are changed.</div>
-        <div class="modal-actions">
-          <button class="btn btn-primary" onclick="confirmEvacUpdate()">Return to tracking</button>
-          <button class="btn btn-secondary" onclick="hideModal('modal-evac')">Close</button>
-        </div>
-      </div>
-    </div>
-  </div>
+  <div id="evac-toast" class="save-toast">Evacuation status updated</div>
 
   <script src="js/database.js"></script>
   <script src="js/app.js"></script>
   <script>
-    let affectedHouseholds = [];
-    let pendingEvacId = null;
-    let pendingEvacStatus = null;
+    const EVAC_OPTIONS = [
+      'At Home',
+      'En Route to Evacuation',
+      'In Evacuation Center',
+      'Pre-emptively Evacuated',
+      'Assisted',
+      'Unaccounted For'
+    ];
 
     function escapeEvacHtml(value) {
       return String(value ?? '')
-        .replace(/&/g, '&')
-        .replace(/</g, '<')
-        .replace(/>/g, '>')
-        .replace(/"/g, '"')
-        .replace(/'/g, ''');
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
     }
 
-    document.addEventListener('DOMContentLoaded', () => {
-      const activeBarangay = typeof getActiveBarangayName === 'function' ? getActiveBarangayName() : 'San Miguel';
-      const subtitleEl = document.getElementById('evac-subtitle');
-      if (subtitleEl) {
-        subtitleEl.textContent = activeBarangay
-          ? `${activeBarangay} · Flood preparedness · Puroks 2, 3 & 5`
-          : 'City-Wide · Flood preparedness · Puroks 2, 3 & 5';
+    function readEvacMap() {
+      const saved = JSON.parse(localStorage.getItem('evacuation_statuses') || '{}');
+      return saved && typeof saved === 'object' ? saved : {};
+    }
+
+    function updateEvacuationStatus(hhId, newStatus) {
+      if (!hhId || !newStatus) return;
+      const map = readEvacMap();
+      map[hhId] = newStatus;
+      localStorage.setItem('evacuation_statuses', JSON.stringify(map));
+      localStorage.setItem(`evac_${hhId}`, newStatus);
+
+      if (!navigator.onLine) {
+        const offlineQueue = JSON.parse(localStorage.getItem('offline_queue') || '[]');
+        offlineQueue.push({ id: hhId, type: 'evacuation', status: newStatus, timestamp: Date.now() });
+        localStorage.setItem('offline_queue', JSON.stringify(offlineQueue));
       }
 
-      const all = typeof getScopedHouseholds === 'function'
+      renderEvacuationPage();
+
+      const toast = document.getElementById('evac-toast');
+      if (toast) {
+        toast.textContent = `Updated ${hhId} to "${newStatus}"`;
+        toast.style.display = 'block';
+        clearTimeout(window._evacToastTimer);
+        window._evacToastTimer = setTimeout(() => {
+          toast.style.display = 'none';
+        }, 2200);
+      }
+    }
+
+    function getEvacBadgeClass(status) {
+      if (status === 'In Evacuation Center' || status === 'Pre-emptively Evacuated' || status === 'Assisted') {
+        return 'status-evacuated';
+      }
+      if (status === 'Unaccounted For') {
+        return 'status-unaccounted';
+      }
+      if (status === 'At Home') {
+        return 'status-at-home';
+      }
+      return 'status-en-route';
+    }
+
+    function renderEvacuationPage() {
+      const scoped = typeof getScopedHouseholds === 'function' && typeof households !== 'undefined'
         ? getScopedHouseholds(households)
-        : Object.values(households || {});
-      affectedHouseholds = all.filter(hh => (localStorage.getItem(`record_${hh.id}`) || 'Unverified') === 'Verified');
-      const savedEvacs = JSON.parse(localStorage.getItem('evacuation_statuses')) || {};
+        : Object.values(typeof households !== 'undefined' ? households : {});
 
-      let evacuated = 0, enroute = 0, notEvacuated = 0;
-      let tableHtml = '', selectHtml = '';
+      const verified = scoped.filter(hh => (localStorage.getItem(`record_${hh.id}`) || 'Unverified') === 'Verified');
+      const evacMap = readEvacMap();
 
-      if (affectedHouseholds.length === 0) {
-        tableHtml = '<tr><td colspan="3" style="text-align:center; padding: 20px;">No verified households available.</td></tr>';
-        selectHtml = '<option value="">No households</option>';
-      } else {
-        affectedHouseholds.forEach(hh => {
-          const status = savedEvacs[hh.id] || 'At Home';
-          if (status === 'Assisted' || status === 'In Evacuation Center' || status === 'Pre-emptively Evacuated') evacuated++;
-          else if (status === 'Unaccounted For') notEvacuated++;
-          else enroute++;
+      let homeCount = 0;
+      let routeCount = 0;
+      let centerCount = 0;
+      let unaccountedCount = 0;
 
-          let pillClass = 'status-at-home';
-          if (status === 'Assisted' || status === 'In Evacuation Center' || status === 'Pre-emptively Evacuated') pillClass = 'status-evacuated';
-          if (status === 'Unaccounted For') pillClass = 'status-unaccounted';
+      const rowsData = verified.map(hh => {
+        const status = evacMap[hh.id] || localStorage.getItem(`evac_${hh.id}`) || 'At Home';
+        if (status === 'At Home') homeCount++;
+        else if (status === 'En Route to Evacuation') routeCount++;
+        else if (status === 'In Evacuation Center' || status === 'Pre-emptively Evacuated' || status === 'Assisted') centerCount++;
+        else if (status === 'Unaccounted For') unaccountedCount++;
 
-          const purokShort = String(hh.purok || '').split(',')[0];
-          tableHtml += `<tr><td style="padding-left: 24px;"><strong>${escapeEvacHtml(hh.head)} household</strong><br><span style="color:var(--text-muted); font-size:11px;">${escapeEvacHtml(hh.id)} · ${escapeEvacHtml(purokShort)}</span></td><td><span class="pill ${pillClass}">${escapeEvacHtml(status)}</span></td><td><span style="font-size: 11px; color: var(--text-muted);">Synced</span></td></tr>`;
-          selectHtml += `<option value="${escapeEvacHtml(hh.id)}">${escapeEvacHtml(hh.head)} (${escapeEvacHtml(hh.id)})</option>`;
-        });
+        const firstMember = Array.isArray(hh.members) && hh.members[0] ? hh.members[0] : { needs: 'None reported' };
+        const needText = firstMember.needs && firstMember.needs !== 'None' ? firstMember.needs : 'None reported';
+        return { ...hh, status, needText };
+      });
+
+      document.getElementById('evac-count-home').textContent = homeCount;
+      document.getElementById('evac-count-route').textContent = routeCount;
+      document.getElementById('evac-count-center').textContent = centerCount;
+      document.getElementById('evac-count-unaccounted').textContent = unaccountedCount;
+
+      const query = (document.getElementById('evac-search')?.value || '').trim().toLowerCase();
+      const statusFilter = document.getElementById('filter-evac-status')?.value || 'All';
+
+      const filtered = rowsData.filter(hh => {
+        const matchesStatus = statusFilter === 'All' || hh.status === statusFilter;
+        const matchesQuery =
+          !query ||
+          String(hh.head || '').toLowerCase().includes(query) ||
+          String(hh.id || '').toLowerCase().includes(query) ||
+          String(hh.purok || '').toLowerCase().includes(query) ||
+          String(hh.needText || '').toLowerCase().includes(query);
+        return matchesStatus && matchesQuery;
+      });
+
+      const tbody = document.getElementById('evac-table-body');
+      if (!tbody) return;
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding: 24px; color: var(--text-muted);">No verified households match the selected filter.</td></tr>';
+        return;
       }
 
-      document.getElementById('evac-table-body').innerHTML = tableHtml;
-      document.getElementById('update-hh-select').innerHTML = selectHtml;
-      document.getElementById('kpi-total').textContent = affectedHouseholds.length;
-      document.getElementById('kpi-evacuated').textContent = evacuated;
-      document.getElementById('kpi-enroute').textContent = enroute;
-      document.getElementById('kpi-not-evacuated').textContent = notEvacuated;
-    });
+      tbody.innerHTML = filtered.map(hh => {
+        const optionsHtml = EVAC_OPTIONS.map(opt =>
+          `<option value="${escapeEvacHtml(opt)}" ${hh.status === opt ? 'selected' : ''}>${escapeEvacHtml(opt)}</option>`
+        ).join('');
 
-    function prepareEvacUpdate() {
-      pendingEvacId = document.getElementById('update-hh-select').value;
-      pendingEvacStatus = document.getElementById('update-status-select').value;
-
-      if (!pendingEvacId) return;
-
-      const selectedHh = affectedHouseholds.find(h => h.id === pendingEvacId);
-      const headName = selectedHh ? selectedHh.head : pendingEvacId;
-
-      document.getElementById('evac-modal-desc').innerHTML = `
-        <strong>${escapeEvacHtml(headName)} household (${escapeEvacHtml(pendingEvacId)})</strong> would be marked as <strong>${escapeEvacHtml(pendingEvacStatus)}</strong> on this device.
-        <br><br>
-        The update would wait on this device until a connection returns.
-      `;
-
-      showModal('modal-evac');
+        return `
+          <tr>
+            <td style="padding-left: 24px;">
+              <strong>${escapeEvacHtml(hh.head)} household</strong><br>
+              <span style="font-size: 11px; color: var(--text-muted);">${escapeEvacHtml(hh.id)}</span>
+            </td>
+            <td>
+              ${escapeEvacHtml(hh.purok || '')}<br>
+              <span style="font-size: 11px; color: var(--text-muted);">${escapeEvacHtml(hh.needText)}</span>
+            </td>
+            <td><span class="pill ${getEvacBadgeClass(hh.status)}">${escapeEvacHtml(hh.status)}</span></td>
+            <td>
+              <select class="status-select" onchange="updateEvacuationStatus('${escapeEvacHtml(hh.id)}', this.value)">
+                ${optionsHtml}
+              </select>
+            </td>
+          </tr>
+        `;
+      }).join('');
     }
 
-    function confirmEvacUpdate() {
-      if (!pendingEvacId) return;
-      const savedEvacs = JSON.parse(localStorage.getItem('evacuation_statuses')) || {};
-      savedEvacs[pendingEvacId] = pendingEvacStatus;
-      localStorage.setItem('evacuation_statuses', JSON.stringify(savedEvacs));
-
-      hideModal('modal-evac');
-      window.location.reload();
-    }
+    document.addEventListener('DOMContentLoaded', renderEvacuationPage);
+    window.addEventListener('storage', renderEvacuationPage);
   </script>
 </body>
 </html>
