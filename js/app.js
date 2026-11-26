@@ -92,12 +92,10 @@ function getActiveBarangayName() {
   return workspace.replace(/^Barangay\s+/i, '').trim();
 }
 
-function getScopedHouseholds(householdsObj) {
-  const activeBarangay = getActiveBarangayName();
+function getAllActiveHouseholds(householdsObj) {
   const custom = JSON.parse(localStorage.getItem('custom_households')) || {};
   const deleted = JSON.parse(localStorage.getItem('deleted_households')) || {};
-
-  const combined = [
+  return [
     ...Object.values(householdsObj || {}),
     ...Object.values(custom)
   ]
@@ -106,11 +104,51 @@ function getScopedHouseholds(householdsObj) {
       ...hh,
       barangay: hh.barangay || 'San Miguel'
     }));
+}
 
+function getScopedHouseholds(householdsObj) {
+  const activeBarangay = getActiveBarangayName();
+  const combined = getAllActiveHouseholds(householdsObj);
   if (!activeBarangay) {
     return combined;
   }
   return combined.filter(hh => String(hh.barangay || '').toLowerCase() === activeBarangay.toLowerCase());
+}
+
+function normalizeDupKeyPart(val) {
+  return String(val || '')
+    .toLowerCase()
+    .replace(/\b(household|barangay|brgy\.?|purok)\b/gi, '')
+    .replace(/[^a-z0-9]/g, '')
+    .trim();
+}
+
+function findDuplicateHouseholds(targetHh) {
+  if (!targetHh || !targetHh.id) return [];
+  const pool = typeof households !== 'undefined'
+    ? getAllActiveHouseholds(households)
+    : getAllActiveHouseholds({});
+
+  const targetHead = normalizeDupKeyPart(targetHh.head);
+  const targetBrgy = normalizeDupKeyPart(targetHh.barangay);
+  const targetPurok = normalizeDupKeyPart(targetHh.purok);
+  const targetAddr = normalizeDupKeyPart(targetHh.address);
+
+  return pool.filter(other => {
+    if (!other || other.id === targetHh.id) return false;
+    const otherHead = normalizeDupKeyPart(other.head);
+    const otherBrgy = normalizeDupKeyPart(other.barangay);
+    const otherPurok = normalizeDupKeyPart(other.purok);
+    const otherAddr = normalizeDupKeyPart(other.address);
+
+    if (!targetHead || otherHead !== targetHead) return false;
+    const sameBrgy = !targetBrgy || !otherBrgy || otherBrgy === targetBrgy;
+    const sameLocation =
+      (targetAddr && otherAddr && otherAddr === targetAddr) ||
+      (targetPurok && otherPurok && otherPurok === targetPurok);
+
+    return sameBrgy && sameLocation;
+  });
 }
 
 function canDeleteHouseholdRecord(hh) {
@@ -130,11 +168,12 @@ function ensureDeleteRecordModal() {
   const wrapper = document.createElement('div');
   wrapper.innerHTML = `
     <div id="modal-delete-record" class="modal-overlay">
-      <div class="modal-box" style="max-width: 460px;">
-        <div class="modal-eyebrow">Duplicate Record Removal</div>
-        <div class="modal-title">Delete household record?</div>
+      <div class="modal-box" style="max-width: 500px;">
+        <div class="modal-eyebrow" id="modal-delete-eyebrow">Duplicate Check & Removal</div>
+        <div class="modal-title" id="modal-delete-title">Delete household record?</div>
+        <div id="modal-delete-dup-warning" style="display:none; background:#FEF3C7; border:1px solid #F59E0B; color:#92400E; padding:10px 12px; border-radius:6px; font-size:12px; margin-bottom:12px; line-height:1.45;"></div>
         <div class="modal-desc" id="modal-delete-record-desc">
-          Remove this duplicate household record? This cannot be undone.
+          Remove this household record? This cannot be undone.
         </div>
         <div class="modal-footer">
           <div class="modal-footer-text">Action applies to your active workspace.</div>
@@ -214,10 +253,34 @@ function deleteHouseholdRecord(hhId, onAfterDelete) {
   pendingDeleteHouseholdId = hhId;
   pendingDeleteCallback = typeof onAfterDelete === 'function' ? onAfterDelete : null;
 
-  const headLabel = recordObj && recordObj.head ? `${recordObj.head} household (${hhId})` : hhId;
+  const duplicates = recordObj ? findDuplicateHouseholds(recordObj) : [];
+  const eyebrowEl = document.getElementById('modal-delete-eyebrow');
+  const titleEl = document.getElementById('modal-delete-title');
+  const warnEl = document.getElementById('modal-delete-dup-warning');
   const descEl = document.getElementById('modal-delete-record-desc');
+  const headLabel = recordObj && recordObj.head ? `${recordObj.head} household (${hhId})` : hhId;
+
+  if (duplicates.length > 0) {
+    const dupSummary = duplicates
+      .map(d => `${d.head || 'Household'} (${d.id} · ${d.purok || d.barangay || ''})`)
+      .join(', ');
+    if (eyebrowEl) eyebrowEl.textContent = 'Duplicate Record Warning';
+    if (titleEl) titleEl.textContent = 'Potential duplicate detected';
+    if (warnEl) {
+      warnEl.style.display = 'block';
+      warnEl.innerHTML = `<strong>Warning:</strong> Matching record(s) found: ${escapeSearchHtml(dupSummary)}. Confirm below to remove the duplicate entry.`;
+    }
+  } else {
+    if (eyebrowEl) eyebrowEl.textContent = 'Duplicate Check & Removal';
+    if (titleEl) titleEl.textContent = 'Delete household record?';
+    if (warnEl) {
+      warnEl.style.display = 'none';
+      warnEl.innerHTML = '';
+    }
+  }
+
   if (descEl) {
-    descEl.textContent = `Remove duplicate household record ${headLabel}? This action cannot be undone.`;
+    descEl.textContent = `Remove ${headLabel}? This action cannot be undone.`;
   }
 
   showModal('modal-delete-record');
