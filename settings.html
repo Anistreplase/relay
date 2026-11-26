@@ -7,28 +7,21 @@
   <link rel="stylesheet" href="css/style.css">
   <style>
     .settings-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 24px; }
-    .card { background: var(--white); border: 1px solid var(--border); border-radius: 8px; padding: 24px; margin-bottom: 24px; }
-    .card-title { font-size: 16px; font-weight: 600; margin-bottom: 4px; }
-    .card-subtitle { font-size: 13px; color: var(--text-muted); margin-bottom: 20px; }
-    .detail-row { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
-    .detail-row:last-child { border-bottom: none; }
-    .detail-label { color: var(--text-muted); width: 40%; text-transform: uppercase; font-size: 11px; letter-spacing: 0.05em; }
-    .detail-value { font-weight: 600; width: 60%; }
+    .settings-section { background: var(--white); border: 1px solid var(--border); border-radius: 8px; padding: 24px; margin-bottom: 24px; }
+    .settings-section h3 { font-size: 16px; margin-bottom: 4px; }
+    .settings-section p.desc { font-size: 12px; color: var(--text-muted); margin-bottom: 20px; }
+    .info-row { display: grid; grid-template-columns: 1fr 1fr; gap: 24px; padding: 12px 0; border-bottom: 1px solid var(--border); }
+    .info-row:last-child { border-bottom: none; padding-bottom: 0; }
+    .info-item .label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; font-weight: 600; margin-bottom: 4px; }
+    .info-item .value { font-size: 13px; color: var(--text-main); font-weight: 500; }
     .toggle-switch { position: relative; display: inline-block; width: 44px; height: 24px; }
     .toggle-switch input { opacity: 0; width: 0; height: 0; }
-    .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #ccc; transition: .4s; border-radius: 24px; }
-    .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .4s; border-radius: 50%; }
-    input:checked + .slider { background-color: #10B981; }
+    .slider { position: absolute; cursor: pointer; top: 0; left: 0; right: 0; bottom: 0; background-color: #D1D5DB; transition: .3s; border-radius: 24px; }
+    .slider:before { position: absolute; content: ""; height: 18px; width: 18px; left: 3px; bottom: 3px; background-color: white; transition: .3s; border-radius: 50%; }
+    input:checked + .slider { background-color: var(--maroon); }
     input:checked + .slider:before { transform: translateX(20px); }
-    .reminder-row { display: flex; justify-content: space-between; align-items: center; padding: 16px 0; border-bottom: 1px solid var(--border); }
-    .reminder-row:last-child { border-bottom: none; }
-    .session-item { display: flex; justify-content: space-between; align-items: flex-start; padding: 12px 0; border-bottom: 1px solid var(--border); }
-    .session-item:last-child { border-bottom: none; }
-    .session-icon { font-size: 20px; margin-right: 12px; }
-    .session-info h4 { font-size: 13px; font-weight: 600; margin-bottom: 2px; }
-    .session-info p { font-size: 11px; color: var(--text-muted); }
-    .btn-terminate { background: none; border: none; color: var(--red); font-size: 12px; font-weight: 600; cursor: pointer; padding: 4px; }
-    .current-badge { background: #D1FAE5; color: #065F46; font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 4px; display: inline-block; margin-left: 6px; }
+    .warning-box { background: #FFFDF5; border: 1px solid #FCD34D; border-radius: 8px; padding: 20px; margin-bottom: 24px; }
+    .security-item { display: flex; justify-content: space-between; align-items: center; gap: 12px; padding-top: 8px; }
   </style>
 </head>
 <body>
@@ -46,11 +39,7 @@
     </nav>
     <div class="sidebar-footer">
       <div class="status-card"><div class="status-title"><div class="status-dot"></div> System operational</div>Last synced at 09:42<br>Household records up to date</div>
-      <nav class="sidebar-nav" style="margin-top: 12px;">
-        <a href="users.html" id="nav-users" style="display: none;"><span class="nav-icon">👤</span> Manage Users</a>
-        <a href="settings.html" class="active"><span class="nav-icon">⚙</span> Settings</a>
-        <a href="help.html"><span class="nav-icon">?</span> Help & support</a>
-      </nav>
+      <nav class="sidebar-nav" style="margin-top: 12px;"><a href="settings.html" class="active"><span class="nav-icon">⚙</span> Settings</a><a href="help.html"><span class="nav-icon">?</span> Help & support</a></nav>
     </div>
   </aside>
   <main class="main-content">
@@ -60,178 +49,143 @@
         <div class="search-bar"><span>🔍</span> Search households, puroks, records...</div>
       </div>
       <div class="topbar-right">
-        <span class="demo-badge">DEMO WORKSPACE</span><span>🔔</span>
+        <span>🔔</span>
         <div class="user-profile"><div class="user-info"><div class="user-name">Loading...</div><div class="user-role">Loading...</div></div></div>
       </div>
     </header>
     <div class="page-header">
       <div><h1>Settings</h1><p>Your account, workspace preferences, and session controls.</p></div>
-      <div><a href="dashboard.html" class="btn btn-secondary">Back to dashboard</a></div>
+      <div><button class="btn btn-secondary" onclick="window.location.href='dashboard.html'">Back to dashboard</button></div>
     </div>
     <div class="page-body">
       <div class="settings-grid">
         <div>
-          <div class="card">
-            <div class="card-title">Account & workspace</div>
-            <div class="card-subtitle">Your access is managed by the system administrator.</div>
-            <div class="detail-row"><div class="detail-label">Account role</div><div class="detail-value" id="setting-role">Loading...</div></div>
-            <div class="detail-row"><div class="detail-label">Workspace</div><div class="detail-value" id="setting-workspace">Loading...</div></div>
-            <div class="detail-row"><div class="detail-label">Responsibilities</div><div class="detail-value" id="setting-responsibilities">Loading...</div></div>
-            <div class="detail-row"><div class="detail-label">Session Location</div><div class="detail-value" id="setting-location">Detecting location...</div></div>
-          </div>
-          
-          <div class="card">
-            <div class="card-title">Notifications & reminders</div>
-            <div class="card-subtitle" style="margin-bottom: 0;">Manage how you receive updates.</div>
-            <div class="reminder-row">
-              <div><div style="font-size: 13px; font-weight: 600;">Revalidation reminders</div><div style="font-size: 12px; color: var(--text-muted); margin-top: 4px;">Periodic prompts for household records that are due.</div></div>
-              <label class="toggle-switch"><input type="checkbox" checked><span class="slider"></span></label>
+          <div class="settings-section">
+            <h3>Account & workspace</h3>
+            <p class="desc">Your access is managed by the system administrator.</p>
+            <div class="info-row">
+              <div class="info-item"><div class="label">Account role</div><div class="value" id="set-role">Barangay Official</div></div>
+              <div class="info-item"><div class="label">Workspace</div><div class="value" id="set-workspace">Barangay San Miguel</div></div>
+            </div>
+            <div class="info-row">
+              <div class="info-item"><div class="label">Responsibilities</div><div class="value" id="set-resp">Record review & coordination</div></div>
+              <div class="info-item"><div class="label">Session location</div><div class="value">Iligan City, Philippines (Verified Device)</div></div>
             </div>
           </div>
-          
-          <div class="card">
-            <div class="card-title">Session</div>
-            <div class="card-subtitle">Log out of this workspace.</div>
-            <p style="font-size: 13px; color: var(--text-muted); margin-bottom: 16px;">Return to the login screen on this device. Check that pending field updates are synchronized before ending a live session.</p>
-            <button class="btn btn-primary" onclick="showModal('modal-logout')" style="padding: 10px 24px;">Log out</button>
-          </div>
-        </div>
-        
-        <div>
-          <div class="card">
-            <div class="card-title">Recent security activity</div>
-            <div class="card-subtitle">If you see a device you don't recognize, log it out immediately.</div>
-            <div id="session-list"></div>
+
+          <div class="settings-section">
+            <h3>Notifications & reminders</h3>
+            <p class="desc">Manage how you receive updates.</p>
+            <div style="display: flex; justify-content: space-between; align-items: center; padding: 12px 0;">
+              <div>
+                <div style="font-size: 13px; font-weight: 600;">Revalidation reminders</div>
+                <div style="font-size: 12px; color: var(--text-muted);">Periodic prompts for household records that are due.</div>
+              </div>
+              <div style="display: flex; align-items: center; gap: 12px;">
+                <label class="toggle-switch"><input type="checkbox" id="reminder-toggle" checked onchange="toggleReminder()"><span class="slider"></span></label>
+              </div>
+            </div>
           </div>
 
-          <div class="card" style="background: #FFFDF5; border-color: #FCD34D;">
-            <div class="card-title" style="color: #92400E;">Your information, protected</div>
-            <p style="font-size: 13px; color: #92400E; margin: 12px 0; font-weight: 600;">Access follows your assigned role.</p>
-            <p style="font-size: 12px; color: #92400E; line-height: 1.5;">Household information is available only within the permissions granted to your account.</p>
+          <div class="settings-section">
+            <h3>Session</h3>
+            <p class="desc">Log out of this workspace.</p>
+            <div style="display: flex; justify-content: space-between; align-items: center; padding-top: 8px;">
+              <div>
+                <div style="font-size: 13px; font-weight: 600;">Return to the login screen on this device.</div>
+                <div style="font-size: 12px; color: var(--text-muted);" id="pending-sync-msg">Check that pending field updates are synchronized before ending a live session.</div>
+              </div>
+              <button class="btn btn-primary" onclick="logout()">Log out</button>
+            </div>
+          </div>
+        </div>
+
+        <div>
+          <div class="settings-section">
+            <h3>Recent security activity</h3>
+            <p class="desc">If you see a device you don't recognize, log it out immediately.</p>
+            <div class="security-item">
+              <div>
+                <div style="font-size: 13px; font-weight: 600;">Chrome on Windows</div>
+                <div style="font-size: 11px; color: var(--text-muted);">Detecting location... · Nov 26, 12:28 PM</div>
+              </div>
+              <button type="button" class="btn btn-secondary" style="padding: 4px 10px; font-size: 12px; color: #991B1B; border: none; background: transparent;" onclick="logout()">Log out</button>
+            </div>
+          </div>
+
+          <div class="warning-box">
+            <h4 style="font-size: 14px; font-weight: 600; color: #92400E; margin-bottom: 12px;">Your information, protected</h4>
+            <div style="font-size: 12px; color: #92400E; font-weight: 600; margin-bottom: 4px;">Access follows your assigned role.</div>
+            <p style="font-size: 12px; color: #92400E; line-height: 1.5; margin-bottom: 0;">Household information is available only within the permissions granted to your account.</p>
           </div>
         </div>
       </div>
     </div>
   </main>
-
-  <div id="modal-logout" class="modal-overlay">
-    <div class="modal-box">
-      <div class="modal-eyebrow">Interactive Preview</div>
-      <div class="modal-title">Sign out of Relay?</div>
-      <div class="modal-desc">You are about to end your session. Make sure any field updates made while offline have synced before leaving this device.</div>
-      <div class="modal-footer">
-        <div class="modal-footer-text">Sample interaction. No real data is changed.</div>
-        <div class="modal-actions">
-          <button class="btn btn-secondary" onclick="hideModal('modal-logout')">Cancel</button>
-          <button class="btn btn-primary" onclick="confirmLogout()">Sign out</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
+  <script src="js/database.js"></script>
+  <script src="js/app.js"></script>
   <script>
-    let sessionId = sessionStorage.getItem('relay-session-id');
-    if (!sessionId) {
-      sessionId = 'sess_' + Math.random().toString(36).substr(2, 9);
-      sessionStorage.setItem('relay-session-id', sessionId);
+    function syncSettingsAccountDetails() {
+      const role = localStorage.getItem('relay-role') || 'Barangay Official';
+      const userEmail = (localStorage.getItem('relay-user') || '').trim().toLowerCase();
+      let workspace = localStorage.getItem('relay-workspace') || 'Barangay San Miguel';
+
+      if (typeof inferWorkspaceFromEmail === 'function') {
+        const inferred = inferWorkspaceFromEmail(userEmail);
+        if (role !== 'Admin' && inferred) {
+          workspace = inferred;
+          localStorage.setItem('relay-workspace', workspace);
+        }
+      }
+
+      document.getElementById('set-role').textContent = role;
+      document.getElementById('set-workspace').textContent = workspace;
+
+      if (role === 'Admin') {
+        document.getElementById('set-resp').textContent = 'Full system access & administration';
+      } else if (role === 'Purok Officer') {
+        document.getElementById('set-resp').textContent = 'Data collection & updates';
+      } else {
+        document.getElementById('set-resp').textContent = 'Record review & coordination';
+      }
+
+      const reminderEnabled = localStorage.getItem('relay-revalidation-reminders') !== 'false';
+      const toggle = document.getElementById('reminder-toggle');
+      if (toggle) {
+        toggle.checked = reminderEnabled;
+      }
+
+      const queue = JSON.parse(localStorage.getItem('offline_queue')) || [];
+      const pendingMsg = document.getElementById('pending-sync-msg');
+      if (pendingMsg) {
+        pendingMsg.textContent = queue.length > 0
+          ? `Check that ${queue.length} pending field updates are synchronized before ending a live session.`
+          : 'Check that pending field updates are synchronized before ending a live session.';
+      }
     }
 
     document.addEventListener('DOMContentLoaded', () => {
-      const role = localStorage.getItem('relay-role') || 'Barangay Official';
-      
-      const roleEl = document.getElementById('setting-role');
-      const workspaceEl = document.getElementById('setting-workspace');
-      const respEl = document.getElementById('setting-responsibilities');
-      const locEl = document.getElementById('setting-location');
-
-      if (role === 'Admin') {
-        roleEl.textContent = 'System Administrator';
-        workspaceEl.textContent = 'City-Wide Administration';
-        respEl.textContent = 'Full system access & user management';
-      } else if (role === 'Purok Officer') {
-        roleEl.textContent = 'Purok Officer';
-        workspaceEl.textContent = 'Barangay San Miguel';
-        respEl.textContent = 'Data collection & updates';
-      } else {
-        roleEl.textContent = 'Barangay DRRM Official';
-        workspaceEl.textContent = 'Barangay San Miguel';
-        respEl.textContent = 'Review & coordination';
-      }
-
-      // Improved Location simulation
-      setTimeout(() => {
-        const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
-        const language = navigator.language;
-        if (timezone.includes('Manila') || language.includes('PH')) {
-          locEl.textContent = 'Iligan City, Philippines (Verified Device)';
-        } else {
-          locEl.textContent = timezone.replace('_', ' ') + ' (Current Device)';
-        }
-      }, 600);
-
-      loadSessions();
+      syncSettingsAccountDetails();
+      setTimeout(syncSettingsAccountDetails, 0);
     });
 
-    function registerSession() {
-      let sessions = JSON.parse(localStorage.getItem('relay-active-sessions')) || {};
-      if (!sessions[sessionId]) {
-        const browserInfo = navigator.userAgent.includes('Chrome') ? 'Chrome on ' : navigator.userAgent.includes('Firefox') ? 'Firefox on ' : 'Browser on ';
-        const osInfo = navigator.userAgent.includes('Windows') ? 'Windows' : navigator.userAgent.includes('Mac') ? 'Mac' : 'Unknown OS';
-        sessions[sessionId] = {
-          device: browserInfo + osInfo,
-          location: document.getElementById('setting-location').textContent || 'Iligan City, Philippines',
-          time: new Date().toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
-        };
-        localStorage.setItem('relay-active-sessions', JSON.stringify(sessions));
-      }
-      loadSessions();
+    function toggleReminder() {
+      const toggle = document.getElementById('reminder-toggle');
+      const enabled = !!(toggle && toggle.checked);
+      localStorage.setItem('relay-revalidation-reminders', String(enabled));
     }
 
-    function loadSessions() {
-      let sessions = JSON.parse(localStorage.getItem('relay-active-sessions')) || {};
-      const listEl = document.getElementById('session-list');
-      listEl.innerHTML = '';
-
-      if (Object.keys(sessions).length === 0) {
-         registerSession();
-         return;
+    function logout() {
+      const queue = JSON.parse(localStorage.getItem('offline_queue')) || [];
+      if (queue.length > 0) {
+        alert(`You have ${queue.length} unsynchronized changes. Please sync before logging out.`);
+        return;
       }
-
-      Object.keys(sessions).forEach(key => {
-        const sess = sessions[key];
-        const isCurrent = key === sessionId;
-        listEl.innerHTML += `
-          <div class="session-item">
-            <div style="display: flex;">
-              <div class="session-icon">💻</div>
-              <div class="session-info">
-                <h4>${sess.device} ${isCurrent ? '<span class="current-badge">Current session</span>' : ''}</h4>
-                <p>📍 ${sess.location} · 🕒 ${sess.time}</p>
-              </div>
-            </div>
-            ${!isCurrent ? `<button class="btn-terminate" onclick="terminateSession('${key}')">Log out</button>` : ''}
-          </div>
-        `;
-      });
-    }
-
-    function terminateSession(idToTerminate) {
-      let sessions = JSON.parse(localStorage.getItem('relay-active-sessions')) || {};
-      delete sessions[idToTerminate];
-      localStorage.setItem('relay-active-sessions', JSON.stringify(sessions));
-      if (idToTerminate === sessionId) {
-        localStorage.removeItem('relay-user');
-        localStorage.removeItem('relay-role');
-        window.location.href = 'index.html';
-      } else {
-        loadSessions();
-      }
-    }
-
-    function confirmLogout() {
-      terminateSession(sessionId);
+      localStorage.removeItem('relay-user');
+      localStorage.removeItem('relay-role');
+      localStorage.removeItem('relay-workspace');
+      window.location.href = 'index.html';
     }
   </script>
-  <script src="js/app.js"></script>
 </body>
 </html>
