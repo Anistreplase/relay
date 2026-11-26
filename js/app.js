@@ -13,7 +13,6 @@ document.addEventListener('DOMContentLoaded', () => {
   initNetworkListener();
   initNotifications();
 
-  // 1. Make the Sidebar Logo clickable to return to Dashboard
   const sidebarLogo = document.querySelector('.sidebar-logo');
   if (sidebarLogo) {
     sidebarLogo.style.cursor = 'pointer';
@@ -22,7 +21,6 @@ document.addEventListener('DOMContentLoaded', () => {
     });
   }
 
-  // 2. Global Button Listeners
   document.body.addEventListener('click', (e) => {
     if (e.target.closest('.btn-add-action')) window.location.href = 'add-household.html';
     
@@ -46,7 +44,6 @@ document.addEventListener('DOMContentLoaded', () => {
     if (e.target.closest('.page-btn')) alert('Page changed! (Simulated pagination)');
   });
 
-  // Close notification dropdown if clicking outside
   document.addEventListener('click', (e) => {
     const dropdown = document.getElementById('notif-dropdown');
     if (dropdown && dropdown.style.display === 'block' && !e.target.closest('#notif-container')) {
@@ -56,10 +53,51 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // =========================================
+// LOGIN LOGIC (SMART EMAIL PARSER)
+// =========================================
+function simulateLogin(event) {
+  event.preventDefault();
+  const email = document.getElementById('email').value.toLowerCase();
+  
+  if (!email) return;
+
+  let assignedRole = 'Barangay Official';
+  let assignedWorkspace = 'Barangay San Miguel'; // Default
+
+  // 1. Determine Role
+  if (email.includes('admin') || email.includes('citydrrm')) {
+    assignedRole = 'Admin';
+    assignedWorkspace = 'City-Wide Administration';
+  } else if (email.includes('purok')) {
+    assignedRole = 'Purok Officer';
+  } else {
+    assignedRole = 'Barangay Official';
+  }
+
+  // 2. Determine Barangay Workspace based on email domain
+  if (email.includes('tibanga')) {
+    assignedWorkspace = 'Barangay Tibanga';
+  } else if (email.includes('saray')) {
+    assignedWorkspace = 'Barangay Saray';
+  } else if (email.includes('sanmiguel')) {
+    assignedWorkspace = 'Barangay San Miguel';
+  }
+
+  // Save session data
+  localStorage.setItem('relay-user', email);
+  localStorage.setItem('relay-role', assignedRole);
+  localStorage.setItem('relay-workspace', assignedWorkspace);
+  
+  window.location.href = 'dashboard.html';
+}
+
+// =========================================
 // USER PROFILE & ROLE PERMISSIONS
 // =========================================
 function updateUserProfile() {
   const savedRole = localStorage.getItem('relay-role') || 'Barangay Official';
+  const savedWorkspace = localStorage.getItem('relay-workspace') || 'Barangay San Miguel';
+  
   const nameEl = document.querySelector('.user-name');
   const roleEl = document.querySelector('.user-role');
   const workspaceSelector = document.getElementById('workspace-selector');
@@ -80,26 +118,17 @@ function updateUserProfile() {
         workspaceSelector.style.cursor = 'pointer';
       }
       
-      // Show the Manage Users link in the sidebar
       const navUsers = document.getElementById('nav-users');
       if (navUsers) navUsers.style.display = 'flex';
 
-    } else if (savedRole === 'Purok Officer') {
-      nameEl.textContent = 'Purok Officer'; 
-      roleEl.textContent = 'Data collection & updates';
-      
-      if (workspaceSelector) {
-        workspaceSelector.innerHTML = `<option>Barangay San Miguel</option>`;
-        workspaceSelector.disabled = true;
-        workspaceSelector.style.cursor = 'not-allowed';
-      }
-      
     } else {
-      nameEl.textContent = 'Barangay Official'; 
-      roleEl.textContent = 'Review & coordination';
+      // Barangay Official or Purok Officer
+      nameEl.textContent = savedRole === 'Purok Officer' ? 'Purok Officer' : 'Barangay Official'; 
+      roleEl.textContent = savedRole === 'Purok Officer' ? 'Data collection & updates' : 'Review & coordination';
       
       if (workspaceSelector) {
-        workspaceSelector.innerHTML = `<option>Barangay San Miguel</option>`;
+        // Lock the selector to their specific barangay
+        workspaceSelector.innerHTML = `<option>${savedWorkspace}</option>`;
         workspaceSelector.disabled = true;
         workspaceSelector.style.cursor = 'not-allowed';
       }
