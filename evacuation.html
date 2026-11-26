@@ -45,12 +45,12 @@
         <div class="search-bar"><span>🔍</span> Search households, puroks, records...</div>
       </div>
       <div class="topbar-right">
-        <span class="demo-badge">DEMO WORKSPACE</span><span>🔔</span>
+        <span>🔔</span>
         <div class="user-profile"><div class="user-info"><div class="user-name">Loading...</div><div class="user-role">Loading...</div></div></div>
       </div>
     </header>
     <div class="page-header">
-      <div><h1>Evacuation tracking</h1><p>Flood preparedness · Puroks 2, 3 & 5</p></div>
+      <div><h1>Evacuation tracking</h1><p id="evac-subtitle">Flood preparedness · Puroks 2, 3 & 5</p></div>
     </div>
     <div class="page-body">
       <div class="kpi-grid">
@@ -75,22 +75,17 @@
           <div class="form-field"><label>Household</label><select id="update-hh-select"></select></div>
           <div class="form-field"><label>New evacuation status</label><select id="update-status-select"><option>At Home</option><option>Pre-emptively Evacuated</option><option>In Evacuation Center</option><option>Assisted</option><option>Unaccounted For</option></select></div>
           <div class="form-field"><label>Field note (optional)</label><textarea rows="3" id="update-note" placeholder="e.g. Transport required..."></textarea></div>
-          
-          <!-- THIS BUTTON NOW OPENS THE MODAL -->
           <button class="btn btn-primary" style="width: 100%; justify-content: center;" onclick="prepareEvacUpdate()">Save update on this device</button>
         </div>
       </div>
     </div>
   </main>
 
-  <!-- CUSTOM MODAL: FIELD UPDATE PREVIEW -->
   <div id="modal-evac" class="modal-overlay">
     <div class="modal-box">
       <div class="modal-eyebrow">Interactive Preview</div>
       <div class="modal-title">Field update preview</div>
-      <div class="modal-desc" id="evac-modal-desc">
-        <!-- Injected by JS -->
-      </div>
+      <div class="modal-desc" id="evac-modal-desc"></div>
       <div class="modal-footer">
         <div class="modal-footer-text">Sample interaction · No real records are changed.</div>
         <div class="modal-actions">
@@ -102,39 +97,56 @@
   </div>
 
   <script src="js/database.js"></script>
+  <script src="js/app.js"></script>
   <script>
     let affectedHouseholds = [];
     let pendingEvacId = null;
     let pendingEvacStatus = null;
 
+    function escapeEvacHtml(value) {
+      return String(value ?? '')
+        .replace(/&/g, '&')
+        .replace(/</g, '<')
+        .replace(/>/g, '>')
+        .replace(/"/g, '"')
+        .replace(/'/g, ''');
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
-      let all = [];
-      for (const key in households) all.push(households[key]);
-      const custom = JSON.parse(localStorage.getItem('custom_households')) || {};
-      for (const key in custom) all.push(custom[key]);
-      
-      affectedHouseholds = all.filter(hh => (localStorage.getItem(`record_${hh.id}`) || "Unverified") === 'Verified');
+      const activeBarangay = typeof getActiveBarangayName === 'function' ? getActiveBarangayName() : 'San Miguel';
+      const subtitleEl = document.getElementById('evac-subtitle');
+      if (subtitleEl) {
+        subtitleEl.textContent = activeBarangay
+          ? `${activeBarangay} · Flood preparedness · Puroks 2, 3 & 5`
+          : 'City-Wide · Flood preparedness · Puroks 2, 3 & 5';
+      }
+
+      const all = typeof getScopedHouseholds === 'function'
+        ? getScopedHouseholds(households)
+        : Object.values(households || {});
+      affectedHouseholds = all.filter(hh => (localStorage.getItem(`record_${hh.id}`) || 'Unverified') === 'Verified');
       const savedEvacs = JSON.parse(localStorage.getItem('evacuation_statuses')) || {};
-      
+
       let evacuated = 0, enroute = 0, notEvacuated = 0;
       let tableHtml = '', selectHtml = '';
 
       if (affectedHouseholds.length === 0) {
         tableHtml = '<tr><td colspan="3" style="text-align:center; padding: 20px;">No verified households available.</td></tr>';
-        selectHtml = '<option>No households</option>';
+        selectHtml = '<option value="">No households</option>';
       } else {
         affectedHouseholds.forEach(hh => {
-          const status = savedEvacs[hh.id] || "At Home";
+          const status = savedEvacs[hh.id] || 'At Home';
           if (status === 'Assisted' || status === 'In Evacuation Center' || status === 'Pre-emptively Evacuated') evacuated++;
           else if (status === 'Unaccounted For') notEvacuated++;
           else enroute++;
 
-          let pillClass = "status-at-home";
-          if (status === 'Assisted' || status === 'In Evacuation Center' || status === 'Pre-emptively Evacuated') pillClass = "status-evacuated";
-          if (status === 'Unaccounted For') pillClass = "status-unaccounted";
+          let pillClass = 'status-at-home';
+          if (status === 'Assisted' || status === 'In Evacuation Center' || status === 'Pre-emptively Evacuated') pillClass = 'status-evacuated';
+          if (status === 'Unaccounted For') pillClass = 'status-unaccounted';
 
-          tableHtml += `<tr><td style="padding-left: 24px;"><strong>${hh.head} household</strong><br><span style="color:var(--text-muted); font-size:11px;">${hh.id} · ${hh.purok.split(',')[0]}</span></td><td><span class="pill ${pillClass}">${status}</span></td><td><span style="font-size: 11px; color: var(--text-muted);">Synced</span></td></tr>`;
-          selectHtml += `<option value="${hh.id}">${hh.head} (${hh.id})</option>`;
+          const purokShort = String(hh.purok || '').split(',')[0];
+          tableHtml += `<tr><td style="padding-left: 24px;"><strong>${escapeEvacHtml(hh.head)} household</strong><br><span style="color:var(--text-muted); font-size:11px;">${escapeEvacHtml(hh.id)} · ${escapeEvacHtml(purokShort)}</span></td><td><span class="pill ${pillClass}">${escapeEvacHtml(status)}</span></td><td><span style="font-size: 11px; color: var(--text-muted);">Synced</span></td></tr>`;
+          selectHtml += `<option value="${escapeEvacHtml(hh.id)}">${escapeEvacHtml(hh.head)} (${escapeEvacHtml(hh.id)})</option>`;
         });
       }
 
@@ -146,34 +158,33 @@
       document.getElementById('kpi-not-evacuated').textContent = notEvacuated;
     });
 
-    // 1. Opens the modal and sets the text
     function prepareEvacUpdate() {
       pendingEvacId = document.getElementById('update-hh-select').value;
       pendingEvacStatus = document.getElementById('update-status-select').value;
-      
-      if (pendingEvacId === 'No households') return;
 
-      const headName = affectedHouseholds.find(h => h.id === pendingEvacId).head;
-      
+      if (!pendingEvacId) return;
+
+      const selectedHh = affectedHouseholds.find(h => h.id === pendingEvacId);
+      const headName = selectedHh ? selectedHh.head : pendingEvacId;
+
       document.getElementById('evac-modal-desc').innerHTML = `
-        <strong>${headName} household (${pendingEvacId})</strong> would be marked as <strong>${pendingEvacStatus}</strong> on this device. 
+        <strong>${escapeEvacHtml(headName)} household (${escapeEvacHtml(pendingEvacId)})</strong> would be marked as <strong>${escapeEvacHtml(pendingEvacStatus)}</strong> on this device.
         <br><br>
         The update would wait on this device until a connection returns.
       `;
-      
+
       showModal('modal-evac');
     }
 
-    // 2. Actually saves the data when you click "Return to tracking"
     function confirmEvacUpdate() {
-      let savedEvacs = JSON.parse(localStorage.getItem('evacuation_statuses')) || {};
+      if (!pendingEvacId) return;
+      const savedEvacs = JSON.parse(localStorage.getItem('evacuation_statuses')) || {};
       savedEvacs[pendingEvacId] = pendingEvacStatus;
       localStorage.setItem('evacuation_statuses', JSON.stringify(savedEvacs));
-      
+
       hideModal('modal-evac');
-      window.location.reload(); // Refresh to show the new status
+      window.location.reload();
     }
   </script>
-  <script src="js/app.js"></script>
 </body>
 </html>
