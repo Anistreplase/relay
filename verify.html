@@ -27,7 +27,11 @@
     </nav>
     <div class="sidebar-footer">
       <div class="status-card"><div class="status-title"><div class="status-dot"></div> System operational</div>Last synced at 09:42<br>Household records up to date</div>
-      <nav class="sidebar-nav" style="margin-top: 12px;"><a href="settings.html"><span class="nav-icon">⚙</span> Settings</a><a href="help.html"><span class="nav-icon">?</span> Help & support</a></nav>
+      <nav class="sidebar-nav" style="margin-top: 12px;">
+        <a href="users.html" id="nav-users" style="display: none;"><span class="nav-icon">👤</span> Manage Users</a>
+        <a href="settings.html"><span class="nav-icon">⚙</span> Settings</a>
+        <a href="help.html"><span class="nav-icon">?</span> Help & support</a>
+      </nav>
     </div>
   </aside>
   <main class="main-content">
@@ -65,18 +69,31 @@
   </main>
   <script src="js/database.js"></script>
   <script>
+    let userRole = localStorage.getItem('relay-role') || 'Barangay Official';
+    let userWorkspace = localStorage.getItem('relay-workspace') || 'Barangay San Miguel';
     let queueData = [];
+
     document.addEventListener('DOMContentLoaded', () => {
       let all = [];
-      for (const key in households) all.push(households[key]);
+      for (const key in households) {
+        if (userRole === 'Admin' || households[key].barangay === userWorkspace.replace('Barangay ', '')) {
+          all.push(households[key]);
+        }
+      }
       const custom = JSON.parse(localStorage.getItem('custom_households')) || {};
-      for (const key in custom) all.push(custom[key]);
+      for (const key in custom) {
+        if (userRole === 'Admin' || custom[key].barangay === userWorkspace.replace('Barangay ', '')) {
+          all.push(custom[key]);
+        }
+      }
+
       queueData = all.filter(hh => {
         const savedStatus = localStorage.getItem(`record_${hh.id}`) || "Unverified";
         return savedStatus === "Unverified" || savedStatus === "Needs Correction";
       });
       renderQueue(queueData);
     });
+
     function renderQueue(data) {
       const tbody = document.getElementById('table-body'); tbody.innerHTML = '';
       if (data.length === 0) {
@@ -86,10 +103,11 @@
       data.forEach(hh => {
         const savedStatus = localStorage.getItem(`record_${hh.id}`) || "Unverified";
         const pillClass = savedStatus === "Needs Correction" ? "pill-needs" : "pill-unverified";
-        tbody.innerHTML += `<tr data-id="${hh.id}"><td style="padding-left: 24px;"><strong>${hh.head} household</strong><br><span style="color:var(--text-muted); font-size:11px;">${hh.id} · ${hh.head}</span></td><td>${hh.purok.split(',')[0]}</td><td><span class="pill ${pillClass}">${savedStatus}</span></td><td><button class="btn btn-primary btn-verify-action" style="padding:6px 12px; font-size:12px;">Review Record</button></td></tr>`;
+        tbody.innerHTML += `<tr data-id="${hh.id}"><td style="padding-left: 24px;"><strong>${hh.head} household</strong><br><span style="color:var(--text-muted); font-size:11px;">${hh.id} · ${hh.head}</span></td><td>${hh.purok}</td><td><span class="pill ${pillClass}">${savedStatus}</span></td><td><button class="btn btn-primary btn-verify-action" style="padding:6px 12px; font-size:12px;">Review Record</button></td></tr>`;
       });
       document.getElementById('row-count').textContent = `${data.length} records pending`;
     }
+
     function filterQueue() {
       const query = document.getElementById('search-input').value.toLowerCase();
       const purok = document.getElementById('purok-filter').value;
