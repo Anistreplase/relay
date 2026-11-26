@@ -6,10 +6,13 @@
   <title>Relay - Verification Queue</title>
   <link rel="stylesheet" href="css/style.css">
   <style>
-    .filters-row { display: flex; gap: 12px; margin-bottom: 24px; }
-    .filter-input { background: var(--white); border: 1px solid var(--border); border-radius: 6px; padding: 10px 16px; font-size: 13px; color: var(--text-main); }
+    .filters-row { display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
+    .filter-input { background: var(--white); border: 1px solid var(--border); border-radius: 6px; padding: 10px 14px; font-size: 13px; color: var(--text-main); }
     .filter-input:focus { outline: none; border-color: var(--maroon); }
-    .search-input { flex-grow: 1; }
+    .search-input { flex-grow: 1; min-width: 240px; }
+    .pill-unable { background: #FEE2E2; color: #991B1B; }
+    .btn-delete-record { padding: 6px 10px; font-size: 12px; background: #FEE2E2; color: #991B1B; border: 1px solid #FCA5A5; border-radius: 6px; cursor: pointer; font-weight: 600; }
+    .btn-delete-record:hover { background: #FECACA; }
   </style>
 </head>
 <body>
@@ -27,13 +30,10 @@
     </nav>
     <div class="sidebar-footer">
       <div class="status-card"><div class="status-title"><div class="status-dot"></div> System operational</div>Last synced at 09:42<br>Household records up to date</div>
-      <nav class="sidebar-nav" style="margin-top: 12px;">
-        <a href="users.html" id="nav-users" style="display: none;"><span class="nav-icon">👤</span> Manage Users</a>
-        <a href="settings.html"><span class="nav-icon">⚙</span> Settings</a>
-        <a href="help.html"><span class="nav-icon">?</span> Help & support</a>
-      </nav>
+      <nav class="sidebar-nav" style="margin-top: 12px;"><a href="settings.html"><span class="nav-icon">⚙</span> Settings</a><a href="help.html"><span class="nav-icon">?</span> Help & support</a></nav>
     </div>
   </aside>
+
   <main class="main-content">
     <header class="topbar">
       <div class="topbar-left">
@@ -41,84 +41,144 @@
         <div class="search-bar"><span>🔍</span> Search households, puroks, records...</div>
       </div>
       <div class="topbar-right">
-        <span class="demo-badge">DEMO WORKSPACE</span><span>🔔</span>
+        <span>🔔</span>
         <div class="user-profile"><div class="user-info"><div class="user-name">Loading...</div><div class="user-role">Loading...</div></div></div>
       </div>
     </header>
+
     <div class="page-header">
       <div><h1>Verification queue</h1><p>Records waiting for review and validation by the Barangay DRRM official.</p></div>
+      <div style="font-size: 12px; color: var(--text-muted);" id="queue-pending-count">0 records pending</div>
     </div>
+
     <div class="page-body">
       <div class="filters-row">
-        <input type="text" id="search-input" class="filter-input search-input" placeholder="Search by household head or ID..." onkeyup="filterQueue()">
-        <select id="purok-filter" class="filter-input" onchange="filterQueue()"><option value="All">All puroks</option><option value="Purok 1">Purok 1</option><option value="Purok 2">Purok 2</option><option value="Purok 3">Purok 3</option><option value="Purok 4">Purok 4</option><option value="Purok 5">Purok 5</option></select>
+        <input type="text" id="queue-search" class="filter-input search-input" placeholder="Search by household head or ID..." oninput="renderVerificationQueue()">
+        <select id="filter-queue-purok" class="filter-input" onchange="renderVerificationQueue()">
+          <option value="All">All puroks</option>
+          <option value="Purok 1">Purok 1</option>
+          <option value="Purok 2">Purok 2</option>
+          <option value="Purok 3">Purok 3</option>
+          <option value="Purok 4">Purok 4</option>
+          <option value="Purok 5">Purok 5</option>
+        </select>
       </div>
-      <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px; text-align: right;" id="row-count">0 records pending</div>
+
       <div class="card" style="padding: 0; overflow: hidden;">
         <div class="table-container">
           <table>
-            <thead style="background: #F9FAFB;"><tr><th style="padding-left: 24px;">Household / ID</th><th>Purok</th><th>Status</th><th>Action</th></tr></thead>
-            <tbody id="table-body"></tbody>
+            <thead style="background: #F9FAFB;">
+              <tr>
+                <th style="padding-left: 24px;">Household / ID</th>
+                <th>Purok</th>
+                <th>Status</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="verify-table-body"></tbody>
           </table>
         </div>
       </div>
-      <div class="alert-banner" style="margin-top: 24px;">
-        <span><strong>Reminder:</strong> You can only verify records assigned to your specific Barangay. City responders cannot access unverified data.</span>
-      </div>
+
+      <p style="font-size: 12px; color: var(--text-muted); margin-top: 16px;">
+        Reminder: You can only verify records assigned to your specific Barangay. City responders cannot access unverified data.
+      </p>
     </div>
   </main>
+
   <script src="js/database.js"></script>
-  <script>
-    let userRole = localStorage.getItem('relay-role') || 'Barangay Official';
-    let userWorkspace = localStorage.getItem('relay-workspace') || 'Barangay San Miguel';
-    let queueData = [];
-
-    document.addEventListener('DOMContentLoaded', () => {
-      let all = [];
-      for (const key in households) {
-        if (userRole === 'Admin' || households[key].barangay === userWorkspace.replace('Barangay ', '')) {
-          all.push(households[key]);
-        }
-      }
-      const custom = JSON.parse(localStorage.getItem('custom_households')) || {};
-      for (const key in custom) {
-        if (userRole === 'Admin' || custom[key].barangay === userWorkspace.replace('Barangay ', '')) {
-          all.push(custom[key]);
-        }
-      }
-
-      queueData = all.filter(hh => {
-        const savedStatus = localStorage.getItem(`record_${hh.id}`) || "Unverified";
-        return savedStatus === "Unverified" || savedStatus === "Needs Correction";
-      });
-      renderQueue(queueData);
-    });
-
-    function renderQueue(data) {
-      const tbody = document.getElementById('table-body'); tbody.innerHTML = '';
-      if (data.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="4" style="text-align: center; padding: 40px; color: var(--text-muted);">No records pending verification. Excellent work!</td></tr>';
-        document.getElementById('row-count').textContent = `0 records pending`; return;
-      }
-      data.forEach(hh => {
-        const savedStatus = localStorage.getItem(`record_${hh.id}`) || "Unverified";
-        const pillClass = savedStatus === "Needs Correction" ? "pill-needs" : "pill-unverified";
-        tbody.innerHTML += `<tr data-id="${hh.id}"><td style="padding-left: 24px;"><strong>${hh.head} household</strong><br><span style="color:var(--text-muted); font-size:11px;">${hh.id} · ${hh.head}</span></td><td>${hh.purok}</td><td><span class="pill ${pillClass}">${savedStatus}</span></td><td><button class="btn btn-primary btn-verify-action" style="padding:6px 12px; font-size:12px;">Review Record</button></td></tr>`;
-      });
-      document.getElementById('row-count').textContent = `${data.length} records pending`;
-    }
-
-    function filterQueue() {
-      const query = document.getElementById('search-input').value.toLowerCase();
-      const purok = document.getElementById('purok-filter').value;
-      let filtered = queueData.filter(hh => {
-        const matchesSearch = hh.head.toLowerCase().includes(query) || hh.id.toLowerCase().includes(query);
-        const matchesPurok = purok === "All" || hh.purok.includes(purok);
-        return matchesSearch && matchesPurok;
-      });
-      renderQueue(filtered);
-    }
-  </script>
   <script src="js/app.js"></script>
+  <script>
+    function escapeVerifyHtml(value) {
+      return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function openQueueReview(hhId) {
+      localStorage.setItem('selected_household', hhId);
+      window.location.href = 'review.html';
+    }
+
+    function handleQueueDelete(hhId) {
+      if (typeof deleteHouseholdRecord === 'function') {
+        deleteHouseholdRecord(hhId, () => {
+          renderVerificationQueue();
+        });
+      }
+    }
+
+    function renderVerificationQueue() {
+      const scoped = typeof getScopedHouseholds === 'function' && typeof households !== 'undefined'
+        ? getScopedHouseholds(households)
+        : Object.values(typeof households !== 'undefined' ? households : {});
+
+      const pendingAll = scoped
+        .map(hh => ({
+          ...hh,
+          status: localStorage.getItem(`record_${hh.id}`) || 'Unverified'
+        }))
+        .filter(hh => hh.status === 'Unverified' || hh.status === 'Needs Correction' || hh.status === 'Unable to Verify');
+
+      const countEl = document.getElementById('queue-pending-count');
+      if (countEl) {
+        countEl.textContent = `${pendingAll.length} ${pendingAll.length === 1 ? 'record' : 'records'} pending`;
+      }
+
+      const searchVal = (document.getElementById('queue-search')?.value || '').trim().toLowerCase();
+      const purokVal = document.getElementById('filter-queue-purok')?.value || 'All';
+
+      const filtered = pendingAll.filter(hh => {
+        const matchesPurok = purokVal === 'All' || String(hh.purok || '').toLowerCase().includes(purokVal.toLowerCase());
+        const matchesSearch =
+          !searchVal ||
+          String(hh.head || '').toLowerCase().includes(searchVal) ||
+          String(hh.id || '').toLowerCase().includes(searchVal) ||
+          String(hh.purok || '').toLowerCase().includes(searchVal);
+        return matchesPurok && matchesSearch;
+      });
+
+      const tbody = document.getElementById('verify-table-body');
+      if (!tbody) return;
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding: 24px; color: var(--text-muted);">No pending records match your filter.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = filtered.map(hh => {
+        const pillClass =
+          hh.status === 'Needs Correction' ? 'pill-needs' :
+          hh.status === 'Unable to Verify' ? 'pill-unable' :
+          'pill-unverified';
+        const allowDelete = typeof canDeleteHouseholdRecord === 'function' ? canDeleteHouseholdRecord(hh) : true;
+        const deleteBtnHtml = allowDelete
+          ? `<button type="button" class="btn-delete-record" onclick="handleQueueDelete('${escapeVerifyHtml(hh.id)}')">Delete</button>`
+          : '';
+
+        return `
+          <tr data-id="${escapeVerifyHtml(hh.id)}">
+            <td style="padding-left: 24px;">
+              <strong>${escapeVerifyHtml(hh.head)} household</strong><br>
+              <span style="font-size: 11px; color: var(--text-muted);">${escapeVerifyHtml(hh.id)} · ${escapeVerifyHtml(hh.head)}</span>
+            </td>
+            <td>${escapeVerifyHtml(hh.purok || '')}</td>
+            <td><span class="pill ${pillClass}">${escapeVerifyHtml(hh.status)}</span></td>
+            <td>
+              <div style="display: flex; gap: 8px; align-items: center;">
+                <button type="button" class="btn btn-primary btn-verify-action" style="padding: 6px 12px; font-size: 12px;" onclick="openQueueReview('${escapeVerifyHtml(hh.id)}')">Review Record</button>
+                ${deleteBtnHtml}
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    document.addEventListener('DOMContentLoaded', renderVerificationQueue);
+  </script>
 </body>
 </html>
