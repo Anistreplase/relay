@@ -280,7 +280,7 @@ function ensureDuplicateResolveModal() {
   wrapper.innerHTML = `
     <div id="modal-duplicate-resolve" class="modal-overlay">
       <div class="modal-box" style="max-width: 720px; max-height: 90vh; overflow-y: auto;">
-        <div class="modal-eyebrow">UC-06 · Detect & Resolve Duplicate Records</div>
+        <div class="modal-eyebrow">Detect & Resolve Duplicate Records</div>
         <div class="modal-title" id="dup-modal-title">Side-by-side duplicate comparison</div>
         <div class="modal-desc" id="dup-modal-desc" style="margin-bottom: 12px;">
           Compare conflicting fields between records. Choose which value to keep when merging, or select Keep Both, Not a Duplicate, or Flag For Validation.
@@ -333,7 +333,7 @@ function openDuplicateResolveModal(primaryHh, candidates = [], onResolved = null
     openNoticeModal(
       'No duplicate matches',
       'No duplicate candidate records were found for this household.',
-      'UC-06 · Duplicate Check'
+      'Duplicate Check'
     );
     return;
   }
@@ -369,7 +369,7 @@ function openDuplicateCenterModal(onResolved = null) {
     openNoticeModal(
       'No duplicates detected',
       'There are no active possible duplicate pairs in your current workspace.',
-      'UC-06 · Duplicate Check'
+      'Duplicate Check'
     );
     return;
   }
@@ -884,7 +884,7 @@ function ensureImportRecordsModal() {
   wrapper.innerHTML = `
     <div id="modal-import-records" class="modal-overlay">
       <div class="modal-box" style="max-width: 620px;">
-        <div class="modal-eyebrow">UC-14 · Import Existing Records</div>
+        <div class="modal-eyebrow">Import Existing Records</div>
         <div class="modal-title">Import household records</div>
         <div class="modal-desc">
           Upload a CSV or JSON file. Records are previewed for missing fields and possible duplicates, tagged with their source, and saved as <strong>Unverified</strong>.
