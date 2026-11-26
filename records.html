@@ -6,17 +6,17 @@
   <title>Relay - Household Records</title>
   <link rel="stylesheet" href="css/style.css">
   <style>
-    .tabs-container { display: flex; gap: 24px; border-bottom: 1px solid var(--border); margin-bottom: 24px; }
-    .tab { padding: 12px 0; font-size: 14px; font-weight: 600; color: var(--text-muted); cursor: pointer; border-bottom: 2px solid transparent; transition: all 0.2s; display: flex; align-items: center; gap: 8px; }
-    .tab:hover { color: var(--text-main); }
-    .tab.active { color: var(--maroon); border-bottom-color: var(--maroon); }
-    .tab .count { background: var(--cream); padding: 2px 8px; border-radius: 9999px; font-size: 11px; font-weight: 600; }
-    .tab.active .count { background: var(--maroon); color: var(--white); }
-    .filters-row { display: flex; gap: 12px; margin-bottom: 24px; }
-    .filter-input { background: var(--white); border: 1px solid var(--border); border-radius: 6px; padding: 10px 16px; font-size: 13px; color: var(--text-main); }
+    .tabs-bar { display: flex; gap: 24px; border-bottom: 1px solid var(--border); margin-bottom: 20px; flex-wrap: wrap; }
+    .tab-btn { background: none; border: none; padding: 10px 4px; font-size: 13px; font-weight: 600; color: var(--text-muted); cursor: pointer; position: relative; display: flex; align-items: center; gap: 6px; }
+    .tab-btn.active { color: var(--maroon); }
+    .tab-btn.active::after { content: ""; position: absolute; bottom: -1px; left: 0; right: 0; height: 2px; background: var(--maroon); }
+    .tab-count { background: var(--cream); color: var(--text-main); font-size: 11px; padding: 2px 7px; border-radius: 999px; }
+    .tab-btn.active .tab-count { background: var(--maroon); color: var(--white); }
+    .filters-row { display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
+    .filter-input { background: var(--white); border: 1px solid var(--border); border-radius: 6px; padding: 10px 14px; font-size: 13px; color: var(--text-main); }
     .filter-input:focus { outline: none; border-color: var(--maroon); }
-    .search-input { flex-grow: 1; }
-    .pagination { display: flex; justify-content: space-between; align-items: center; padding-top: 20px; border-top: 1px solid var(--border); font-size: 13px; color: var(--text-muted); }
+    .search-input { flex-grow: 1; min-width: 240px; }
+    .pill-unable { background: #FEE2E2; color: #991B1B; }
   </style>
 </head>
 <body>
@@ -34,11 +34,7 @@
     </nav>
     <div class="sidebar-footer">
       <div class="status-card"><div class="status-title"><div class="status-dot"></div> System operational</div>Last synced at 09:42<br>Household records up to date</div>
-      <nav class="sidebar-nav" style="margin-top: 12px;">
-        <a href="users.html" id="nav-users" style="display: none;"><span class="nav-icon">👤</span> Manage Users</a>
-        <a href="settings.html"><span class="nav-icon">⚙</span> Settings</a>
-        <a href="help.html"><span class="nav-icon">?</span> Help & support</a>
-      </nav>
+      <nav class="sidebar-nav" style="margin-top: 12px;"><a href="settings.html"><span class="nav-icon">⚙</span> Settings</a><a href="help.html"><span class="nav-icon">?</span> Help & support</a></nav>
     </div>
   </aside>
   <main class="main-content">
@@ -55,120 +51,166 @@
     <div class="page-header">
       <div><h1>Household records</h1><p id="records-subtitle">Collect, maintain and verify household information across 5 puroks.</p></div>
       <div style="display: flex; gap: 12px;">
-        <button class="btn btn-secondary btn-export-action">Export permitted records</button>
-        <button class="btn btn-primary btn-add-action">Add household</button>
+        <button type="button" class="btn btn-secondary btn-export-action" onclick="handleRecordsExport()">Export summary</button>
+        <button type="button" class="btn btn-primary btn-add-action" onclick="window.location.href='add-household.html'">Add household</button>
       </div>
     </div>
     <div class="page-body">
-      <div class="tabs-container">
-        <div class="tab active" onclick="changeTab('All', this)">All records <span class="count" id="count-all">0</span></div>
-        <div class="tab" onclick="changeTab('Verified', this)">Verified <span class="count" id="count-verified">0</span></div>
-        <div class="tab" onclick="changeTab('Unverified', this)">Unverified <span class="count" id="count-unverified">0</span></div>
-        <div class="tab" onclick="changeTab('Needs Correction', this)">Needs Correction <span class="count" id="count-needs">0</span></div>
-        <div class="tab" onclick="changeTab('Unable to Verify', this)">Unable to Verify <span class="count" id="count-unable">0</span></div>
+      <div class="tabs-bar" id="status-tabs">
+        <button type="button" class="tab-btn active" data-status="All" onclick="setStatusTab('All')">All records <span class="tab-count" id="count-all">0</span></button>
+        <button type="button" class="tab-btn" data-status="Verified" onclick="setStatusTab('Verified')">Verified <span class="tab-count" id="count-verified">0</span></button>
+        <button type="button" class="tab-btn" data-status="Unverified" onclick="setStatusTab('Unverified')">Unverified <span class="tab-count" id="count-unverified">0</span></button>
+        <button type="button" class="tab-btn" data-status="Needs Correction" onclick="setStatusTab('Needs Correction')">Needs Correction <span class="tab-count" id="count-needs">0</span></button>
+        <button type="button" class="tab-btn" data-status="Unable to Verify" onclick="setStatusTab('Unable to Verify')">Unable to Verify <span class="tab-count" id="count-unable">0</span></button>
       </div>
+
       <div class="filters-row">
-        <input type="text" id="search-input" class="filter-input search-input" placeholder="Search by household head, ID, or address..." onkeyup="filterTable()">
-        <select id="purok-filter" class="filter-input" onchange="filterTable()"><option value="All">All puroks</option><option value="Purok 1">Purok 1</option><option value="Purok 2">Purok 2</option><option value="Purok 3">Purok 3</option><option value="Purok 4">Purok 4</option><option value="Purok 5">Purok 5</option></select>
+        <input type="text" id="record-search" class="filter-input search-input" placeholder="Search by household head, ID, or address..." oninput="renderHouseholdRecords()">
+        <select id="filter-purok" class="filter-input" onchange="renderHouseholdRecords()">
+          <option value="All">All puroks</option>
+          <option value="Purok 1">Purok 1</option>
+          <option value="Purok 2">Purok 2</option>
+          <option value="Purok 3">Purok 3</option>
+          <option value="Purok 4">Purok 4</option>
+          <option value="Purok 5">Purok 5</option>
+        </select>
       </div>
-      <div style="font-size: 12px; color: var(--text-muted); margin-bottom: 12px; text-align: right;" id="row-count">0 households</div>
+
       <div class="card" style="padding: 0; overflow: hidden;">
         <div class="table-container">
           <table>
-            <thead style="background: #F9FAFB;"><tr><th style="padding-left: 24px;">Household / ID</th><th>Purok</th><th>Members</th><th>Verification status</th><th>Last updated</th><th>Action</th></tr></thead>
-            <tbody id="table-body"></tbody>
+            <thead style="background: #F9FAFB;">
+              <tr>
+                <th style="padding-left: 24px;">Household / ID</th>
+                <th>Purok / Address</th>
+                <th>Members</th>
+                <th>Status</th>
+                <th>Action</th>
+              </tr>
+            </thead>
+            <tbody id="records-table-body"></tbody>
           </table>
         </div>
-        <div style="padding: 16px 24px; background: #F9FAFB;"><div class="pagination" style="border-top: none; padding-top: 0;"><span id="showing-text">Showing 0 of 0 households</span></div></div>
       </div>
     </div>
   </main>
+
   <script src="js/database.js"></script>
   <script src="js/app.js"></script>
   <script>
-    let allHouseholds = [], currentTab = 'All';
+    let currentRecordStatusTab = 'All';
 
     function escapeRecHtml(value) {
       return String(value ?? '')
-        .replace(/&/g, '&')
-        .replace(/</g, '<')
-        .replace(/>/g, '>')
-        .replace(/"/g, '"')
-        .replace(/'/g, ''');
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
     }
 
-    function loadData() {
-      const activeBarangay = typeof getActiveBarangayName === 'function' ? getActiveBarangayName() : 'San Miguel';
-      const subtitleEl = document.getElementById('records-subtitle');
-      if (subtitleEl) {
-        subtitleEl.textContent = activeBarangay
-          ? `Collect, maintain and verify household information in Barangay ${activeBarangay} across 5 puroks.`
-          : 'Collect, maintain and verify household information across all barangays and puroks.';
+    function getRecordsSourceList() {
+      if (typeof getScopedHouseholds === 'function' && typeof households !== 'undefined') {
+        return getScopedHouseholds(households);
       }
+      const custom = JSON.parse(localStorage.getItem('custom_households')) || {};
+      const baseObj = typeof households !== 'undefined' ? households : {};
+      return [...Object.values(baseObj), ...Object.values(custom)];
+    }
 
-      allHouseholds = typeof getScopedHouseholds === 'function'
-        ? getScopedHouseholds(households)
-        : Object.values(households || {});
-
-      allHouseholds.forEach(hh => {
-        hh.status = localStorage.getItem(`record_${hh.id}`) || 'Unverified';
+    function setStatusTab(statusName) {
+      currentRecordStatusTab = statusName;
+      document.querySelectorAll('#status-tabs .tab-btn').forEach(btn => {
+        btn.classList.toggle('active', btn.getAttribute('data-status') === statusName);
       });
-      updateTabCounts();
-      filterTable();
+      renderHouseholdRecords();
     }
 
-    function updateTabCounts() {
-      document.getElementById('count-all').textContent = allHouseholds.length;
-      document.getElementById('count-verified').textContent = allHouseholds.filter(h => h.status === 'Verified').length;
-      document.getElementById('count-unverified').textContent = allHouseholds.filter(h => h.status === 'Unverified').length;
-      document.getElementById('count-needs').textContent = allHouseholds.filter(h => h.status === 'Needs Correction').length;
-      document.getElementById('count-unable').textContent = allHouseholds.filter(h => h.status === 'Unable to Verify').length;
+    function openHouseholdReview(hhId) {
+      localStorage.setItem('selected_household', hhId);
+      window.location.href = 'review.html';
     }
 
-    function changeTab(status, el) {
-      currentTab = status;
-      document.querySelectorAll('.tab').forEach(t => t.classList.remove('active'));
-      el.classList.add('active');
-      filterTable();
-    }
-
-    function filterTable() {
-      const query = document.getElementById('search-input').value.toLowerCase();
-      const purok = document.getElementById('purok-filter').value;
-      const filtered = allHouseholds.filter(hh => {
-        const matchesSearch =
-          String(hh.head || '').toLowerCase().includes(query) ||
-          String(hh.id || '').toLowerCase().includes(query) ||
-          String(hh.address || '').toLowerCase().includes(query);
-        const matchesPurok = purok === 'All' || String(hh.purok || '').includes(purok);
-        const matchesTab = currentTab === 'All' || hh.status === currentTab;
-        return matchesSearch && matchesPurok && matchesTab;
-      });
-      renderTable(filtered);
-    }
-
-    function renderTable(data) {
-      const tbody = document.getElementById('table-body');
-      tbody.innerHTML = '';
-      if (data.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:20px;">No records found.</td></tr>';
-        document.getElementById('showing-text').textContent = 'Showing 0 of 0 households';
-        document.getElementById('row-count').textContent = '0 households';
+    function handleRecordsExport() {
+      if (!navigator.onLine) {
+        alert('You are currently offline. This action cannot be completed until you reconnect.');
         return;
       }
-      data.forEach(hh => {
-        let pillClass = 'pill-unverified';
-        if (hh.status === 'Verified') pillClass = 'pill-verified';
-        if (hh.status === 'Needs Correction') pillClass = 'pill-needs';
-        if (hh.status === 'Unable to Verify') pillClass = 'pill-unable';
-        const memberCount = Array.isArray(hh.members) ? hh.members.length : 0;
-        tbody.innerHTML += `<tr data-id="${escapeRecHtml(hh.id)}"><td style="padding-left:24px;"><strong>${escapeRecHtml(hh.head)} household</strong><br><span style="color:var(--text-muted); font-size:11px;">${escapeRecHtml(hh.id)} · ${escapeRecHtml(hh.head)}</span></td><td>${escapeRecHtml(hh.purok)}</td><td>${memberCount}</td><td><span class="pill ${pillClass}">${escapeRecHtml(hh.status)}</span></td><td>24 Oct 2026</td><td><button class="btn btn-secondary btn-verify-action" style="padding:6px 12px; font-size:12px;">View →</button></td></tr>`;
-      });
-      document.getElementById('showing-text').textContent = `Showing 1-${data.length} of ${data.length} households`;
-      document.getElementById('row-count').textContent = `${data.length} households`;
+      if (typeof showModal === 'function' && document.getElementById('modal-export')) {
+        showModal('modal-export');
+      } else {
+        window.location.href = 'reports.html';
+      }
     }
 
-    document.addEventListener('DOMContentLoaded', loadData);
+    function renderHouseholdRecords() {
+      const list = getRecordsSourceList();
+      const searchVal = (document.getElementById('record-search')?.value || '').trim().toLowerCase();
+      const purokVal = document.getElementById('filter-purok')?.value || 'All';
+
+      let counts = { All: 0, Verified: 0, Unverified: 0, 'Needs Correction': 0, 'Unable to Verify': 0 };
+      const enriched = list.map(hh => {
+        const status = localStorage.getItem(`record_${hh.id}`) || 'Unverified';
+        counts.All++;
+        if (counts[status] !== undefined) counts[status]++;
+        else counts.Unverified++;
+        return { ...hh, status };
+      });
+
+      document.getElementById('count-all').textContent = counts.All;
+      document.getElementById('count-verified').textContent = counts.Verified;
+      document.getElementById('count-unverified').textContent = counts.Unverified;
+      document.getElementById('count-needs').textContent = counts['Needs Correction'];
+      document.getElementById('count-unable').textContent = counts['Unable to Verify'];
+
+      const filtered = enriched.filter(hh => {
+        const matchesTab = currentRecordStatusTab === 'All' || hh.status === currentRecordStatusTab;
+        const matchesPurok = purokVal === 'All' || String(hh.purok || '').toLowerCase().includes(purokVal.toLowerCase());
+        const matchesSearch =
+          !searchVal ||
+          String(hh.head || '').toLowerCase().includes(searchVal) ||
+          String(hh.id || '').toLowerCase().includes(searchVal) ||
+          String(hh.address || '').toLowerCase().includes(searchVal) ||
+          String(hh.purok || '').toLowerCase().includes(searchVal);
+        return matchesTab && matchesPurok && matchesSearch;
+      });
+
+      const tbody = document.getElementById('records-table-body');
+      if (!tbody) return;
+
+      if (filtered.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding: 24px; color: var(--text-muted);">No household records match the current filter.</td></tr>';
+        return;
+      }
+
+      tbody.innerHTML = filtered.map(hh => {
+        const memberCount = Array.isArray(hh.members) ? hh.members.length : 0;
+        let pillClass = 'pill-unverified';
+        if (hh.status === 'Verified') pillClass = 'pill-verified';
+        else if (hh.status === 'Needs Correction') pillClass = 'pill-needs';
+        else if (hh.status === 'Unable to Verify') pillClass = 'pill-unable';
+
+        return `
+          <tr data-id="${escapeRecHtml(hh.id)}">
+            <td style="padding-left: 24px;">
+              <strong>${escapeRecHtml(hh.head)} household</strong><br>
+              <span style="font-size: 11px; color: var(--text-muted);">${escapeRecHtml(hh.id)}</span>
+            </td>
+            <td>
+              ${escapeRecHtml(hh.purok || '')}<br>
+              <span style="font-size: 11px; color: var(--text-muted);">${escapeRecHtml(hh.address || '')}</span>
+            </td>
+            <td>${memberCount} ${memberCount === 1 ? 'member' : 'members'}</td>
+            <td><span class="pill ${pillClass}">${escapeRecHtml(hh.status)}</span></td>
+            <td>
+              <button type="button" class="btn btn-secondary btn-verify-action" style="padding: 6px 12px; font-size: 12px;" onclick="openHouseholdReview('${escapeRecHtml(hh.id)}')">Review</button>
+            </td>
+          </tr>
+        `;
+      }).join('');
+    }
+
+    document.addEventListener('DOMContentLoaded', renderHouseholdRecords);
   </script>
 </body>
 </html>
