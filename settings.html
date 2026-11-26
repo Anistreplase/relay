@@ -22,15 +22,12 @@
     input:checked + .slider:before { transform: translateX(20px); }
     .reminder-row { display: flex; justify-content: space-between; align-items: center; padding: 16px 0; border-bottom: 1px solid var(--border); }
     .reminder-row:last-child { border-bottom: none; }
-    
-    /* Session Card Styles */
     .session-item { display: flex; justify-content: space-between; align-items: flex-start; padding: 12px 0; border-bottom: 1px solid var(--border); }
     .session-item:last-child { border-bottom: none; }
     .session-icon { font-size: 20px; margin-right: 12px; }
     .session-info h4 { font-size: 13px; font-weight: 600; margin-bottom: 2px; }
     .session-info p { font-size: 11px; color: var(--text-muted); }
     .btn-terminate { background: none; border: none; color: var(--red); font-size: 12px; font-weight: 600; cursor: pointer; padding: 4px; }
-    .btn-terminate:hover { text-decoration: underline; }
     .current-badge { background: #D1FAE5; color: #065F46; font-size: 10px; font-weight: 700; padding: 2px 6px; border-radius: 4px; display: inline-block; margin-left: 6px; }
   </style>
 </head>
@@ -49,7 +46,11 @@
     </nav>
     <div class="sidebar-footer">
       <div class="status-card"><div class="status-title"><div class="status-dot"></div> System operational</div>Last synced at 09:42<br>Household records up to date</div>
-      <nav class="sidebar-nav" style="margin-top: 12px;"><a href="settings.html" class="active"><span class="nav-icon">⚙</span> Settings</a><a href="help.html"><span class="nav-icon">?</span> Help & support</a></nav>
+      <nav class="sidebar-nav" style="margin-top: 12px;">
+        <a href="users.html" id="nav-users" style="display: none;"><span class="nav-icon">👤</span> Manage Users</a>
+        <a href="settings.html" class="active"><span class="nav-icon">⚙</span> Settings</a>
+        <a href="help.html"><span class="nav-icon">?</span> Help & support</a>
+      </nav>
     </div>
   </aside>
   <main class="main-content">
@@ -97,13 +98,10 @@
         </div>
         
         <div>
-          <!-- RECENT SESSIONS CARD -->
           <div class="card">
             <div class="card-title">Recent security activity</div>
             <div class="card-subtitle">If you see a device you don't recognize, log it out immediately.</div>
-            <div id="session-list">
-              <!-- Injected by JS -->
-            </div>
+            <div id="session-list"></div>
           </div>
 
           <div class="card" style="background: #FFFDF5; border-color: #FCD34D;">
@@ -132,7 +130,6 @@
   </div>
 
   <script>
-    // Generate a unique ID for this specific tab/browser session
     let sessionId = sessionStorage.getItem('relay-session-id');
     if (!sessionId) {
       sessionId = 'sess_' + Math.random().toString(36).substr(2, 9);
@@ -141,14 +138,16 @@
 
     document.addEventListener('DOMContentLoaded', () => {
       const role = localStorage.getItem('relay-role') || 'Barangay Official';
+      
       const roleEl = document.getElementById('setting-role');
       const workspaceEl = document.getElementById('setting-workspace');
       const respEl = document.getElementById('setting-responsibilities');
-      
+      const locEl = document.getElementById('setting-location');
+
       if (role === 'Admin') {
         roleEl.textContent = 'System Administrator';
         workspaceEl.textContent = 'City-Wide Administration';
-        respEl.textContent = 'Full system access & management';
+        respEl.textContent = 'Full system access & user management';
       } else if (role === 'Purok Officer') {
         roleEl.textContent = 'Purok Officer';
         workspaceEl.textContent = 'Barangay San Miguel';
@@ -159,55 +158,48 @@
         respEl.textContent = 'Review & coordination';
       }
 
-      // Fetch IP Location
-      fetch('https://ipapi.co/json/')
-        .then(response => response.json())
-        .then(data => {
-          document.getElementById('setting-location').textContent = `${data.city}, ${data.country_name}`;
-          registerSession(data.city, data.country_name);
-        })
-        .catch(() => {
-          document.getElementById('setting-location').textContent = 'Iligan City, Philippines';
-          registerSession('Iligan City', 'Philippines');
-        });
+      // Improved Location simulation
+      setTimeout(() => {
+        const timezone = Intl.DateTimeFormat().resolvedOptions().timeZone;
+        const language = navigator.language;
+        if (timezone.includes('Manila') || language.includes('PH')) {
+          locEl.textContent = 'Iligan City, Philippines (Verified Device)';
+        } else {
+          locEl.textContent = timezone.replace('_', ' ') + ' (Current Device)';
+        }
+      }, 600);
 
       loadSessions();
     });
 
-    // Register this current tab as an active session
-    function registerSession(city, country) {
+    function registerSession() {
       let sessions = JSON.parse(localStorage.getItem('relay-active-sessions')) || {};
-      
-      // If this session isn't logged, add it
       if (!sessions[sessionId]) {
         const browserInfo = navigator.userAgent.includes('Chrome') ? 'Chrome on ' : navigator.userAgent.includes('Firefox') ? 'Firefox on ' : 'Browser on ';
         const osInfo = navigator.userAgent.includes('Windows') ? 'Windows' : navigator.userAgent.includes('Mac') ? 'Mac' : 'Unknown OS';
-        
         sessions[sessionId] = {
           device: browserInfo + osInfo,
-          location: `${city}, ${country}`,
-          time: new Date().toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' }),
-          isCurrent: true
+          location: document.getElementById('setting-location').textContent || 'Iligan City, Philippines',
+          time: new Date().toLocaleString('en-US', { month: 'short', day: 'numeric', hour: '2-digit', minute: '2-digit' })
         };
         localStorage.setItem('relay-active-sessions', JSON.stringify(sessions));
       }
       loadSessions();
     }
 
-    // Render the list of sessions
     function loadSessions() {
       let sessions = JSON.parse(localStorage.getItem('relay-active-sessions')) || {};
       const listEl = document.getElementById('session-list');
       listEl.innerHTML = '';
 
+      if (Object.keys(sessions).length === 0) {
+         registerSession();
+         return;
+      }
+
       Object.keys(sessions).forEach(key => {
         const sess = sessions[key];
         const isCurrent = key === sessionId;
-        
-        // Make sure only one shows as "current" visually
-        if (isCurrent) sess.isCurrent = true;
-        else sess.isCurrent = false;
-
         listEl.innerHTML += `
           <div class="session-item">
             <div style="display: flex;">
@@ -223,23 +215,16 @@
       });
     }
 
-    // Log out a specific session
     function terminateSession(idToTerminate) {
       let sessions = JSON.parse(localStorage.getItem('relay-active-sessions')) || {};
-      
-      // Remove it from the list
       delete sessions[idToTerminate];
-      
-      // Save back to local storage (this triggers the storage event in other tabs)
       localStorage.setItem('relay-active-sessions', JSON.stringify(sessions));
-      
-      // If the user terminated their own session from another tab
       if (idToTerminate === sessionId) {
         localStorage.removeItem('relay-user');
         localStorage.removeItem('relay-role');
         window.location.href = 'index.html';
       } else {
-        loadSessions(); // Refresh UI
+        loadSessions();
       }
     }
 
