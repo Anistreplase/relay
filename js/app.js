@@ -4,6 +4,7 @@
 
 let pendingDeleteHouseholdId = null;
 let pendingDeleteCallback = null;
+let pendingExportCallback = null;
 
 document.addEventListener('DOMContentLoaded', () => {
   const currentPath = window.location.pathname.split('/').pop() || 'index.html';
@@ -24,6 +25,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initNotifications();
   initGlobalSearch();
   ensureDeleteRecordModal();
+  ensureExportConfirmModal();
 
   const sidebarLogo = document.querySelector('.sidebar-logo');
   if (sidebarLogo) {
@@ -47,14 +49,17 @@ document.addEventListener('DOMContentLoaded', () => {
       }
     }
 
-    if (e.target.closest('.btn-export-action')) {
-      if (!navigator.onLine) {
-        alert('You are currently offline. This action cannot be completed until you reconnect.');
-      } else if (typeof showModal === 'function') {
-        showModal('modal-export');
-      } else {
-        alert('Export started.');
-      }
+    const exportBtn = e.target.closest('.btn-export-action');
+    if (exportBtn) {
+      e.preventDefault();
+      const label = (exportBtn.textContent || 'export').trim().toLowerCase();
+      openExportConfirmModal(label, () => {
+        if (typeof runExportAction === 'function') {
+          runExportAction(label);
+        } else {
+          alert(`Exported ${label}.`);
+        }
+      });
     }
 
     if (e.target.closest('.page-btn')) {
@@ -285,6 +290,85 @@ function deleteHouseholdRecord(hhId, onAfterDelete) {
 
   showModal('modal-delete-record');
   return true;
+}
+
+// =========================================
+// EXPORT CONFIRMATION & CSV HELPERS
+// =========================================
+function ensureExportConfirmModal() {
+  if (document.getElementById('modal-export')) return;
+
+  const wrapper = document.createElement('div');
+  wrapper.innerHTML = `
+    <div id="modal-export" class="modal-overlay">
+      <div class="modal-box" style="max-width: 480px;">
+        <div class="modal-eyebrow">Export Confirmation</div>
+        <div class="modal-title" id="modal-export-title">Confirm export?</div>
+        <div class="modal-desc" id="modal-export-desc">
+          Generate and export the current workspace records for your active barangay scope?
+        </div>
+        <div class="modal-footer">
+          <div class="modal-footer-text" id="modal-export-meta">Scoped to active workspace</div>
+          <div class="modal-actions">
+            <button type="button" class="btn btn-secondary" onclick="cancelExportConfirmModal()">Cancel</button>
+            <button type="button" class="btn btn-primary" id="confirm-export-btn" onclick="confirmExportModal()">Confirm export</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(wrapper.firstElementChild);
+}
+
+function cancelExportConfirmModal() {
+  pendingExportCallback = null;
+  hideModal('modal-export');
+}
+
+function confirmExportModal() {
+  const cb = pendingExportCallback;
+  cancelExportConfirmModal();
+  if (typeof cb === 'function') {
+    cb();
+  }
+}
+
+function openExportConfirmModal(exportLabel, onConfirm) {
+  if (!navigator.onLine) {
+    alert('You are currently offline. Export cannot be completed until you reconnect.');
+    return;
+  }
+
+  ensureExportConfirmModal();
+  pendingExportCallback = typeof onConfirm === 'function' ? onConfirm : null;
+
+  const workspace = localStorage.getItem('relay-workspace') || 'Barangay San Miguel';
+  const titleEl = document.getElementById('modal-export-title');
+  const descEl = document.getElementById('modal-export-desc');
+  const metaEl = document.getElementById('modal-export-meta');
+
+  if (titleEl) titleEl.textContent = `Confirm ${exportLabel || 'export'}?`;
+  if (descEl) {
+    descEl.textContent = `Export ${exportLabel || 'report data'} for ${workspace} using current household and status records?`;
+  }
+  if (metaEl) metaEl.textContent = `Workspace: ${workspace}`;
+
+  showModal('modal-export');
+}
+
+function downloadRelayCsv(filename, rows) {
+  const csvContent = rows
+    .map(row => row.map(cell => `"${String(cell ?? '').replace(/"/g, '""')}"`).join(','))
+    .join('\n');
+  const blob = new Blob([csvContent], { type: 'text/csv;charset=utf-8;' });
+  const url = URL.createObjectURL(blob);
+  const link = document.createElement('a');
+  link.href = url;
+  link.setAttribute('download', filename);
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(url);
 }
 
 function resolveHouseholdBarangay(selectedBarangayValue) {
@@ -678,7 +762,7 @@ function initNotifications() {
       </span>
       <div id="notif-dropdown" style="display: none; position: absolute; top: 30px; right: -10px; width: 320px; background: var(--white); border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); z-index: 1000; padding: 16px;">
         <h4 style="font-size: 14px; font-weight: 600; margin-bottom: 12px; display: flex; justify-content: space-between;">
-          Notifications <span style="font-size: 11px; color: var(--maroon); cursor: pointer;" onclick="clearNotifications()">Mark all as read</span>
+          Notifications <span style="font-size: 11px; color: var(--red); cursor: pointer;" onclick="clearNotifications()">Mark all as read</span>
         </h4>
         <div id="notif-list" style="display: flex; flex-direction: column; gap: 12px;"></div>
       </div>
