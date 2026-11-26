@@ -1,6 +1,9 @@
 // =========================================
-// RELAY PROTOTYPE - SHARED LOGIC 
+// RELAY PROTOTYPE - SHARED LOGIC
 // =========================================
+
+let pendingDeleteHouseholdId = null;
+let pendingDeleteCallback = null;
 
 document.addEventListener('DOMContentLoaded', () => {
   const currentPath = window.location.pathname.split('/').pop() || 'index.html';
@@ -20,6 +23,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initNetworkListener();
   initNotifications();
   initGlobalSearch();
+  ensureDeleteRecordModal();
 
   const sidebarLogo = document.querySelector('.sidebar-logo');
   if (sidebarLogo) {
@@ -120,18 +124,40 @@ function canDeleteHouseholdRecord(hh) {
   return activeBarangay.toLowerCase() === recordBarangay.toLowerCase();
 }
 
-function deleteHouseholdRecord(hhId) {
+function ensureDeleteRecordModal() {
+  if (document.getElementById('modal-delete-record')) return;
+
+  const wrapper = document.createElement('div');
+  wrapper.innerHTML = `
+    <div id="modal-delete-record" class="modal-overlay">
+      <div class="modal-box" style="max-width: 460px;">
+        <div class="modal-eyebrow">Duplicate Record Removal</div>
+        <div class="modal-title">Delete household record?</div>
+        <div class="modal-desc" id="modal-delete-record-desc">
+          Remove this duplicate household record? This cannot be undone.
+        </div>
+        <div class="modal-footer">
+          <div class="modal-footer-text">Action applies to your active workspace.</div>
+          <div class="modal-actions">
+            <button type="button" class="btn btn-secondary" onclick="cancelDeleteHouseholdModal()">Cancel</button>
+            <button type="button" class="btn btn-primary" id="confirm-delete-record-btn" onclick="confirmDeleteHouseholdModal()">Delete record</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(wrapper.firstElementChild);
+}
+
+function cancelDeleteHouseholdModal() {
+  pendingDeleteHouseholdId = null;
+  pendingDeleteCallback = null;
+  hideModal('modal-delete-record');
+}
+
+function executeDeleteHouseholdRecord(hhId) {
   if (!hhId) return false;
   const custom = JSON.parse(localStorage.getItem('custom_households')) || {};
-  const recordObj = custom[hhId] || (typeof households !== 'undefined' ? households[hhId] : null);
-
-  if (!canDeleteHouseholdRecord(recordObj)) {
-    alert('You can only delete household records within your assigned barangay workspace.');
-    return false;
-  }
-
-  const confirmed = confirm(`Remove duplicate household record ${hhId}? This cannot be undone.`);
-  if (!confirmed) return false;
 
   if (custom[hhId]) {
     delete custom[hhId];
@@ -159,6 +185,42 @@ function deleteHouseholdRecord(hhId) {
     generateNotifications();
   }
 
+  return true;
+}
+
+function confirmDeleteHouseholdModal() {
+  const idToDelete = pendingDeleteHouseholdId;
+  const callback = pendingDeleteCallback;
+  cancelDeleteHouseholdModal();
+
+  if (!idToDelete) return;
+  const deletedOk = executeDeleteHouseholdRecord(idToDelete);
+  if (deletedOk && typeof callback === 'function') {
+    callback(idToDelete);
+  }
+}
+
+function deleteHouseholdRecord(hhId, onAfterDelete) {
+  if (!hhId) return false;
+  const custom = JSON.parse(localStorage.getItem('custom_households')) || {};
+  const recordObj = custom[hhId] || (typeof households !== 'undefined' ? households[hhId] : null);
+
+  if (!canDeleteHouseholdRecord(recordObj)) {
+    alert('You can only delete household records within your assigned barangay workspace.');
+    return false;
+  }
+
+  ensureDeleteRecordModal();
+  pendingDeleteHouseholdId = hhId;
+  pendingDeleteCallback = typeof onAfterDelete === 'function' ? onAfterDelete : null;
+
+  const headLabel = recordObj && recordObj.head ? `${recordObj.head} household (${hhId})` : hhId;
+  const descEl = document.getElementById('modal-delete-record-desc');
+  if (descEl) {
+    descEl.textContent = `Remove duplicate household record ${headLabel}? This action cannot be undone.`;
+  }
+
+  showModal('modal-delete-record');
   return true;
 }
 
