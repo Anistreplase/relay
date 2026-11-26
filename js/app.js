@@ -53,7 +53,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // =========================================
-// SMART LOGIN LOGIC (NO ROLE DROPDOWN NEEDED)
+// SMART LOGIN LOGIC
 // =========================================
 function simulateLogin(event) {
   event.preventDefault();
@@ -62,9 +62,8 @@ function simulateLogin(event) {
   if (!email) return;
 
   let assignedRole = 'Barangay Official';
-  let assignedWorkspace = 'Barangay San Miguel'; // Default
+  let assignedWorkspace = 'Barangay San Miguel';
 
-  // 1. Determine Role based on email
   if (email.includes('admin') || email.includes('citydrrm')) {
     assignedRole = 'Admin';
     assignedWorkspace = 'City-Wide Administration';
@@ -74,7 +73,6 @@ function simulateLogin(event) {
     assignedRole = 'Barangay Official';
   }
 
-  // 2. Determine Barangay Workspace based on email domain
   if (email.includes('tibanga')) {
     assignedWorkspace = 'Barangay Tibanga';
   } else if (email.includes('saray')) {
@@ -83,7 +81,6 @@ function simulateLogin(event) {
     assignedWorkspace = 'Barangay San Miguel';
   }
 
-  // Save session data
   localStorage.setItem('relay-user', email);
   localStorage.setItem('relay-role', assignedRole);
   localStorage.setItem('relay-workspace', assignedWorkspace);
@@ -92,7 +89,7 @@ function simulateLogin(event) {
 }
 
 // =========================================
-// USER PROFILE & ROLE PERMISSIONS
+// USER PROFILE & STRICT ROLE PERMISSIONS
 // =========================================
 function updateUserProfile() {
   const savedRole = localStorage.getItem('relay-role') || 'Barangay Official';
@@ -101,8 +98,17 @@ function updateUserProfile() {
   const nameEl = document.querySelector('.user-name');
   const roleEl = document.querySelector('.user-role');
   const workspaceSelector = document.getElementById('workspace-selector');
+  const navUsers = document.getElementById('nav-users');
+
+  // Helper to show/hide sidebar links
+  const setNav = (href, visible) => {
+    const link = document.querySelector(`.sidebar-nav a[href="${href}"]`);
+    if (link) link.style.display = visible ? 'flex' : 'none';
+  };
 
   if (nameEl && roleEl) {
+    
+    // --- ROLE: ADMIN ---
     if (savedRole === 'Admin') {
       nameEl.textContent = 'System Administrator'; 
       roleEl.textContent = 'Full system access';
@@ -118,22 +124,62 @@ function updateUserProfile() {
         workspaceSelector.style.cursor = 'pointer';
       }
       
-      const navUsers = document.getElementById('nav-users');
+      // Admin sees EVERYTHING
+      setNav('dashboard.html', true);
+      setNav('records.html', true);
+      setNav('verify.html', true);
+      setNav('preparedness.html', true);
+      setNav('evacuation.html', true);
+      setNav('revalidation.html', true);
+      setNav('reports.html', true);
       if (navUsers) navUsers.style.display = 'flex';
 
-    } else {
-      nameEl.textContent = savedRole === 'Purok Officer' ? 'Purok Officer' : 'Barangay Official'; 
-      roleEl.textContent = savedRole === 'Purok Officer' ? 'Data collection & updates' : 'Review & coordination';
+    } 
+    // --- ROLE: PUROK OFFICER ---
+    else if (savedRole === 'Purok Officer') {
+      nameEl.textContent = 'Purok Officer'; 
+      roleEl.textContent = 'Data collection & updates';
       
       if (workspaceSelector) {
         workspaceSelector.innerHTML = `<option>${savedWorkspace}</option>`;
         workspaceSelector.disabled = true;
         workspaceSelector.style.cursor = 'not-allowed';
       }
+
+      // Purok Officers only collect data
+      setNav('dashboard.html', false);
+      setNav('records.html', true);
+      setNav('verify.html', false);
+      setNav('preparedness.html', false);
+      setNav('evacuation.html', false);
+      setNav('revalidation.html', true); // They receive reminders
+      setNav('reports.html', false);
+      if (navUsers) navUsers.style.display = 'none';
+
+    } 
+    // --- ROLE: BARANGAY OFFICIAL ---
+    else {
+      nameEl.textContent = 'Barangay Official'; 
+      roleEl.textContent = 'Review & coordination';
+      
+      if (workspaceSelector) {
+        workspaceSelector.innerHTML = `<option>${savedWorkspace}</option>`;
+        workspaceSelector.disabled = true;
+        workspaceSelector.style.cursor = 'not-allowed';
+      }
+
+      // Barangay Officials manage records and verify, but no Evacuation or Users
+      setNav('dashboard.html', true);
+      setNav('records.html', true);
+      setNav('verify.html', true);
+      setNav('preparedness.html', true);
+      setNav('evacuation.html', false); // Hidden per your instruction
+      setNav('revalidation.html', true);
+      setNav('reports.html', true);
+      if (navUsers) navUsers.style.display = 'none';
     }
   }
 }
-
 // =========================================
 // NOTIFICATIONS
 // =========================================
