@@ -53,8 +53,59 @@ document.addEventListener('DOMContentLoaded', () => {
       dropdown.style.display = 'none';
     }
   });
-
 });
+
+// =========================================
+// USER PROFILE & ROLE PERMISSIONS
+// =========================================
+function updateUserProfile() {
+  const savedRole = localStorage.getItem('relay-role') || 'Barangay Official';
+  const nameEl = document.querySelector('.user-name');
+  const roleEl = document.querySelector('.user-role');
+  const workspaceSelector = document.getElementById('workspace-selector');
+
+  if (nameEl && roleEl) {
+    if (savedRole === 'Admin') {
+      nameEl.textContent = 'System Administrator'; 
+      roleEl.textContent = 'Full system access';
+      
+      if (workspaceSelector) {
+        workspaceSelector.innerHTML = `
+          <option>City-Wide Administration</option>
+          <option>Barangay San Miguel</option>
+          <option>Barangay Tibanga</option>
+          <option>Barangay Saray</option>
+        `;
+        workspaceSelector.disabled = false;
+        workspaceSelector.style.cursor = 'pointer';
+      }
+      
+      // Show the Manage Users link in the sidebar
+      const navUsers = document.getElementById('nav-users');
+      if (navUsers) navUsers.style.display = 'flex';
+
+    } else if (savedRole === 'Purok Officer') {
+      nameEl.textContent = 'Purok Officer'; 
+      roleEl.textContent = 'Data collection & updates';
+      
+      if (workspaceSelector) {
+        workspaceSelector.innerHTML = `<option>Barangay San Miguel</option>`;
+        workspaceSelector.disabled = true;
+        workspaceSelector.style.cursor = 'not-allowed';
+      }
+      
+    } else {
+      nameEl.textContent = 'Barangay Official'; 
+      roleEl.textContent = 'Review & coordination';
+      
+      if (workspaceSelector) {
+        workspaceSelector.innerHTML = `<option>Barangay San Miguel</option>`;
+        workspaceSelector.disabled = true;
+        workspaceSelector.style.cursor = 'not-allowed';
+      }
+    }
+  }
+}
 
 // =========================================
 // NOTIFICATION ENGINE (FRQ-13)
@@ -68,14 +119,11 @@ function initNotifications() {
       <span id="notif-bell" style="font-size: 18px; position: relative;">🔔
         <span id="notif-badge" style="display: none; position: absolute; top: -2px; right: -2px; width: 8px; height: 8px; background: #EF4444; border-radius: 50%; border: 2px solid var(--white);"></span>
       </span>
-      
       <div id="notif-dropdown" style="display: none; position: absolute; top: 30px; right: -10px; width: 320px; background: var(--white); border: 1px solid var(--border); border-radius: 8px; box-shadow: 0 10px 25px rgba(0,0,0,0.1); z-index: 1000; padding: 16px;">
         <h4 style="font-size: 14px; font-weight: 600; margin-bottom: 12px; display: flex; justify-content: space-between;">
           Notifications <span style="font-size: 11px; color: var(--maroon); cursor: pointer;" onclick="clearNotifications()">Mark all as read</span>
         </h4>
-        <div id="notif-list" style="display: flex; flex-direction: column; gap: 12px;">
-          <!-- Injected by JS -->
-        </div>
+        <div id="notif-list" style="display: flex; flex-direction: column; gap: 12px;"></div>
       </div>
     </div>
   `;
@@ -86,18 +134,20 @@ function initNotifications() {
     bellElement.outerHTML = bellHTML;
   }
 
-  document.getElementById('notif-bell').addEventListener('click', (e) => {
-    e.stopPropagation();
-    const dropdown = document.getElementById('notif-dropdown');
-    dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
-  });
+  const bell = document.getElementById('notif-bell');
+  if (bell) {
+    bell.addEventListener('click', (e) => {
+      e.stopPropagation();
+      const dropdown = document.getElementById('notif-dropdown');
+      dropdown.style.display = dropdown.style.display === 'block' ? 'none' : 'block';
+    });
+  }
 
   generateNotifications();
 }
 
 function generateNotifications() {
   const isRead = sessionStorage.getItem('notifs-read') === 'true';
-  
   let all = [];
   if (typeof households !== 'undefined') {
     for (const key in households) all.push(households[key]);
@@ -106,16 +156,16 @@ function generateNotifications() {
   for (const key in custom) all.push(custom[key]);
   
   const verified = all.filter(hh => (localStorage.getItem(`record_${hh.id}`) || "Unverified") === 'Verified');
-
   const listEl = document.getElementById('notif-list');
   const badge = document.getElementById('notif-badge');
+
+  if (!listEl) return;
 
   if (verified.length === 0) {
     listEl.innerHTML = `<div style="font-size: 13px; color: var(--text-muted); text-align: center; padding: 20px 0;">You're all caught up!</div>`;
     if (badge) badge.style.display = 'none';
   } else {
     if (!isRead && badge) badge.style.display = 'block';
-
     listEl.innerHTML = `
       <div style="background: #FEF3C7; border: 1px solid #FCD34D; padding: 12px; border-radius: 6px; cursor: pointer;" onclick="window.location.href='revalidation.html'">
         <div style="font-size: 13px; font-weight: 600; color: #92400E; margin-bottom: 4px;">Revalidation Due</div>
@@ -130,7 +180,8 @@ function clearNotifications() {
   sessionStorage.setItem('notifs-read', 'true');
   const badge = document.getElementById('notif-badge');
   if (badge) badge.style.display = 'none';
-  document.getElementById('notif-dropdown').style.display = 'none';
+  const dropdown = document.getElementById('notif-dropdown');
+  if (dropdown) dropdown.style.display = 'none';
 }
 
 // =========================================
@@ -149,22 +200,9 @@ window.addEventListener('storage', (e) => {
   }
 });
 
-function updateUserProfile() {
-  const savedRole = localStorage.getItem('relay-role') || 'Barangay Official';
-  const nameEl = document.querySelector('.user-name');
-  const roleEl = document.querySelector('.user-role');
-
-  if (nameEl && roleEl) {
-    if (savedRole === 'Admin') {
-      nameEl.textContent = 'System Administrator'; roleEl.textContent = 'Full system access';
-    } else if (savedRole === 'Purok Officer') {
-      nameEl.textContent = 'Purok Officer'; roleEl.textContent = 'Data collection & updates';
-    } else {
-      nameEl.textContent = 'Barangay Official'; roleEl.textContent = 'Review & coordination';
-    }
-  }
-}
-
+// =========================================
+// LOGIN & MODALS
+// =========================================
 function simulateLogin(event) {
   event.preventDefault();
   const email = document.getElementById('email').value;
@@ -186,24 +224,27 @@ function hideModal(modalId) {
   if (modal) modal.style.display = 'none';
 }
 
+// =========================================
+// SAVE VERIFICATION (NO ALERTS, JUST MODAL)
+// =========================================
 function saveVerification() {
   const selectedStatus = document.querySelector('input[name="verification"]:checked').value;
   const recordId = localStorage.getItem('selected_household');
+  
+  localStorage.setItem(`record_${recordId}`, selectedStatus);
   
   if (!navigator.onLine) {
     let offlineQueue = JSON.parse(localStorage.getItem('offline_queue')) || [];
     offlineQueue.push({ id: recordId, status: selectedStatus, timestamp: Date.now() });
     localStorage.setItem('offline_queue', JSON.stringify(offlineQueue));
-    localStorage.setItem(`record_${recordId}`, selectedStatus);
-    alert('Saved locally. It will sync when your connection returns.');
-    window.location.href = 'records.html';
-  } else {
-    localStorage.setItem(`record_${recordId}`, selectedStatus);
-    alert('Record updated successfully.');
-    window.location.href = 'records.html';
   }
+
+  window.location.href = 'records.html';
 }
 
+// =========================================
+// OFFLINE SYNC BANNER
+// =========================================
 function initNetworkListener() {
   let banner = document.createElement('div');
   banner.id = 'sync-banner';
