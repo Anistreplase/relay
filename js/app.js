@@ -53,7 +53,7 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // =========================================
-// LOGIN LOGIC (SMART EMAIL PARSER)
+// SMART LOGIN LOGIC (NO ROLE DROPDOWN NEEDED)
 // =========================================
 function simulateLogin(event) {
   event.preventDefault();
@@ -64,7 +64,7 @@ function simulateLogin(event) {
   let assignedRole = 'Barangay Official';
   let assignedWorkspace = 'Barangay San Miguel'; // Default
 
-  // 1. Determine Role
+  // 1. Determine Role based on email
   if (email.includes('admin') || email.includes('citydrrm')) {
     assignedRole = 'Admin';
     assignedWorkspace = 'City-Wide Administration';
@@ -126,7 +126,6 @@ function updateUserProfile() {
       roleEl.textContent = savedRole === 'Purok Officer' ? 'Data collection & updates' : 'Review & coordination';
       
       if (workspaceSelector) {
-        // Lock the selector to their specific barangay
         workspaceSelector.innerHTML = `<option>${savedWorkspace}</option>`;
         workspaceSelector.disabled = true;
         workspaceSelector.style.cursor = 'not-allowed';
@@ -136,7 +135,7 @@ function updateUserProfile() {
 }
 
 // =========================================
-// NOTIFICATION ENGINE (FRQ-13)
+// NOTIFICATIONS
 // =========================================
 function initNotifications() {
   const topbarRight = document.querySelector('.topbar-right');
@@ -213,7 +212,7 @@ function clearNotifications() {
 }
 
 // =========================================
-// SESSION TERMINATION LISTENER
+// SESSION TERMINATION & MODALS
 // =========================================
 window.addEventListener('storage', (e) => {
   if (e.key === 'relay-active-sessions') {
@@ -228,20 +227,6 @@ window.addEventListener('storage', (e) => {
   }
 });
 
-// =========================================
-// LOGIN & MODALS
-// =========================================
-function simulateLogin(event) {
-  event.preventDefault();
-  const email = document.getElementById('email').value;
-  const selectedRole = document.getElementById('login-role').value; 
-  if (email && selectedRole) {
-    localStorage.setItem('relay-user', email);
-    localStorage.setItem('relay-role', selectedRole);
-    window.location.href = 'dashboard.html';
-  }
-}
-
 function showModal(modalId) {
   const modal = document.getElementById(modalId);
   if (modal) modal.style.display = 'flex';
@@ -252,9 +237,6 @@ function hideModal(modalId) {
   if (modal) modal.style.display = 'none';
 }
 
-// =========================================
-// SAVE VERIFICATION (NO ALERTS, JUST MODAL)
-// =========================================
 function saveVerification() {
   const selectedStatus = document.querySelector('input[name="verification"]:checked').value;
   const recordId = localStorage.getItem('selected_household');
@@ -270,9 +252,6 @@ function saveVerification() {
   window.location.href = 'records.html';
 }
 
-// =========================================
-// OFFLINE SYNC BANNER
-// =========================================
 function initNetworkListener() {
   let banner = document.createElement('div');
   banner.id = 'sync-banner';
