@@ -17,6 +17,8 @@
     .filter-input:focus { outline: none; border-color: var(--maroon); }
     .search-input { flex-grow: 1; min-width: 240px; }
     .pill-unable { background: #FEE2E2; color: #991B1B; }
+    .btn-delete-record { padding: 6px 10px; font-size: 12px; background: #FEE2E2; color: #991B1B; border: 1px solid #FCA5A5; border-radius: 6px; cursor: pointer; font-weight: 600; }
+    .btn-delete-record:hover { background: #FECACA; }
   </style>
 </head>
 <body>
@@ -114,8 +116,9 @@
         return getScopedHouseholds(households);
       }
       const custom = JSON.parse(localStorage.getItem('custom_households')) || {};
+      const deleted = JSON.parse(localStorage.getItem('deleted_households')) || {};
       const baseObj = typeof households !== 'undefined' ? households : {};
-      return [...Object.values(baseObj), ...Object.values(custom)];
+      return [...Object.values(baseObj), ...Object.values(custom)].filter(hh => hh && hh.id && !deleted[hh.id]);
     }
 
     function setStatusTab(statusName) {
@@ -129,6 +132,14 @@
     function openHouseholdReview(hhId) {
       localStorage.setItem('selected_household', hhId);
       window.location.href = 'review.html';
+    }
+
+    function handleDeleteRecord(hhId) {
+      if (typeof deleteHouseholdRecord === 'function') {
+        if (deleteHouseholdRecord(hhId)) {
+          renderHouseholdRecords();
+        }
+      }
     }
 
     function handleRecordsExport() {
@@ -190,6 +201,11 @@
         else if (hh.status === 'Needs Correction') pillClass = 'pill-needs';
         else if (hh.status === 'Unable to Verify') pillClass = 'pill-unable';
 
+        const allowDelete = typeof canDeleteHouseholdRecord === 'function' ? canDeleteHouseholdRecord(hh) : true;
+        const deleteBtnHtml = allowDelete
+          ? `<button type="button" class="btn-delete-record" onclick="handleDeleteRecord('${escapeRecHtml(hh.id)}')">Delete</button>`
+          : '';
+
         return `
           <tr data-id="${escapeRecHtml(hh.id)}">
             <td style="padding-left: 24px;">
@@ -203,7 +219,10 @@
             <td>${memberCount} ${memberCount === 1 ? 'member' : 'members'}</td>
             <td><span class="pill ${pillClass}">${escapeRecHtml(hh.status)}</span></td>
             <td>
-              <button type="button" class="btn btn-secondary btn-verify-action" style="padding: 6px 12px; font-size: 12px;" onclick="openHouseholdReview('${escapeRecHtml(hh.id)}')">Review</button>
+              <div style="display: flex; gap: 8px; align-items: center;">
+                <button type="button" class="btn btn-secondary btn-verify-action" style="padding: 6px 12px; font-size: 12px;" onclick="openHouseholdReview('${escapeRecHtml(hh.id)}')">Review</button>
+                ${deleteBtnHtml}
+              </div>
             </td>
           </tr>
         `;
