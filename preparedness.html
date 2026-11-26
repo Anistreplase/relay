@@ -8,7 +8,7 @@
   <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
   <style>
     .prep-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 24px; }
-    .map-container { height: 350px; width: 100%; border-radius: 8px; border: 1px solid var(--border); z-index: 1; background: #e5e5e5; }
+    .map-container { height: 350px; width: 100%; border-radius: 8px; border: 1px solid var(--border); z-index: 1; background: #e5e5e5; position: relative; }
     .offline-card { background: var(--white); border: 1px solid var(--border); border-radius: 8px; padding: 24px; height: fit-content; }
     .checklist-item { display: flex; gap: 12px; font-size: 13px; color: var(--text-muted); margin-bottom: 16px; line-height: 1.4; }
     .checklist-item strong { color: var(--text-main); display: block; margin-bottom: 4px; }
@@ -115,16 +115,38 @@
   <script src="js/app.js"></script>
   <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
+    let relayMapInstance = null;
+    let relayMarkerLayer = null;
+
     function escapePrepHtml(value) {
       return String(value ?? '')
-        .replace(/&/g, '&')
-        .replace(/</g, '<')
-        .replace(/>/g, '>')
-        .replace(/"/g, '"')
-        .replace(/'/g, ''');
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
     }
 
-    document.addEventListener('DOMContentLoaded', () => {
+    function getBarangayCenter(activeBarangay) {
+      const key = String(activeBarangay || '').toLowerCase();
+      if (key === 'tibanga') return [8.2345, 124.2368];
+      if (key === 'saray') return [8.2382, 124.2535];
+      return [8.2280, 124.2452];
+    }
+
+    function getDeterministicOffset(seedStr, idx) {
+      let hash = (idx + 1) * 97;
+      for (let i = 0; i < seedStr.length; i++) {
+        hash = ((hash << 5) - hash) + seedStr.charCodeAt(i);
+        hash |= 0;
+      }
+      const normA = ((Math.abs(hash) % 1000) / 1000) - 0.5;
+      const normB = ((Math.abs(hash >> 4) % 1000) / 1000) - 0.5;
+      return [normA * 0.008, normB * 0.008];
+    }
+
+    function renderPreparednessPage() {
+      const activeBarangay = typeof getActiveBarangayName === 'function' ? getActiveBarangayName() : 'San Miguel';
       const all = typeof getScopedHouseholds === 'function'
         ? getScopedHouseholds(households)
         : Object.values(households || {});
@@ -159,27 +181,55 @@
         });
       }
 
-      if (typeof L !== 'undefined') {
-        const map = L.map('map').setView([8.2280, 124.2452], 15);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
-        const redIcon = L.divIcon({
-          className: 'custom-marker',
-          html: '<div style="background-color: #8B0000; width: 16px; height: 16px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.4);"></div>',
-          iconSize: [16, 16],
-          iconAnchor: [8, 8]
-        });
+      const mapEl = document.getElementById('map');
+      if (!mapEl) return;
 
-        if (verified.length === 0) {
-          L.marker([8.2280, 124.2452], { icon: redIcon }).addTo(map).bindPopup('No verified households yet.');
-        } else {
-          verified.forEach(hh => {
-            const lat = 8.2280 + (Math.random() - 0.5) * 0.01;
-            const lng = 124.2452 + (Math.random() - 0.5) * 0.01;
-            L.marker([lat, lng], { icon: redIcon }).addTo(map).bindPopup(`<b>${escapePrepHtml(hh.head)} household</b><br>${escapePrepHtml(hh.id)}`);
-          });
-        }
+      if (typeof L === 'undefined') {
+        mapEl.innerHTML = `<div style="display:flex; height:100%; align-items:center; justify-content:center; padding:16px; text-align:center; color:var(--text-muted); font-size:12px;">Map library could not be loaded (check internet access to unpkg.com). ${verified.length} verified household(s) available in list below.</div>`;
+        return;
       }
-    });
+
+      const center = getBarangayCenter(activeBarangay);
+
+      if (!relayMapInstance) {
+        relayMapInstance = L.map('map').setView(center, 15);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+          attribution: '&copy; OpenStreetMap contributors',
+          maxZoom: 19
+        }).addTo(relayMapInstance);
+        relayMarkerLayer = L.layerGroup().addTo(relayMapInstance);
+      } else {
+        relayMapInstance.setView(center, 15);
+        relayMarkerLayer.clearLayers();
+      }
+
+      const redIcon = L.divIcon({
+        className: 'custom-marker',
+        html: '<div style="background-color: #8B0000; width: 16px; height: 16px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.4);"></div>',
+        iconSize: [16, 16],
+        iconAnchor: [8, 8]
+      });
+
+      if (verified.length === 0) {
+        L.marker(center, { icon: redIcon })
+          .addTo(relayMarkerLayer)
+          .bindPopup(`No verified households in ${escapePrepHtml(activeBarangay || 'selected area')}.`);
+      } else {
+        verified.forEach((hh, idx) => {
+          const [dLat, dLng] = getDeterministicOffset(String(hh.id || hh.head || idx), idx);
+          L.marker([center[0] + dLat, center[1] + dLng], { icon: redIcon })
+            .addTo(relayMarkerLayer)
+            .bindPopup(`<b>${escapePrepHtml(hh.head)} household</b><br>${escapePrepHtml(hh.id)} · ${escapePrepHtml(hh.purok || '')}`);
+        });
+      }
+
+      setTimeout(() => {
+        if (relayMapInstance) relayMapInstance.invalidateSize();
+      }, 150);
+    }
+
+    document.addEventListener('DOMContentLoaded', renderPreparednessPage);
+    window.addEventListener('load', renderPreparednessPage);
   </script>
 </body>
 </html>
