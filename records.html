@@ -6,19 +6,19 @@
   <title>Relay - Household Records</title>
   <link rel="stylesheet" href="css/style.css">
   <style>
-    .tabs-bar { display: flex; gap: 24px; border-bottom: 1px solid var(--border); margin-bottom: 20px; flex-wrap: wrap; }
-    .tab-btn { background: none; border: none; padding: 10px 4px; font-size: 13px; font-weight: 600; color: var(--text-muted); cursor: pointer; position: relative; display: flex; align-items: center; gap: 6px; }
-    .tab-btn.active { color: var(--maroon); }
-    .tab-btn.active::after { content: ""; position: absolute; bottom: -1px; left: 0; right: 0; height: 2px; background: var(--maroon); }
-    .tab-count { background: var(--cream); color: var(--text-main); font-size: 11px; padding: 2px 7px; border-radius: 999px; }
-    .tab-btn.active .tab-count { background: var(--maroon); color: var(--white); }
+    .status-tabs { display: flex; gap: 8px; margin-bottom: 20px; border-bottom: 1px solid var(--border); padding-bottom: 12px; flex-wrap: wrap; }
+    .status-tab { padding: 8px 16px; border-radius: 6px; font-size: 13px; font-weight: 500; background: transparent; color: var(--text-muted); display: flex; align-items: center; gap: 8px; }
+    .status-tab:hover { background: var(--white); color: var(--text-main); }
+    .status-tab.active { background: var(--white); color: var(--red); font-weight: 600; box-shadow: 0 1px 3px rgba(0,0,0,0.05); border: 1px solid var(--border); }
+    .tab-count { background: #F3F4F6; color: var(--text-main); padding: 2px 8px; border-radius: 999px; font-size: 11px; font-weight: 600; }
+    .status-tab.active .tab-count { background: #FEE2E2; color: var(--red); }
     .filters-row { display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
     .filter-input { background: var(--white); border: 1px solid var(--border); border-radius: 6px; padding: 10px 14px; font-size: 13px; color: var(--text-main); }
-    .filter-input:focus { outline: none; border-color: var(--maroon); }
+    .filter-input:focus { outline: none; border-color: var(--red); }
     .search-input { flex-grow: 1; min-width: 240px; }
-    .pill-unable { background: #FEE2E2; color: #991B1B; }
-    .btn-delete-record { padding: 6px 10px; font-size: 12px; background: #FEE2E2; color: #991B1B; border: 1px solid #FCA5A5; border-radius: 6px; cursor: pointer; font-weight: 600; }
-    .btn-delete-record:hover { background: #FECACA; }
+    .action-group { display: inline-flex; align-items: center; gap: 8px; }
+    .btn-delete-hh { background: #FEE2E2; color: #991B1B; border: 1px solid #FCA5A5; padding: 6px 10px; border-radius: 6px; font-size: 12px; font-weight: 600; }
+    .btn-delete-hh:hover { background: #FCA5A5; }
   </style>
 </head>
 <body>
@@ -39,6 +39,7 @@
       <nav class="sidebar-nav" style="margin-top: 12px;"><a href="settings.html"><span class="nav-icon">⚙</span> Settings</a><a href="help.html"><span class="nav-icon">?</span> Help & support</a></nav>
     </div>
   </aside>
+
   <main class="main-content">
     <header class="topbar">
       <div class="topbar-left">
@@ -50,25 +51,27 @@
         <div class="user-profile"><div class="user-info"><div class="user-name">Loading...</div><div class="user-role">Loading...</div></div></div>
       </div>
     </header>
+
     <div class="page-header">
-      <div><h1>Household records</h1><p id="records-subtitle">Collect, maintain and verify household information across 5 puroks.</p></div>
-      <div style="display: flex; gap: 12px;">
-        <button type="button" class="btn btn-secondary btn-export-action" onclick="handleRecordsExport()">Export summary</button>
-        <button type="button" class="btn btn-primary btn-add-action" onclick="window.location.href='add-household.html'">Add household</button>
+      <div><h1>Household records</h1><p>Search, filter, import, and manage household records across your active workspace.</p></div>
+      <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+        <button type="button" class="btn btn-secondary" onclick="openImportRecordsModal()">Import records</button>
+        <button type="button" class="btn btn-primary btn-add-action">+ Add household</button>
       </div>
     </div>
+
     <div class="page-body">
-      <div class="tabs-bar" id="status-tabs">
-        <button type="button" class="tab-btn active" data-status="All" onclick="setStatusTab('All')">All records <span class="tab-count" id="count-all">0</span></button>
-        <button type="button" class="tab-btn" data-status="Verified" onclick="setStatusTab('Verified')">Verified <span class="tab-count" id="count-verified">0</span></button>
-        <button type="button" class="tab-btn" data-status="Unverified" onclick="setStatusTab('Unverified')">Unverified <span class="tab-count" id="count-unverified">0</span></button>
-        <button type="button" class="tab-btn" data-status="Needs Correction" onclick="setStatusTab('Needs Correction')">Needs Correction <span class="tab-count" id="count-needs">0</span></button>
-        <button type="button" class="tab-btn" data-status="Unable to Verify" onclick="setStatusTab('Unable to Verify')">Unable to Verify <span class="tab-count" id="count-unable">0</span></button>
+      <div class="status-tabs">
+        <button type="button" class="status-tab active" data-status="All" onclick="selectRecordTab('All', this)">All records <span class="tab-count" id="count-all">0</span></button>
+        <button type="button" class="status-tab" data-status="Verified" onclick="selectRecordTab('Verified', this)">Verified <span class="tab-count" id="count-verified">0</span></button>
+        <button type="button" class="status-tab" data-status="Unverified" onclick="selectRecordTab('Unverified', this)">Unverified <span class="tab-count" id="count-unverified">0</span></button>
+        <button type="button" class="status-tab" data-status="Needs Correction" onclick="selectRecordTab('Needs Correction', this)">Needs Correction <span class="tab-count" id="count-correction">0</span></button>
+        <button type="button" class="status-tab" data-status="Unable to Verify" onclick="selectRecordTab('Unable to Verify', this)">Unable to Verify <span class="tab-count" id="count-unable">0</span></button>
       </div>
 
       <div class="filters-row">
-        <input type="text" id="record-search" class="filter-input search-input" placeholder="Search by household head, ID, or address..." oninput="renderHouseholdRecords()">
-        <select id="filter-purok" class="filter-input" onchange="renderHouseholdRecords()">
+        <input type="text" id="records-search" class="filter-input search-input" placeholder="Search by household head, ID, purok, or address..." oninput="renderRecordsPage()">
+        <select id="filter-purok" class="filter-input" onchange="renderRecordsPage()">
           <option value="All">All puroks</option>
           <option value="Purok 1">Purok 1</option>
           <option value="Purok 2">Purok 2</option>
@@ -83,10 +86,10 @@
           <table>
             <thead style="background: #F9FAFB;">
               <tr>
-                <th style="padding-left: 24px;">Household / ID</th>
-                <th>Purok / Address</th>
-                <th>Members</th>
-                <th>Status</th>
+                <th style="padding-left: 24px;">Household</th>
+                <th>Purok</th>
+                <th>Verification Status</th>
+                <th>Last Updated</th>
                 <th>Action</th>
               </tr>
             </thead>
@@ -100,7 +103,7 @@
   <script src="js/database.js"></script>
   <script src="js/app.js"></script>
   <script>
-    let currentRecordStatusTab = 'All';
+    let activeRecordTab = 'All';
 
     function escapeRecHtml(value) {
       return String(value ?? '')
@@ -111,117 +114,75 @@
         .replace(/'/g, '&#39;');
     }
 
-    function getRecordsSourceList() {
-      if (typeof getScopedHouseholds === 'function' && typeof households !== 'undefined') {
-        return getScopedHouseholds(households);
-      }
-      const custom = JSON.parse(localStorage.getItem('custom_households')) || {};
-      const deleted = JSON.parse(localStorage.getItem('deleted_households')) || {};
-      const baseObj = typeof households !== 'undefined' ? households : {};
-      return [...Object.values(baseObj), ...Object.values(custom)].filter(hh => hh && hh.id && !deleted[hh.id]);
+    function selectRecordTab(status, el) {
+      activeRecordTab = status;
+      document.querySelectorAll('.status-tab').forEach(btn => btn.classList.remove('active'));
+      if (el) el.classList.add('active');
+      renderRecordsPage();
     }
 
-    function setStatusTab(statusName) {
-      currentRecordStatusTab = statusName;
-      document.querySelectorAll('#status-tabs .tab-btn').forEach(btn => {
-        btn.classList.toggle('active', btn.getAttribute('data-status') === statusName);
-      });
-      renderHouseholdRecords();
-    }
+    function renderRecordsPage() {
+      const scoped = typeof getScopedHouseholds === 'function' && typeof households !== 'undefined'
+        ? getScopedHouseholds(households)
+        : Object.values(typeof households !== 'undefined' ? households : {});
 
-    function openHouseholdReview(hhId) {
-      localStorage.setItem('selected_household', hhId);
-      window.location.href = 'review.html';
-    }
+      const enriched = scoped.map(hh => ({
+        ...hh,
+        verStatus: localStorage.getItem(`record_${hh.id}`) || 'Unverified'
+      }));
 
-    function handleDeleteRecord(hhId) {
-      if (typeof deleteHouseholdRecord === 'function') {
-        deleteHouseholdRecord(hhId, () => {
-          renderHouseholdRecords();
-        });
-      }
-    }
+      document.getElementById('count-all').textContent = enriched.length;
+      document.getElementById('count-verified').textContent = enriched.filter(h => h.verStatus === 'Verified').length;
+      document.getElementById('count-unverified').textContent = enriched.filter(h => h.verStatus === 'Unverified').length;
+      document.getElementById('count-correction').textContent = enriched.filter(h => h.verStatus === 'Needs Correction').length;
+      document.getElementById('count-unable').textContent = enriched.filter(h => h.verStatus === 'Unable to Verify').length;
 
-    function handleRecordsExport() {
-      if (!navigator.onLine) {
-        alert('You are currently offline. This action cannot be completed until you reconnect.');
-        return;
-      }
-      if (typeof showModal === 'function' && document.getElementById('modal-export')) {
-        showModal('modal-export');
-      } else {
-        window.location.href = 'reports.html';
-      }
-    }
-
-    function renderHouseholdRecords() {
-      const list = getRecordsSourceList();
-      const searchVal = (document.getElementById('record-search')?.value || '').trim().toLowerCase();
-      const purokVal = document.getElementById('filter-purok')?.value || 'All';
-
-      let counts = { All: 0, Verified: 0, Unverified: 0, 'Needs Correction': 0, 'Unable to Verify': 0 };
-      const enriched = list.map(hh => {
-        const status = localStorage.getItem(`record_${hh.id}`) || 'Unverified';
-        counts.All++;
-        if (counts[status] !== undefined) counts[status]++;
-        else counts.Unverified++;
-        return { ...hh, status };
-      });
-
-      document.getElementById('count-all').textContent = counts.All;
-      document.getElementById('count-verified').textContent = counts.Verified;
-      document.getElementById('count-unverified').textContent = counts.Unverified;
-      document.getElementById('count-needs').textContent = counts['Needs Correction'];
-      document.getElementById('count-unable').textContent = counts['Unable to Verify'];
+      const q = (document.getElementById('records-search')?.value || '').trim().toLowerCase();
+      const purokFilter = document.getElementById('filter-purok')?.value || 'All';
 
       const filtered = enriched.filter(hh => {
-        const matchesTab = currentRecordStatusTab === 'All' || hh.status === currentRecordStatusTab;
-        const matchesPurok = purokVal === 'All' || String(hh.purok || '').toLowerCase().includes(purokVal.toLowerCase());
-        const matchesSearch =
-          !searchVal ||
-          String(hh.head || '').toLowerCase().includes(searchVal) ||
-          String(hh.id || '').toLowerCase().includes(searchVal) ||
-          String(hh.address || '').toLowerCase().includes(searchVal) ||
-          String(hh.purok || '').toLowerCase().includes(searchVal);
-        return matchesTab && matchesPurok && matchesSearch;
+        const matchesTab = activeRecordTab === 'All' || hh.verStatus === activeRecordTab;
+        const matchesPurok = purokFilter === 'All' || String(hh.purok || '').toLowerCase().includes(purokFilter.toLowerCase());
+        const matchesQuery =
+          !q ||
+          String(hh.head || '').toLowerCase().includes(q) ||
+          String(hh.id || '').toLowerCase().includes(q) ||
+          String(hh.purok || '').toLowerCase().includes(q) ||
+          String(hh.address || '').toLowerCase().includes(q) ||
+          String(hh.importSource || '').toLowerCase().includes(q);
+        return matchesTab && matchesPurok && matchesQuery;
       });
 
       const tbody = document.getElementById('records-table-body');
       if (!tbody) return;
 
       if (filtered.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding: 24px; color: var(--text-muted);">No household records match the current filter.</td></tr>';
+        tbody.innerHTML = '<tr><td colspan="5" style="text-align:center; padding: 24px; color: var(--text-muted);">No matching household records found.</td></tr>';
         return;
       }
 
       tbody.innerHTML = filtered.map(hh => {
-        const memberCount = Array.isArray(hh.members) ? hh.members.length : 0;
-        let pillClass = 'pill-unverified';
-        if (hh.status === 'Verified') pillClass = 'pill-verified';
-        else if (hh.status === 'Needs Correction') pillClass = 'pill-needs';
-        else if (hh.status === 'Unable to Verify') pillClass = 'pill-unable';
+        const pillClass =
+          hh.verStatus === 'Verified' ? 'pill-verified' :
+          hh.verStatus === 'Needs Correction' ? 'pill-needs' :
+          hh.verStatus === 'Unable to Verify' ? 'pill-unable' :
+          'pill-unverified';
 
-        const allowDelete = typeof canDeleteHouseholdRecord === 'function' ? canDeleteHouseholdRecord(hh) : true;
-        const deleteBtnHtml = allowDelete
-          ? `<button type="button" class="btn-delete-record" onclick="handleDeleteRecord('${escapeRecHtml(hh.id)}')">Delete</button>`
-          : '';
+        const sourceMeta = hh.importSource ? ` · Source: ${escapeRecHtml(hh.importSource)}` : '';
 
         return `
           <tr data-id="${escapeRecHtml(hh.id)}">
             <td style="padding-left: 24px;">
               <strong>${escapeRecHtml(hh.head)} household</strong><br>
-              <span style="font-size: 11px; color: var(--text-muted);">${escapeRecHtml(hh.id)}</span>
+              <span style="font-size: 11px; color: var(--text-muted);">${escapeRecHtml(hh.id)}${sourceMeta}</span>
             </td>
+            <td>${escapeRecHtml(hh.purok || '')}</td>
+            <td><span class="pill ${pillClass}">${escapeRecHtml(hh.verStatus)}</span></td>
+            <td>${escapeRecHtml(hh.lastUpdated || '2026-11-26')}</td>
             <td>
-              ${escapeRecHtml(hh.purok || '')}<br>
-              <span style="font-size: 11px; color: var(--text-muted);">${escapeRecHtml(hh.address || '')}</span>
-            </td>
-            <td>${memberCount} ${memberCount === 1 ? 'member' : 'members'}</td>
-            <td><span class="pill ${pillClass}">${escapeRecHtml(hh.status)}</span></td>
-            <td>
-              <div style="display: flex; gap: 8px; align-items: center;">
-                <button type="button" class="btn btn-secondary btn-verify-action" style="padding: 6px 12px; font-size: 12px;" onclick="openHouseholdReview('${escapeRecHtml(hh.id)}')">Review</button>
-                ${deleteBtnHtml}
+              <div class="action-group">
+                <button type="button" class="btn btn-secondary btn-verify-action" style="padding: 6px 12px; font-size: 12px;">Review</button>
+                <button type="button" class="btn-delete-hh" onclick="deleteHouseholdRecord('${escapeRecHtml(hh.id)}', renderRecordsPage)">Delete</button>
               </div>
             </td>
           </tr>
@@ -229,7 +190,7 @@
       }).join('');
     }
 
-    document.addEventListener('DOMContentLoaded', renderHouseholdRecords);
+    document.addEventListener('DOMContentLoaded', renderRecordsPage);
   </script>
 </body>
 </html>
