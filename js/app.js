@@ -27,6 +27,7 @@ document.addEventListener('DOMContentLoaded', () => {
   initNetworkListener();
   initNotifications();
   initGlobalSearch();
+  ensureNoticeModal();
   ensureDeleteRecordModal();
   ensureExportConfirmModal();
   ensureImportRecordsModal();
@@ -62,13 +63,13 @@ document.addEventListener('DOMContentLoaded', () => {
         if (typeof runExportAction === 'function') {
           runExportAction(label);
         } else {
-          alert(`Exported ${label}.`);
+          openNoticeModal('Export Complete', `Exported ${label}.`);
         }
       });
     }
 
     if (e.target.closest('.page-btn')) {
-      alert('Page changed! (Simulated pagination)');
+      openNoticeModal('Pagination', 'Page changed! (Simulated pagination)');
     }
   });
 
@@ -88,6 +89,46 @@ document.addEventListener('DOMContentLoaded', () => {
 
 function removeDemoBadge() {
   document.querySelectorAll('.demo-badge').forEach(badge => badge.remove());
+}
+
+// =========================================
+// REUSABLE NOTICE MODAL
+// =========================================
+function ensureNoticeModal() {
+  if (document.getElementById('modal-relay-notice')) return;
+
+  const wrapper = document.createElement('div');
+  wrapper.innerHTML = `
+    <div id="modal-relay-notice" class="modal-overlay">
+      <div class="modal-box" style="max-width: 460px;">
+        <div class="modal-eyebrow" id="relay-notice-eyebrow">Relay Notice</div>
+        <div class="modal-title" id="relay-notice-title">Notice</div>
+        <div class="modal-desc" id="relay-notice-desc"></div>
+        <div class="modal-footer">
+          <div class="modal-footer-text" id="relay-notice-meta">Workspace update</div>
+          <div class="modal-actions">
+            <button type="button" class="btn btn-primary" onclick="hideModal('modal-relay-notice')">OK</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  `;
+  document.body.appendChild(wrapper.firstElementChild);
+}
+
+function openNoticeModal(title, message, eyebrow = 'Relay Notice', meta = 'Active workspace') {
+  ensureNoticeModal();
+  const eyebrowEl = document.getElementById('relay-notice-eyebrow');
+  const titleEl = document.getElementById('relay-notice-title');
+  const descEl = document.getElementById('relay-notice-desc');
+  const metaEl = document.getElementById('relay-notice-meta');
+
+  if (eyebrowEl) eyebrowEl.textContent = eyebrow;
+  if (titleEl) titleEl.textContent = title || 'Notice';
+  if (descEl) descEl.textContent = message || '';
+  if (metaEl) metaEl.textContent = meta || '';
+
+  showModal('modal-relay-notice');
 }
 
 // =========================================
@@ -289,7 +330,11 @@ function openDuplicateResolveModal(primaryHh, candidates = [], onResolved = null
 
   const list = Array.isArray(candidates) && candidates.length > 0 ? candidates : [];
   if (!primaryHh || list.length === 0) {
-    alert('No duplicate candidate records found for this household.');
+    openNoticeModal(
+      'No duplicate matches',
+      'No duplicate candidate records were found for this household.',
+      'UC-06 · Duplicate Check'
+    );
     return;
   }
 
@@ -321,7 +366,11 @@ function openDuplicateResolveModal(primaryHh, candidates = [], onResolved = null
 function openDuplicateCenterModal(onResolved = null) {
   const pairs = findAllDuplicatePairsInScope();
   if (pairs.length === 0) {
-    alert('No active possible duplicate pairs detected in your current workspace.');
+    openNoticeModal(
+      'No duplicates detected',
+      'There are no active possible duplicate pairs in your current workspace.',
+      'UC-06 · Duplicate Check'
+    );
     return;
   }
 
@@ -502,7 +551,6 @@ function resolveDuplicateMerge() {
   };
   localStorage.setItem('custom_households', JSON.stringify(custom));
 
-  // Archive secondary record B and preserve history of both
   const deleted = JSON.parse(localStorage.getItem('deleted_households')) || {};
   deleted[recB.id] = Date.now();
   localStorage.setItem('deleted_households', JSON.stringify(deleted));
@@ -694,7 +742,11 @@ function deleteHouseholdRecord(hhId, onAfterDelete) {
   const recordObj = getLatestRecordById(hhId);
 
   if (!canDeleteHouseholdRecord(recordObj)) {
-    alert('You can only delete household records within your assigned barangay workspace.');
+    openNoticeModal(
+      'Permission Restricted',
+      'You can only delete household records within your assigned barangay workspace.',
+      'Workspace Access'
+    );
     return false;
   }
 
@@ -782,7 +834,11 @@ function confirmExportModal() {
 
 function openExportConfirmModal(exportLabel, onConfirm) {
   if (!navigator.onLine) {
-    alert('You are currently offline. Export cannot be completed until you reconnect.');
+    openNoticeModal(
+      'Offline Mode',
+      'You are currently offline. Export cannot be completed until you reconnect.',
+      'Network Status'
+    );
     return;
   }
 
@@ -862,7 +918,11 @@ function ensureImportRecordsModal() {
 
 function openImportRecordsModal() {
   if (!navigator.onLine) {
-    alert('You are currently offline. Connect to import record files.');
+    openNoticeModal(
+      'Offline Mode',
+      'You are currently offline. Connect to import record files.',
+      'Network Status'
+    );
     return;
   }
   ensureImportRecordsModal();
@@ -1609,10 +1669,16 @@ window.addEventListener('storage', (e) => {
     const sessions = JSON.parse(e.newValue) || {};
     const currentSessionId = sessionStorage.getItem('relay-session-id');
     if (currentSessionId && !sessions[currentSessionId]) {
-      alert('Your session has been terminated by an administrator or another device.');
       localStorage.removeItem('relay-user');
       localStorage.removeItem('relay-role');
-      window.location.href = 'index.html';
+      openNoticeModal(
+        'Session Ended',
+        'Your session has been terminated by an administrator or another device.',
+        'Session Security'
+      );
+      setTimeout(() => {
+        window.location.href = 'index.html';
+      }, 1200);
     }
   }
 });
