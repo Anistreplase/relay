@@ -161,7 +161,7 @@ const DEFAULT_RELAY_USERS = [
   {
     id: 'USR-04',
     name: 'T. Odicta',
-    email: 'purok2@tibanga.gov.ph',
+    email: 'purok@tibanga.gov.ph',
     role: 'Purok Officer',
     workspace: 'Barangay Tibanga',
     barangay: 'Tibanga',
@@ -181,7 +181,7 @@ const DEFAULT_RELAY_USERS = [
   {
     id: 'USR-06',
     name: 'E. Ramos',
-    email: 'purok4@saray.gov.ph',
+    email: 'purok@saray.gov.ph',
     role: 'Purok Officer',
     workspace: 'Barangay Saray',
     barangay: 'Saray',
@@ -220,8 +220,18 @@ function getRelayUsers() {
 // =========================================
 // SMART LOGIN LOGIC
 // =========================================
+function inferWorkspaceFromEmail(emailStr) {
+  const lower = String(emailStr || '').trim().toLowerCase();
+  if (lower.includes('tibanga')) return 'Barangay Tibanga';
+  if (lower.includes('saray')) return 'Barangay Saray';
+  if (lower.includes('sanmiguel') || lower.includes('san miguel')) return 'Barangay San Miguel';
+  return null;
+}
+
 function simulateLogin(event) {
-  event.preventDefault();
+  if (event && typeof event.preventDefault === 'function') {
+    event.preventDefault();
+  }
   const emailInput = document.getElementById('email');
   const email = (emailInput ? emailInput.value : '').trim().toLowerCase();
   if (!email) return;
@@ -234,18 +244,10 @@ function simulateLogin(event) {
     assignedWorkspace = 'City-Wide Administration';
   } else if (email.includes('purok')) {
     assignedRole = 'Purok Officer';
+    assignedWorkspace = inferWorkspaceFromEmail(email) || 'Barangay San Miguel';
   } else {
     assignedRole = 'Barangay Official';
-  }
-
-  if (assignedRole !== 'Admin') {
-    if (email.includes('tibanga')) {
-      assignedWorkspace = 'Barangay Tibanga';
-    } else if (email.includes('saray')) {
-      assignedWorkspace = 'Barangay Saray';
-    } else {
-      assignedWorkspace = 'Barangay San Miguel';
-    }
+    assignedWorkspace = inferWorkspaceFromEmail(email) || 'Barangay San Miguel';
   }
 
   localStorage.setItem('relay-user', email);
@@ -260,9 +262,14 @@ function simulateLogin(event) {
 // =========================================
 function updateUserProfile() {
   const savedRole = localStorage.getItem('relay-role') || 'Barangay Official';
+  const savedUserEmail = (localStorage.getItem('relay-user') || '').trim().toLowerCase();
   let savedWorkspace = localStorage.getItem('relay-workspace') || 'Barangay San Miguel';
 
-  if (savedRole !== 'Admin' && savedWorkspace === 'City-Wide Administration') {
+  const inferredFromUser = inferWorkspaceFromEmail(savedUserEmail);
+  if (savedRole !== 'Admin' && inferredFromUser) {
+    savedWorkspace = inferredFromUser;
+    localStorage.setItem('relay-workspace', savedWorkspace);
+  } else if (savedRole !== 'Admin' && savedWorkspace === 'City-Wide Administration') {
     savedWorkspace = 'Barangay San Miguel';
     localStorage.setItem('relay-workspace', savedWorkspace);
   }
