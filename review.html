@@ -3,19 +3,22 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Relay - Review Household</title>
+  <title>Relay - Review Household Record</title>
   <link rel="stylesheet" href="css/style.css">
   <style>
     .review-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 24px; }
-    .detail-row { display: flex; justify-content: space-between; padding: 12px 0; border-bottom: 1px solid var(--border); font-size: 13px; }
-    .detail-row:last-child { border-bottom: none; }
-    .detail-label { color: var(--text-muted); width: 40%; }
-    .detail-value { font-weight: 600; width: 60%; }
-    .decision-card { border: 2px solid var(--maroon); border-radius: 8px; padding: 20px; background: #FFFDF5; }
-    .radio-group { display: flex; flex-direction: column; gap: 12px; margin: 16px 0; }
-    .radio-label { display: flex; align-items: center; gap: 8px; font-size: 13px; font-weight: 600; cursor: pointer; }
-    .radio-label input { width: 16px; height: 16px; accent-color: var(--maroon); }
-    .success-icon { font-size: 40px; margin-bottom: 16px; }
+    .review-card { background: var(--white); border: 1px solid var(--border); border-radius: 8px; padding: 24px; margin-bottom: 24px; }
+    .review-card h3 { font-size: 16px; margin-bottom: 4px; }
+    .review-card p.desc { font-size: 12px; color: var(--text-muted); margin-bottom: 18px; }
+    .detail-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; padding-bottom: 16px; border-bottom: 1px solid var(--border); margin-bottom: 16px; }
+    .detail-item .label { font-size: 11px; color: var(--text-muted); text-transform: uppercase; font-weight: 600; margin-bottom: 4px; }
+    .detail-item .val { font-size: 13px; color: var(--text-main); font-weight: 500; }
+    .radio-option { display: flex; align-items: flex-start; gap: 10px; padding: 12px; border: 1px solid var(--border); border-radius: 8px; margin-bottom: 10px; cursor: pointer; background: var(--white); }
+    .radio-option input { margin-top: 3px; }
+    .radio-option strong { display: block; font-size: 13px; color: var(--text-main); }
+    .radio-option span { font-size: 12px; color: var(--text-muted); }
+    .btn-delete-record { padding: 8px 14px; font-size: 13px; background: #FEE2E2; color: #991B1B; border: 1px solid #FCA5A5; border-radius: 6px; cursor: pointer; font-weight: 600; }
+    .btn-delete-record:hover { background: #FECACA; }
   </style>
 </head>
 <body>
@@ -36,7 +39,7 @@
       <nav class="sidebar-nav" style="margin-top: 12px;"><a href="settings.html"><span class="nav-icon">⚙</span> Settings</a><a href="help.html"><span class="nav-icon">?</span> Help & support</a></nav>
     </div>
   </aside>
-  
+
   <main class="main-content">
     <header class="topbar">
       <div class="topbar-left">
@@ -44,128 +47,170 @@
         <div class="search-bar"><span>🔍</span> Search households, puroks, records...</div>
       </div>
       <div class="topbar-right">
-        <span class="demo-badge">DEMO WORKSPACE</span><span>🔔</span>
+        <span>🔔</span>
         <div class="user-profile"><div class="user-info"><div class="user-name">Loading...</div><div class="user-role">Loading...</div></div></div>
       </div>
     </header>
-    
+
     <div class="page-header">
-      <div>
-        <div style="font-size: 11px; color: var(--text-muted); margin-bottom: 8px; text-transform: uppercase;">Verification queue</div>
-        <h1>Review household record</h1>
-        <p id="dynamic-header-text">Loading...</p>
+      <div><h1>Review household record</h1><p id="review-subtitle">Inspect household details, verification status, or remove duplicate entries.</p></div>
+      <div style="display: flex; gap: 10px; align-items: center;">
+        <button type="button" class="btn-delete-record" id="btn-review-delete" onclick="handleReviewDelete()">Delete</button>
+        <a href="records.html" class="btn btn-secondary">Back to records</a>
       </div>
-      <div><span class="pill pill-unverified">Unverified</span></div>
     </div>
-    
+
     <div class="page-body">
       <div class="review-grid">
-        <div style="display: flex; flex-direction: column; gap: 24px;">
-          <div class="card">
-            <div class="card-header"><div class="card-title">Household details</div><span id="review-id" style="font-size: 12px; color: var(--text-muted);"></span></div>
-            <div class="detail-row"><div class="detail-label">Household head</div><div class="detail-value" id="review-head"></div></div>
-            <div class="detail-row"><div class="detail-label">Address</div><div class="detail-value" id="review-address"></div></div>
-            <div class="detail-row"><div class="detail-label">Purok</div><div class="detail-value" id="review-purok"></div></div>
-            <div class="detail-row"><div class="detail-label">Contact number</div><div class="detail-value" id="review-contact"></div></div>
-            <div class="detail-row"><div class="detail-label">Tenure</div><div class="detail-value" id="review-tenure"></div></div>
-          </div>
-          <div class="card">
-            <div class="card-header"><div class="card-title">Household members</div></div>
-            <table><thead><tr><th>Name</th><th>Age</th><th>Category</th><th>Assistance needed</th></tr></thead><tbody id="review-members-body"></tbody></table>
+        <div>
+          <div class="review-card">
+            <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 14px;">
+              <div>
+                <h3 id="hh-title">Loading household...</h3>
+                <p class="desc" id="hh-id-line" style="margin-bottom: 0;">Record ID</p>
+              </div>
+              <span class="pill pill-unverified" id="hh-current-status">Unverified</span>
+            </div>
+
+            <div class="detail-grid">
+              <div class="detail-item"><div class="label">Barangay</div><div class="val" id="hh-barangay">-</div></div>
+              <div class="detail-item"><div class="label">Purok</div><div class="val" id="hh-purok">-</div></div>
+              <div class="detail-item"><div class="label">Address</div><div class="val" id="hh-address">-</div></div>
+              <div class="detail-item"><div class="label">Contact / Tenure</div><div class="val" id="hh-contact">-</div></div>
+            </div>
+
+            <h4 style="font-size: 13px; font-weight: 600; margin-bottom: 10px;">Household members</h4>
+            <div class="table-container">
+              <table>
+                <thead style="background: #F9FAFB;">
+                  <tr>
+                    <th>Name</th>
+                    <th>Relationship</th>
+                    <th>Category</th>
+                    <th>Assistance need</th>
+                  </tr>
+                </thead>
+                <tbody id="hh-members-body"></tbody>
+              </table>
+            </div>
           </div>
         </div>
-        <div style="display: flex; flex-direction: column; gap: 24px;">
-          <div class="decision-card">
-            <h3 style="font-size: 15px; color: var(--maroon); margin-bottom: 8px;">Verification decision</h3>
-            <div class="radio-group">
-              <label class="radio-label"><input type="radio" name="verification" value="Verified" checked> Verified</label>
-              <label class="radio-label"><input type="radio" name="verification" value="Needs Correction"> Needs Correction</label>
-              <label class="radio-label"><input type="radio" name="verification" value="Unable to Verify"> Unable to Verify</label>
-            </div>
-            <button class="btn btn-primary" style="width: 100%; justify-content: center;" onclick="showModal('modal-verify')">Save verification</button>
+
+        <div>
+          <div class="review-card">
+            <h3>Verification decision</h3>
+            <p class="desc">Set the validation status for this record.</p>
+            <form onsubmit="event.preventDefault(); saveVerification();">
+              <label class="radio-option">
+                <input type="radio" name="verification" value="Verified" checked>
+                <div><strong>Verified</strong><span>Approved for preparedness, mapping, and response coordination.</span></div>
+              </label>
+              <label class="radio-option">
+                <input type="radio" name="verification" value="Needs Correction">
+                <div><strong>Needs Correction</strong><span>Return for purok follow-up or detail updates.</span></div>
+              </label>
+              <label class="radio-option">
+                <input type="radio" name="verification" value="Unable to Verify">
+                <div><strong>Unable to Verify</strong><span>Flag incomplete or unreachable record details.</span></div>
+              </label>
+              <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center; margin-top: 8px;">Save verification</button>
+            </form>
           </div>
         </div>
       </div>
     </div>
   </main>
 
-  <!-- MODAL 1: ACTION PREVIEW -->
-  <div id="modal-verify" class="modal-overlay">
-    <div class="modal-box">
-      <div class="modal-eyebrow">Interactive Preview</div>
-      <div class="modal-title">Verification action preview</div>
-      <div class="modal-desc">The selected outcome is <strong><span id="modal-status-text">Verified</span></strong>. Saving this record will update its status and make it available to authorized responders.</div>
-      <div class="modal-footer">
-        <div class="modal-footer-text">Sample interaction · No real records are changed.</div>
-        <div class="modal-actions">
-          <button class="btn btn-primary" onclick="processVerification()">Continue</button>
-          <button class="btn btn-secondary" onclick="hideModal('modal-verify')">Close</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
-  <!-- MODAL 2: SUCCESS CONFIRMATION -->
-  <div id="modal-success" class="modal-overlay">
-    <div class="modal-box" style="text-align: center;">
-      <div class="success-icon">✅</div>
-      <div class="modal-title">Record updated successfully</div>
-      <div class="modal-desc">The household record has been marked as <strong><span id="success-status-text">Verified</span></strong> and the changes have been saved.</div>
-      <div class="modal-footer" style="justify-content: center; border-top: none;">
-        <div class="modal-actions">
-          <button class="btn btn-primary" onclick="window.location.href='records.html'">Back to Records</button>
-        </div>
-      </div>
-    </div>
-  </div>
-
   <script src="js/database.js"></script>
+  <script src="js/app.js"></script>
   <script>
-    let currentRecordId = 'HH-SM-0248';
-    document.addEventListener('DOMContentLoaded', () => {
-      currentRecordId = localStorage.getItem('selected_household') || 'HH-SM-0248';
-      let all = [];
-      for (const key in households) all.push(households[key]);
-      const custom = JSON.parse(localStorage.getItem('custom_households')) || {};
-      for (const key in custom) all.push(custom[key]);
-      
-      const data = all.find(h => h.id === currentRecordId);
-      if (data) {
-        document.getElementById('review-id').textContent = data.id;
-        document.getElementById('review-head').textContent = data.head;
-        document.getElementById('review-address').textContent = data.address;
-        document.getElementById('review-purok').textContent = data.purok;
-        document.getElementById('review-contact').textContent = data.contact;
-        document.getElementById('review-tenure').textContent = data.tenure;
-        document.getElementById('dynamic-header-text').innerHTML = `${data.head} household · ${data.purok.split(',')[0]} · Submitted 24 October 2026`;
-        const membersBody = document.getElementById('review-members-body'); membersBody.innerHTML = ''; 
-        data.members.forEach(member => {
-          membersBody.innerHTML += `<tr><td><strong>${member.name}</strong></td><td>${member.age}</td><td>${member.category}</td><td>${member.needs}</td></tr>`;
-        });
+    let activeReviewRecord = null;
+
+    function escapeRevHtml(value) {
+      return String(value ?? '')
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
+    }
+
+    function resolveTargetHousehold() {
+      const selectedId = localStorage.getItem('selected_household');
+      const scoped = typeof getScopedHouseholds === 'function' && typeof households !== 'undefined'
+        ? getScopedHouseholds(households)
+        : Object.values(typeof households !== 'undefined' ? households : {});
+
+      if (selectedId) {
+        const match = scoped.find(hh => hh.id === selectedId);
+        if (match) return match;
+      }
+      return scoped[0] || null;
+    }
+
+    function renderReviewPage() {
+      const hh = resolveTargetHousehold();
+      activeReviewRecord = hh;
+      const deleteBtn = document.getElementById('btn-review-delete');
+
+      if (!hh) {
+        document.getElementById('hh-title').textContent = 'No household record found';
+        document.getElementById('hh-id-line').textContent = 'Select a record from Household records.';
+        document.getElementById('hh-members-body').innerHTML = '<tr><td colspan="4" style="text-align:center; padding: 18px; color: var(--text-muted);">No record available.</td></tr>';
+        if (deleteBtn) deleteBtn.style.display = 'none';
+        return;
       }
 
-      document.querySelectorAll('input[name="verification"]').forEach(radio => {
-        radio.addEventListener('change', (e) => {
-          document.getElementById('modal-status-text').textContent = e.target.value;
-        });
-      });
-    });
+      localStorage.setItem('selected_household', hh.id);
+      const status = localStorage.getItem(`record_${hh.id}`) || 'Unverified';
 
-    // This function runs when you click "Continue" on the first modal
-    function processVerification() {
-      const selectedStatus = document.querySelector('input[name="verification"]:checked').value;
-      
-      // Save to database
-      localStorage.setItem(`record_${currentRecordId}`, selectedStatus);
-      
-      // Update the text on the success modal
-      document.getElementById('success-status-text').textContent = selectedStatus;
-      
-      // Hide the first modal and show the success modal
-      hideModal('modal-verify');
-      showModal('modal-success');
+      document.getElementById('hh-title').textContent = `${hh.head} household`;
+      document.getElementById('hh-id-line').textContent = `Record ID: ${hh.id}`;
+      document.getElementById('hh-barangay').textContent = hh.barangay || 'San Miguel';
+      document.getElementById('hh-purok').textContent = hh.purok || '-';
+      document.getElementById('hh-address').textContent = hh.address || '-';
+      document.getElementById('hh-contact').textContent = `${hh.contact || 'N/A'} · ${hh.tenure || 'Resident'}`;
+
+      const statusPill = document.getElementById('hh-current-status');
+      statusPill.textContent = status;
+      statusPill.className = 'pill ' + (
+        status === 'Verified' ? 'pill-verified' :
+        status === 'Needs Correction' ? 'pill-needs' :
+        'pill-unverified'
+      );
+
+      const radio = document.querySelector(`input[name="verification"][value="${status}"]`);
+      if (radio) radio.checked = true;
+
+      const members = Array.isArray(hh.members) ? hh.members : [];
+      const tbody = document.getElementById('hh-members-body');
+      tbody.innerHTML = members.length === 0
+        ? '<tr><td colspan="4" style="text-align:center; padding: 16px; color: var(--text-muted);">No member entries listed.</td></tr>'
+        : members.map(m => `
+            <tr>
+              <td><strong>${escapeRevHtml(m.name)}</strong>${m.age ? ` <span style="font-size:11px; color:var(--text-muted);">(${escapeRevHtml(m.age)} yrs)</span>` : ''}</td>
+              <td>${escapeRevHtml(m.rel || m.relationship || 'Member')}</td>
+              <td>${escapeRevHtml(m.category || 'None')}</td>
+              <td>${escapeRevHtml(m.needs || 'None')}</td>
+            </tr>
+          `).join('');
+
+      if (deleteBtn) {
+        const allowed = typeof canDeleteHouseholdRecord === 'function' ? canDeleteHouseholdRecord(hh) : true;
+        deleteBtn.style.display = allowed ? 'inline-flex' : 'none';
+      }
     }
+
+    function handleReviewDelete() {
+      if (!activeReviewRecord || !activeReviewRecord.id) return;
+      if (typeof deleteHouseholdRecord === 'function') {
+        deleteHouseholdRecord(activeReviewRecord.id, () => {
+          window.location.href = 'records.html';
+        });
+      }
+    }
+
+    document.addEventListener('DOMContentLoaded', renderReviewPage);
   </script>
-  <script src="js/app.js"></script>
 </body>
 </html>
