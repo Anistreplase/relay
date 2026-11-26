@@ -3,17 +3,17 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Relay - Revalidation & Post-Event</title>
+  <title>Relay - Revalidation</title>
   <link rel="stylesheet" href="css/style.css">
   <style>
-    .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
-    .kpi-card { background: var(--white); border: 1px solid var(--border); border-radius: 8px; padding: 20px; }
-    .kpi-card .kpi-label { font-size: 12px; color: var(--text-muted); font-weight: 600; margin-bottom: 8px; }
-    .kpi-card .kpi-value { font-size: 28px; font-weight: 700; color: var(--text-main); }
-    .revalidation-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 24px; }
-    .checklist-item { display: flex; gap: 12px; font-size: 13px; color: var(--text-main); margin-bottom: 12px; line-height: 1.4; }
-    .checklist-item input[type="checkbox"] { margin-top: 2px; accent-color: var(--maroon); }
-    .status-en-route { background: #FEF3C7; color: #92400E; }
+    .filters-row { display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
+    .filter-input { background: var(--white); border: 1px solid var(--border); border-radius: 6px; padding: 10px 14px; font-size: 13px; color: var(--text-main); }
+    .filter-input:focus { outline: none; border-color: var(--maroon); }
+    .search-input { flex-grow: 1; min-width: 240px; }
+    .reval-badge-due { background: #FEF3C7; color: #92400E; }
+    .reval-badge-done { background: #D1FAE5; color: #065F46; }
+    .reval-badge-flag { background: #FEE2E2; color: #991B1B; }
+    .reval-toast { display: none; position: fixed; bottom: 24px; right: 24px; background: #065F46; color: #FFFFFF; padding: 12px 16px; border-radius: 8px; font-size: 13px; font-weight: 600; box-shadow: 0 8px 20px rgba(0,0,0,0.15); z-index: 2000; }
   </style>
 </head>
 <body>
@@ -34,6 +34,7 @@
       <nav class="sidebar-nav" style="margin-top: 12px;"><a href="settings.html"><span class="nav-icon">⚙</span> Settings</a><a href="help.html"><span class="nav-icon">?</span> Help & support</a></nav>
     </div>
   </aside>
+
   <main class="main-content">
     <header class="topbar">
       <div class="topbar-left">
@@ -45,115 +46,198 @@
         <div class="user-profile"><div class="user-info"><div class="user-name">Loading...</div><div class="user-role">Loading...</div></div></div>
       </div>
     </header>
+
     <div class="page-header">
-      <div><h1>Revalidation & post-event review</h1><p>Review current verified records after an event.</p></div>
-      <div><button class="btn btn-secondary btn-export-action">View reminder history</button></div>
+      <div><h1>Revalidation</h1><p>Confirm post-event resident conditions, transfers, or return-for-correction status.</p></div>
+      <div style="font-size: 12px; color: var(--text-muted);" id="reval-summary-count">0 due for revalidation</div>
     </div>
+
     <div class="page-body">
-      <div class="kpi-grid">
-        <div class="kpi-card"><div class="kpi-label">Due for revalidation</div><div class="kpi-value" id="count-due">0</div></div>
-        <div class="kpi-card"><div class="kpi-label">Overdue</div><div class="kpi-value" style="color: #EF4444;" id="count-overdue">0</div></div>
-        <div class="kpi-card"><div class="kpi-label">Post-event follow-ups</div><div class="kpi-value" id="count-followup">0</div></div>
-        <div class="kpi-card"><div class="kpi-label">Completed this week</div><div class="kpi-value" style="color: #10B981;">18</div></div>
+      <div class="filters-row">
+        <input type="text" id="reval-search" class="filter-input search-input" placeholder="Search by household head, ID, or purok..." oninput="renderRevalidationPage()">
+        <select id="filter-reval-state" class="filter-input" onchange="renderRevalidationPage()">
+          <option value="All">All revalidation items</option>
+          <option value="Due">Due for Revalidation</option>
+          <option value="Revalidated">Revalidated</option>
+          <option value="Needs Correction">Returned for Correction</option>
+        </select>
       </div>
-      <div class="revalidation-grid">
-        <div class="card" style="padding: 0; overflow: hidden; height: fit-content;">
-          <div class="card-header" style="padding: 20px 24px; border-bottom: 1px solid var(--border);">
-            <div class="card-title">Your household work queue</div>
-          </div>
-          <div class="table-container">
-            <table>
-              <thead style="background: #F9FAFB;"><tr><th style="padding-left: 24px;">Household</th><th>Last verified</th><th>Task</th></tr></thead>
-              <tbody id="reval-table-body"></tbody>
-            </table>
-          </div>
-        </div>
-        <div style="display: flex; flex-direction: column; gap: 24px;">
-          <div class="card" style="background: #FFFDF5; border-color: #FCD34D;">
-            <h3 style="font-size: 15px; margin-bottom: 4px;">Complete household follow-up</h3>
-            <p style="font-size: 12px; color: var(--text-muted); margin-bottom: 16px;" id="selected-hh-name">No household selected</p>
 
-            <div class="checklist-item">
-              <input type="checkbox" id="check-1" checked>
-              <div><strong>Review with the household</strong><br><span style="color: var(--text-muted); font-size: 11px;">✓ Resident composition<br>✓ Address and contact details<br>✓ Assistance and health needs<br>✓ Evacuation and return status</span></div>
-            </div>
-            <div class="checklist-item" style="margin-top: 16px;">
-              <input type="checkbox" id="check-2">
-              <div><strong>Follow-up notes</strong><br><textarea id="reval-notes" rows="2" style="width: 100%; margin-top: 4px; padding: 8px; border: 1px solid var(--border); border-radius: 4px; font-family: inherit; font-size: 12px;" placeholder="e.g. Residents have returned home..."></textarea></div>
-            </div>
-
-            <div style="font-size: 11px; color: var(--text-muted); margin: 16px 0; padding-top: 16px; border-top: 1px solid #FCD34D;">Updated records are saved as Unverified and return to the DRRM verification queue.</div>
-            <button class="btn btn-primary" style="width: 100%; justify-content: center;" onclick="submitRevalidation()">Re-submit for verification</button>
-          </div>
+      <div class="card" style="padding: 0; overflow: hidden;">
+        <div class="table-container">
+          <table>
+            <thead style="background: #F9FAFB;">
+              <tr>
+                <th style="padding-left: 24px;">Household / ID</th>
+                <th>Purok / Vulnerable Need</th>
+                <th>Revalidation Status</th>
+                <th>Actions</th>
+              </tr>
+            </thead>
+            <tbody id="reval-table-body"></tbody>
+          </table>
         </div>
       </div>
     </div>
   </main>
+
+  <div id="reval-toast" class="reval-toast">Revalidation updated</div>
+
   <script src="js/database.js"></script>
   <script src="js/app.js"></script>
   <script>
-    let verifiedHouseholds = [];
-    let selectedHouseholdId = null;
-
     function escapeRevalHtml(value) {
       return String(value ?? '')
-        .replace(/&/g, '&')
-        .replace(/</g, '<')
-        .replace(/>/g, '>')
-        .replace(/"/g, '"')
-        .replace(/'/g, ''');
+        .replace(/&/g, '&amp;')
+        .replace(/</g, '&lt;')
+        .replace(/>/g, '&gt;')
+        .replace(/"/g, '&quot;')
+        .replace(/'/g, '&#39;');
     }
 
-    document.addEventListener('DOMContentLoaded', () => {
-      const all = typeof getScopedHouseholds === 'function'
-        ? getScopedHouseholds(households)
-        : Object.values(households || {});
+    function readRevalidatedMap() {
+      const saved = JSON.parse(localStorage.getItem('revalidated_households') || '{}');
+      return saved && typeof saved === 'object' ? saved : {};
+    }
 
-      verifiedHouseholds = all.filter(hh => (localStorage.getItem(`record_${hh.id}`) || 'Unverified') === 'Verified');
+    function markRevalidated(hhId) {
+      if (!hhId) return;
+      const revalMap = readRevalidatedMap();
+      revalMap[hhId] = { status: 'Revalidated', updatedAt: Date.now() };
+      localStorage.setItem('revalidated_households', JSON.stringify(revalMap));
+      localStorage.setItem(`record_${hhId}`, 'Verified');
+      sessionStorage.removeItem('notifs-read');
+
+      if (!navigator.onLine) {
+        const offlineQueue = JSON.parse(localStorage.getItem('offline_queue') || '[]');
+        offlineQueue.push({ id: hhId, type: 'revalidation', status: 'Revalidated', timestamp: Date.now() });
+        localStorage.setItem('offline_queue', JSON.stringify(offlineQueue));
+      }
+
+      if (typeof generateNotifications === 'function') generateNotifications();
+      renderRevalidationPage();
+      showRevalToast(`Marked ${hhId} as Revalidated`);
+    }
+
+    function flagRevalidationCorrection(hhId) {
+      if (!hhId) return;
+      const revalMap = readRevalidatedMap();
+      revalMap[hhId] = { status: 'Needs Correction', updatedAt: Date.now() };
+      localStorage.setItem('revalidated_households', JSON.stringify(revalMap));
+      localStorage.setItem(`record_${hhId}`, 'Needs Correction');
+      sessionStorage.removeItem('notifs-read');
+
+      if (!navigator.onLine) {
+        const offlineQueue = JSON.parse(localStorage.getItem('offline_queue') || '[]');
+        offlineQueue.push({ id: hhId, type: 'revalidation', status: 'Needs Correction', timestamp: Date.now() });
+        localStorage.setItem('offline_queue', JSON.stringify(offlineQueue));
+      }
+
+      if (typeof generateNotifications === 'function') generateNotifications();
+      renderRevalidationPage();
+      showRevalToast(`Returned ${hhId} for correction`);
+    }
+
+    function showRevalToast(msg) {
+      const toast = document.getElementById('reval-toast');
+      if (!toast) return;
+      toast.textContent = msg;
+      toast.style.display = 'block';
+      clearTimeout(window._revalToastTimer);
+      window._revalToastTimer = setTimeout(() => {
+        toast.style.display = 'none';
+      }, 2200);
+    }
+
+    function renderRevalidationPage() {
+      const scoped = typeof getScopedHouseholds === 'function' && typeof households !== 'undefined'
+        ? getScopedHouseholds(households)
+        : Object.values(typeof households !== 'undefined' ? households : {});
+
+      const revalMap = readRevalidatedMap();
+
+      const candidates = scoped
+        .map(hh => {
+          const recStatus = localStorage.getItem(`record_${hh.id}`) || 'Unverified';
+          const revalEntry = revalMap[hh.id];
+          let revalState = 'Due';
+          if (revalEntry && revalEntry.status === 'Revalidated' && recStatus === 'Verified') {
+            revalState = 'Revalidated';
+          } else if (revalEntry && revalEntry.status === 'Needs Correction' && recStatus === 'Needs Correction') {
+            revalState = 'Needs Correction';
+          } else if (recStatus === 'Needs Correction') {
+            revalState = 'Needs Correction';
+          }
+
+          const firstMember = Array.isArray(hh.members) && hh.members[0] ? hh.members[0] : { needs: 'None reported' };
+          const needText = firstMember.needs && firstMember.needs !== 'None' ? firstMember.needs : 'None reported';
+          return { ...hh, recStatus, revalState, needText };
+        })
+        .filter(hh => hh.recStatus === 'Verified' || hh.revalState === 'Revalidated' || hh.revalState === 'Needs Correction');
+
+      const dueCount = candidates.filter(hh => hh.revalState === 'Due').length;
+      const summaryEl = document.getElementById('reval-summary-count');
+      if (summaryEl) {
+        summaryEl.textContent = `${dueCount} ${dueCount === 1 ? 'household' : 'households'} due for revalidation`;
+      }
+
+      const query = (document.getElementById('reval-search')?.value || '').trim().toLowerCase();
+      const stateFilter = document.getElementById('filter-reval-state')?.value || 'All';
+
+      const filtered = candidates.filter(hh => {
+        const matchesState = stateFilter === 'All' || hh.revalState === stateFilter;
+        const matchesQuery =
+          !query ||
+          String(hh.head || '').toLowerCase().includes(query) ||
+          String(hh.id || '').toLowerCase().includes(query) ||
+          String(hh.purok || '').toLowerCase().includes(query) ||
+          String(hh.needText || '').toLowerCase().includes(query);
+        return matchesState && matchesQuery;
+      });
 
       const tbody = document.getElementById('reval-table-body');
-      tbody.innerHTML = '';
+      if (!tbody) return;
 
-      if (verifiedHouseholds.length === 0) {
-        tbody.innerHTML = '<tr><td colspan="3" style="text-align:center; padding: 20px;">No verified households available for revalidation.</td></tr>';
-        document.getElementById('count-due').textContent = '0';
-      } else {
-        document.getElementById('count-due').textContent = verifiedHouseholds.length;
-        verifiedHouseholds.forEach((hh, index) => {
-          tbody.innerHTML += `
-            <tr data-reval-id="${escapeRevalHtml(hh.id)}" data-reval-head="${escapeRevalHtml(hh.head)}" style="cursor:pointer; ${index === 0 ? 'background: #F3F4F6;' : ''}">
-              <td style="padding-left: 24px;"><strong>${escapeRevalHtml(hh.head)} household</strong><br><span style="color:var(--text-muted); font-size:11px;">${escapeRevalHtml(hh.id)}</span></td>
-              <td>24 Oct 2026</td>
-              <td><span class="pill status-en-route">Due today</span></td>
-            </tr>
-          `;
-        });
-
-        tbody.addEventListener('click', (e) => {
-          const row = e.target.closest('tr[data-reval-id]');
-          if (!row) return;
-          tbody.querySelectorAll('tr[data-reval-id]').forEach(r => {
-            r.style.background = '';
-          });
-          row.style.background = '#F3F4F6';
-          selectHousehold(row.getAttribute('data-reval-id'), row.getAttribute('data-reval-head'));
-        });
-
-        selectHousehold(verifiedHouseholds[0].id, verifiedHouseholds[0].head);
+      if (filtered.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding: 24px; color: var(--text-muted);">No records match the current revalidation filter.</td></tr>';
+        return;
       }
-    });
 
-    function selectHousehold(id, head) {
-      selectedHouseholdId = id;
-      document.getElementById('selected-hh-name').textContent = `${head} household · ${id}`;
+      tbody.innerHTML = filtered.map(hh => {
+        let badgeClass = 'reval-badge-due';
+        let badgeLabel = 'Due for Revalidation';
+        if (hh.revalState === 'Revalidated') {
+          badgeClass = 'reval-badge-done';
+          badgeLabel = 'Revalidated';
+        } else if (hh.revalState === 'Needs Correction') {
+          badgeClass = 'reval-badge-flag';
+          badgeLabel = 'Needs Correction';
+        }
+
+        return `
+          <tr>
+            <td style="padding-left: 24px;">
+              <strong>${escapeRevalHtml(hh.head)} household</strong><br>
+              <span style="font-size: 11px; color: var(--text-muted);">${escapeRevalHtml(hh.id)}</span>
+            </td>
+            <td>
+              ${escapeRevalHtml(hh.purok || '')}<br>
+              <span style="font-size: 11px; color: var(--text-muted);">${escapeRevalHtml(hh.needText)}</span>
+            </td>
+            <td><span class="pill ${badgeClass}">${escapeRevalHtml(badgeLabel)}</span></td>
+            <td>
+              <div style="display: flex; gap: 8px; flex-wrap: wrap;">
+                <button type="button" class="btn btn-primary" style="padding: 6px 12px; font-size: 12px;" onclick="markRevalidated('${escapeRevalHtml(hh.id)}')">Confirm Revalidated</button>
+                <button type="button" class="btn btn-secondary" style="padding: 6px 12px; font-size: 12px;" onclick="flagRevalidationCorrection('${escapeRevalHtml(hh.id)}')">Needs Correction</button>
+              </div>
+            </td>
+          </tr>
+        `;
+      }).join('');
     }
 
-    function submitRevalidation() {
-      if (!selectedHouseholdId) return;
-      localStorage.setItem(`record_${selectedHouseholdId}`, 'Unverified');
-      alert('Household re-submitted for verification! It is now back in the Verification Queue.');
-      window.location.href = 'records.html';
-    }
+    document.addEventListener('DOMContentLoaded', renderRevalidationPage);
+    window.addEventListener('storage', renderRevalidationPage);
   </script>
 </body>
 </html>
