@@ -3,21 +3,20 @@
 <head>
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>Relay - Dashboard</title>
+  <title>Relay - Overview</title>
   <link rel="stylesheet" href="css/style.css">
   <style>
-    .kpi-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 24px; }
-    .kpi-card { background: var(--white); border: 1px solid var(--border); border-radius: 8px; padding: 20px; }
-    .kpi-card .kpi-label { font-size: 12px; color: var(--text-muted); font-weight: 600; margin-bottom: 8px; display: flex; justify-content: space-between; }
-    .kpi-card .kpi-value { font-size: 28px; font-weight: 700; color: var(--text-main); margin-bottom: 4px; }
-    .kpi-card .kpi-sub { font-size: 11px; color: var(--text-muted); }
-    .dashboard-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 24px; }
-    .chart-bar-container { display: flex; align-items: center; gap: 12px; margin-bottom: 12px; font-size: 13px; }
-    .chart-bar-container .label { width: 100px; color: var(--text-muted); }
-    .chart-bar-container .bar-track { flex-grow: 1; background: var(--cream); height: 8px; border-radius: 4px; overflow: hidden; }
-    .chart-bar-container .bar-fill { height: 100%; border-radius: 4px; }
-    .chart-bar-container .value { width: 40px; text-align: right; font-weight: 600; }
-    .alert-banner { background: #FEF3C7; border: 1px solid #FCD34D; color: #92400E; padding: 12px 16px; border-radius: 6px; font-size: 13px; display: flex; justify-content: space-between; align-items: center; margin-bottom: 24px; }
+    .stats-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; }
+    .stat-card { background: var(--white); border: 1px solid var(--border); border-radius: 8px; padding: 20px; }
+    .stat-label { font-size: 11px; text-transform: uppercase; letter-spacing: 0.05em; color: var(--text-muted); font-weight: 600; margin-bottom: 8px; }
+    .stat-num { font-size: 28px; font-weight: 700; color: var(--text-main); margin-bottom: 4px; }
+    .stat-sub { font-size: 12px; color: var(--text-muted); }
+    .dash-grid { display: grid; grid-template-columns: 2fr 1fr; gap: 24px; }
+    .flag-text { font-size: 12px; color: var(--text-muted); }
+    @media (max-width: 1000px) {
+      .stats-grid { grid-template-columns: repeat(2, 1fr); }
+      .dash-grid { grid-template-columns: 1fr; }
+    }
   </style>
 </head>
 <body>
@@ -38,6 +37,7 @@
       <nav class="sidebar-nav" style="margin-top: 12px;"><a href="settings.html"><span class="nav-icon">⚙</span> Settings</a><a href="help.html"><span class="nav-icon">?</span> Help & support</a></nav>
     </div>
   </aside>
+
   <main class="main-content">
     <header class="topbar">
       <div class="topbar-left">
@@ -49,62 +49,75 @@
         <div class="user-profile"><div class="user-info"><div class="user-name">Loading...</div><div class="user-role">Loading...</div></div></div>
       </div>
     </header>
+
     <div class="page-header">
-      <div><h1 id="dash-title">Dashboard</h1><p id="dash-subtitle">Iligan City · Household readiness · 24 October 2026</p></div>
-      <div style="display: flex; gap: 12px;">
-        <button class="btn btn-secondary btn-export-action">Export summary</button>
-        <button class="btn btn-primary btn-add-action">Add household</button>
+      <div><h1>Overview</h1><p>Barangay DRRM household registry, verification status, and response readiness.</p></div>
+      <div style="display: flex; gap: 10px; flex-wrap: wrap;">
+        <button type="button" class="btn btn-secondary" onclick="triggerDashboardExportSummary()">Export summary</button>
+        <button type="button" class="btn btn-primary btn-add-action">+ Add household</button>
       </div>
     </div>
+
     <div class="page-body">
-      <div class="alert-banner">
-        <span><strong>Keep records current.</strong> Keep records current before the next response.</span>
-        <a href="revalidation.html" style="font-weight:600; color:#92400E; text-decoration:underline;">Open work queue →</a>
+      <div class="stats-grid">
+        <div class="stat-card">
+          <div class="stat-label">Total Households</div>
+          <div class="stat-num" id="dash-total-hh">0</div>
+          <div class="stat-sub">Active scoped records</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Verified</div>
+          <div class="stat-num" id="dash-verified-hh">0</div>
+          <div class="stat-sub">Ready for coordination</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Pending Verification</div>
+          <div class="stat-num" id="dash-pending-hh">0</div>
+          <div class="stat-sub">Awaiting validation</div>
+        </div>
+        <div class="stat-card">
+          <div class="stat-label">Evacuated / Assisted</div>
+          <div class="stat-num" id="dash-evac-hh">0</div>
+          <div class="stat-sub">Accounted movement</div>
+        </div>
       </div>
-      <div class="kpi-grid">
-        <div class="kpi-card"><div class="kpi-label">Total households</div><div class="kpi-value" id="dash-total">0</div><div class="kpi-sub">Across 5 puroks</div></div>
-        <div class="kpi-card"><div class="kpi-label">Verified records</div><div class="kpi-value" id="dash-verified">0</div><div class="kpi-sub">Available to authorized responders</div></div>
-        <div class="kpi-card"><div class="kpi-label">Awaiting review</div><div class="kpi-value" id="dash-unverified">0</div><div class="kpi-sub">Sent for verification</div></div>
-        <div class="kpi-card"><div class="kpi-label">Needs correction</div><div class="kpi-value" id="dash-needs">0</div><div class="kpi-sub">Requires follow-up</div></div>
-      </div>
-      <div class="dashboard-grid">
-        <div style="display: flex; flex-direction: column; gap: 24px;">
-          <div class="card">
-            <div class="card-header"><div class="card-title">Verification work queue</div><a href="verify.html" style="font-size:12px; color:var(--maroon); font-weight:600;">View all →</a></div>
-            <div class="table-container">
-              <table><thead><tr><th>Household</th><th>Status</th><th>Flag</th><th>Action</th></tr></thead><tbody id="dash-queue-body"></tbody></table>
-            </div>
+
+      <div class="dash-grid">
+        <div class="card" style="padding: 0; overflow: hidden;">
+          <div class="card-header" style="padding: 20px 24px 14px 24px; margin-bottom: 0;">
+            <div class="card-title">Verification work queue</div>
+            <a href="verify.html" style="font-size: 12px; color: var(--red); font-weight: 600;">View all →</a>
           </div>
-          <div class="card">
-            <div class="card-header"><div class="card-title">Every record, accounted for</div><span style="font-size:11px; color:var(--text-muted);">Verification status</span></div>
-            <div style="padding-top: 12px;">
-              <div class="chart-bar-container"><div class="label">Verified</div><div class="bar-track"><div class="bar-fill" id="bar-verified" style="width: 0%; background: #10B981;"></div></div><div class="value" id="val-verified">0</div></div>
-              <div class="chart-bar-container"><div class="label">Unverified</div><div class="bar-track"><div class="bar-fill" id="bar-unverified" style="width: 0%; background: #6B7280;"></div></div><div class="value" id="val-unverified">0</div></div>
-              <div class="chart-bar-container"><div class="label">Needs Correction</div><div class="bar-track"><div class="bar-fill" id="bar-needs" style="width: 0%; background: #F59E0B;"></div></div><div class="value" id="val-needs">0</div></div>
-            </div>
+          <div class="table-container">
+            <table>
+              <thead style="background: #F9FAFB;">
+                <tr>
+                  <th style="padding-left: 24px;">Household</th>
+                  <th>Status</th>
+                  <th>Flag</th>
+                  <th>Action</th>
+                </tr>
+              </thead>
+              <tbody id="dash-queue-body"></tbody>
+            </table>
           </div>
         </div>
-        <div style="display: flex; flex-direction: column; gap: 24px;">
-          <div class="card">
-            <div class="card-header"><div class="card-title">Preparedness & evacuation</div><span class="pill pill-verified" style="font-size:10px;">Forecast active</span></div>
-            <p style="font-size:12px; color:var(--text-muted); margin-bottom:16px;">Flood preparedness · Puroks 2, 3 & 5</p>
-            <div style="display:flex; gap:16px; margin-bottom:16px;">
-              <div><div style="font-size:20px; font-weight:700;" id="prep-verified">0</div><div style="font-size:11px; color:var(--text-muted);">Verified households</div></div>
-              <div><div style="font-size:20px; font-weight:700;" id="prep-priority">0</div><div style="font-size:11px; color:var(--text-muted);">Priority households</div></div>
-              <div><div style="font-size:20px; font-weight:700;" id="prep-evacuated">0</div><div style="font-size:11px; color:var(--text-muted);">Evacuated so far</div></div>
-            </div>
-            <div style="background:var(--cream); height:6px; border-radius:3px; margin-bottom:8px;"><div id="prep-progress-bar" style="background:#10B981; height:100%; width:0%; border-radius:3px;"></div></div>
-            <div style="display:flex; justify-content:space-between; font-size:11px; color:var(--text-muted);"><span id="prep-progress-text">0 of 0 households evacuated: 0%</span><a href="evacuation.html" style="color:var(--maroon); font-weight:600;">Open tracking →</a></div>
+
+        <div class="card">
+          <div class="card-header">
+            <div class="card-title">Quick shortcuts</div>
           </div>
-          <div class="card" style="background: #FEF3C7; border-color: #FCD34D;">
-            <div class="card-title" style="color:#92400E; margin-bottom:8px;">Ready beyond the connection</div>
-            <p style="font-size:12px; color:#92400E; margin-bottom:16px;">Download verified household records and area maps before deployment.</p>
-            <button class="btn btn-yellow" style="width:100%;" onclick="window.location.href='preparedness.html'">Prepare offline package</button>
+          <div style="display: flex; flex-direction: column; gap: 10px;">
+            <a href="preparedness.html" class="btn btn-secondary" style="justify-content: space-between;">Preparedness & offline map <span>→</span></a>
+            <a href="evacuation.html" class="btn btn-secondary" style="justify-content: space-between;">Evacuation tracking <span>→</span></a>
+            <a href="revalidation.html" class="btn btn-secondary" style="justify-content: space-between;">Revalidation queue <span>→</span></a>
+            <a href="reports.html" class="btn btn-secondary" style="justify-content: space-between;">Reports & exports <span>→</span></a>
           </div>
         </div>
       </div>
     </div>
   </main>
+
   <script src="js/database.js"></script>
   <script src="js/app.js"></script>
   <script>
@@ -117,81 +130,94 @@
         .replace(/'/g, '&#39;');
     }
 
-    document.addEventListener('DOMContentLoaded', () => {
-      const activeBarangay = typeof getActiveBarangayName === 'function' ? getActiveBarangayName() : 'San Miguel';
-      const role = localStorage.getItem('relay-role') || 'Barangay Official';
-      const titleEl = document.getElementById('dash-title');
-      const subtitleEl = document.getElementById('dash-subtitle');
+    function triggerDashboardExportSummary() {
+      openExportConfirmModal('summary export', () => {
+        const scoped = typeof getScopedHouseholds === 'function' && typeof households !== 'undefined'
+          ? getScopedHouseholds(households)
+          : [];
+        const evacMap = JSON.parse(localStorage.getItem('evacuation_statuses') || '{}');
+        const rows = [
+          ['ID', 'Household Head', 'Barangay', 'Purok', 'Verification Status', 'Evacuation Status'],
+          ...scoped.map(hh => [
+            hh.id,
+            hh.head,
+            hh.barangay || 'San Miguel',
+            hh.purok || '',
+            localStorage.getItem(`record_${hh.id}`) || 'Unverified',
+            evacMap[hh.id] || 'At Home'
+          ])
+        ];
+        downloadRelayCsv('relay-overview-summary.csv', rows);
+      });
+    }
 
-      if (titleEl) {
-        titleEl.textContent = activeBarangay
-          ? `${activeBarangay} · ${role} dashboard`
-          : `City-Wide · ${role} dashboard`;
-      }
-
-      if (subtitleEl) {
-        const areaText = activeBarangay ? `Barangay ${activeBarangay}` : 'City-Wide Administration';
-        subtitleEl.textContent = `${areaText}, Iligan City · ${role} view · 24 October 2026`;
-      }
-
-      const all = typeof getScopedHouseholds === 'function'
+    function renderDashboardPage() {
+      const scoped = typeof getScopedHouseholds === 'function' && typeof households !== 'undefined'
         ? getScopedHouseholds(households)
-        : Object.values(households || {});
-      const savedEvacs = JSON.parse(localStorage.getItem('evacuation_statuses')) || {};
+        : Object.values(typeof households !== 'undefined' ? households : {});
 
-      let verified = 0, unverified = 0, needs = 0, evacuated = 0;
-      let queueHtml = '', queueCount = 0;
+      const evacMap = JSON.parse(localStorage.getItem('evacuation_statuses') || '{}');
+      let verifiedCount = 0;
+      let pendingCount = 0;
+      let evacCount = 0;
 
-      all.forEach(hh => {
-        const savedStatus = localStorage.getItem(`record_${hh.id}`) || 'Unverified';
-        if (savedStatus === 'Verified') {
-          verified++;
-          const evacStatus = savedEvacs[hh.id] || 'At Home';
-          if (evacStatus !== 'At Home' && evacStatus !== 'Unaccounted For') evacuated++;
-        } else if (savedStatus === 'Needs Correction') {
-          needs++;
-        } else {
-          unverified++;
+      const queueRows = [];
+
+      scoped.forEach(hh => {
+        const status = localStorage.getItem(`record_${hh.id}`) || 'Unverified';
+        if (status === 'Verified') verifiedCount++;
+        else pendingCount++;
+
+        const evacStatus = evacMap[hh.id] || localStorage.getItem(`evac_${hh.id}`) || 'At Home';
+        if (
+          evacStatus === 'In Evacuation Center' ||
+          evacStatus === 'Pre-emptively Evacuated' ||
+          evacStatus === 'Assisted'
+        ) {
+          evacCount++;
         }
 
-        if (savedStatus !== 'Verified' && queueCount < 3) {
-          const pillClass = savedStatus === 'Needs Correction' ? 'pill-needs' : 'pill-unverified';
-          const flagText = savedStatus === 'Needs Correction' ? 'Address correction' : 'Office confirmed';
-          const purokShort = String(hh.purok || '').split(',')[0];
-          queueHtml += `<tr data-id="${escapeDashHtml(hh.id)}"><td><strong>${escapeDashHtml(hh.head)} household</strong><br><span style="color:var(--text-muted); font-size:11px;">${escapeDashHtml(hh.id)} · ${escapeDashHtml(purokShort)}</span></td><td><span class="pill ${pillClass}">${escapeDashHtml(savedStatus)}</span></td><td>${escapeDashHtml(flagText)}</td><td><button class="btn btn-secondary btn-verify-action" style="padding:6px 12px; font-size:12px;">Review</button></td></tr>`;
-          queueCount++;
+        if (status !== 'Verified') {
+          queueRows.push({ ...hh, status });
         }
       });
 
-      document.getElementById('dash-total').textContent = all.length;
-      document.getElementById('dash-verified').textContent = verified;
-      document.getElementById('dash-unverified').textContent = unverified;
-      document.getElementById('dash-needs').textContent = needs;
+      document.getElementById('dash-total-hh').textContent = scoped.length;
+      document.getElementById('dash-verified-hh').textContent = verifiedCount;
+      document.getElementById('dash-pending-hh').textContent = pendingCount;
+      document.getElementById('dash-evac-hh').textContent = evacCount;
 
-      if (all.length > 0) {
-        document.getElementById('bar-verified').style.width = Math.round((verified / all.length) * 100) + '%';
-        document.getElementById('bar-unverified').style.width = Math.round((unverified / all.length) * 100) + '%';
-        document.getElementById('bar-needs').style.width = Math.round((needs / all.length) * 100) + '%';
-        document.getElementById('val-verified').textContent = verified;
-        document.getElementById('val-unverified').textContent = unverified;
-        document.getElementById('val-needs').textContent = needs;
+      const tbody = document.getElementById('dash-queue-body');
+      if (!tbody) return;
+
+      if (queueRows.length === 0) {
+        tbody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding: 20px; color: var(--text-muted);">No records awaiting verification.</td></tr>';
+        return;
       }
 
-      document.getElementById('prep-verified').textContent = verified;
-      document.getElementById('prep-priority').textContent = verified;
-      document.getElementById('prep-evacuated').textContent = evacuated;
+      tbody.innerHTML = queueRows.slice(0, 5).map(hh => {
+        const pillClass =
+          hh.status === 'Needs Correction' ? 'pill-needs' :
+          hh.status === 'Unable to Verify' ? 'pill-unable' :
+          'pill-unverified';
+        const flagLabel = hh.locationConfirmed === false ? 'Unconfirmed pin' : 'Office confirmed';
+        const purokShort = String(hh.purok || '').split(',')[0];
 
-      if (verified > 0) {
-        const evacPct = Math.round((evacuated / verified) * 100);
-        document.getElementById('prep-progress-bar').style.width = evacPct + '%';
-        document.getElementById('prep-progress-text').textContent = `${evacuated} of ${verified} households evacuated: ${evacPct}%`;
-      } else {
-        document.getElementById('prep-progress-bar').style.width = '0%';
-        document.getElementById('prep-progress-text').textContent = '0 of 0 households evacuated: 0%';
-      }
+        return `
+          <tr data-id="${escapeDashHtml(hh.id)}">
+            <td style="padding-left: 24px;">
+              <strong>${escapeDashHtml(hh.head)} household</strong><br>
+              <span style="font-size: 11px; color: var(--text-muted);">${escapeDashHtml(hh.id)}${purokShort ? ' · ' + escapeDashHtml(purokShort) : ''}</span>
+            </td>
+            <td><span class="pill ${pillClass}">${escapeDashHtml(hh.status)}</span></td>
+            <td><span class="flag-text">${escapeDashHtml(flagLabel)}</span></td>
+            <td><button type="button" class="btn btn-secondary btn-verify-action" style="padding: 6px 12px; font-size: 12px;">Review</button></td>
+          </tr>
+        `;
+      }).join('');
+    }
 
-      document.getElementById('dash-queue-body').innerHTML = queueHtml || '<tr><td colspan="4" style="text-align:center; padding: 20px;">No pending records.</td></tr>';
-    });
+    document.addEventListener('DOMContentLoaded', renderDashboardPage);
   </script>
 </body>
 </html>
