@@ -3,10 +3,12 @@
 // =========================================
 
 document.addEventListener('DOMContentLoaded', () => {
-  
   const currentPath = window.location.pathname.split('/').pop() || 'index.html';
   document.querySelectorAll('.sidebar-nav a').forEach(link => {
-    if (link.getAttribute('href') === currentPath) link.classList.add('active');
+    const href = link.getAttribute('href');
+    if (href === currentPath || (currentPath === 'user.html' && href === 'users.html') || (currentPath === 'users.html' && href === 'user.html')) {
+      link.classList.add('active');
+    }
   });
 
   updateUserProfile();
@@ -22,26 +24,32 @@ document.addEventListener('DOMContentLoaded', () => {
   }
 
   document.body.addEventListener('click', (e) => {
-    if (e.target.closest('.btn-add-action')) window.location.href = 'add-household.html';
-    
+    if (e.target.closest('.btn-add-action')) {
+      window.location.href = 'add-household.html';
+    }
+
     const verifyBtn = e.target.closest('.btn-verify-action');
     if (verifyBtn) {
       const row = verifyBtn.closest('tr');
       if (row && row.hasAttribute('data-id')) {
-        localStorage.setItem('selected_household', row.getAttribute('data-id')); 
+        localStorage.setItem('selected_household', row.getAttribute('data-id'));
         window.location.href = 'review.html';
       }
     }
 
     if (e.target.closest('.btn-export-action')) {
       if (!navigator.onLine) {
-        alert("You are currently offline. This action cannot be completed until you reconnect.");
+        alert('You are currently offline. This action cannot be completed until you reconnect.');
+      } else if (typeof showModal === 'function') {
+        showModal('modal-export');
       } else {
-        if(typeof showModal === 'function') showModal('modal-export');
-        else alert('Export started.');
+        alert('Export started.');
       }
     }
-    if (e.target.closest('.page-btn')) alert('Page changed! (Simulated pagination)');
+
+    if (e.target.closest('.page-btn')) {
+      alert('Page changed! (Simulated pagination)');
+    }
   });
 
   document.addEventListener('click', (e) => {
@@ -53,12 +61,38 @@ document.addEventListener('DOMContentLoaded', () => {
 });
 
 // =========================================
+// WORKSPACE & RECORD HELPERS
+// =========================================
+function getActiveBarangayName() {
+  const role = localStorage.getItem('relay-role') || 'Barangay Official';
+  const workspace = localStorage.getItem('relay-workspace') || 'Barangay San Miguel';
+  if (role === 'Admin' && workspace === 'City-Wide Administration') {
+    return null;
+  }
+  return workspace.replace(/^Barangay\s+/i, '').trim();
+}
+
+function getScopedHouseholds(householdsObj) {
+  const activeBarangay = getActiveBarangayName();
+  const custom = JSON.parse(localStorage.getItem('custom_households')) || {};
+  const combined = [
+    ...Object.values(householdsObj || {}),
+    ...Object.values(custom)
+  ];
+
+  if (!activeBarangay) {
+    return combined;
+  }
+  return combined.filter(hh => hh.barangay === activeBarangay);
+}
+
+// =========================================
 // SMART LOGIN LOGIC
 // =========================================
 function simulateLogin(event) {
   event.preventDefault();
-  const email = document.getElementById('email').value.toLowerCase();
-  
+  const emailInput = document.getElementById('email');
+  const email = (emailInput ? emailInput.value : '').trim().toLowerCase();
   if (!email) return;
 
   let assignedRole = 'Barangay Official';
@@ -73,19 +107,21 @@ function simulateLogin(event) {
     assignedRole = 'Barangay Official';
   }
 
-  if (email.includes('tibanga')) {
-    assignedWorkspace = 'Barangay Tibanga';
-  } else if (email.includes('saray')) {
-    assignedWorkspace = 'Barangay Saray';
-  } else if (email.includes('sanmiguel')) {
-    assignedWorkspace = 'Barangay San Miguel';
+  if (assignedRole !== 'Admin') {
+    if (email.includes('tibanga')) {
+      assignedWorkspace = 'Barangay Tibanga';
+    } else if (email.includes('saray')) {
+      assignedWorkspace = 'Barangay Saray';
+    } else {
+      assignedWorkspace = 'Barangay San Miguel';
+    }
   }
 
   localStorage.setItem('relay-user', email);
   localStorage.setItem('relay-role', assignedRole);
   localStorage.setItem('relay-workspace', assignedWorkspace);
-  
-  window.location.href = 'dashboard.html';
+
+  window.location.href = assignedRole === 'Purok Officer' ? 'records.html' : 'dashboard.html';
 }
 
 // =========================================
@@ -93,25 +129,27 @@ function simulateLogin(event) {
 // =========================================
 function updateUserProfile() {
   const savedRole = localStorage.getItem('relay-role') || 'Barangay Official';
-  const savedWorkspace = localStorage.getItem('relay-workspace') || 'Barangay San Miguel';
-  
+  let savedWorkspace = localStorage.getItem('relay-workspace') || 'Barangay San Miguel';
+  if (savedRole !== 'Admin' && savedWorkspace === 'City-Wide Administration') {
+    savedWorkspace = 'Barangay San Miguel';
+    localStorage.setItem('relay-workspace', savedWorkspace);
+  }
+
   const nameEl = document.querySelector('.user-name');
   const roleEl = document.querySelector('.user-role');
   const workspaceSelector = document.getElementById('workspace-selector');
 
-  // 1. DYNAMICALLY INSERT "MANAGE USERS" LINK IF IT DOESN'T EXIST
   let navUsers = document.getElementById('nav-users');
+  const targetUserHref = document.querySelector('a[href="user.html"]') ? 'user.html' : 'users.html';
   if (!navUsers) {
     const footerNav = document.querySelector('.sidebar-footer .sidebar-nav');
     if (footerNav) {
-      // Create the link element
       navUsers = document.createElement('a');
-      navUsers.href = 'users.html';
+      navUsers.href = targetUserHref;
       navUsers.id = 'nav-users';
       navUsers.innerHTML = '<span class="nav-icon">👤</span> Manage Users';
       navUsers.style.display = 'none';
-      
-      // Insert it before the Settings link
+
       const settingsLink = footerNav.querySelector('a[href="settings.html"]');
       if (settingsLink) {
         footerNav.insertBefore(navUsers, settingsLink);
@@ -121,31 +159,32 @@ function updateUserProfile() {
     }
   }
 
-  // Helper to show/hide regular sidebar links
   const setNav = (href, visible) => {
     const link = document.querySelector(`.sidebar-nav a[href="${href}"]`);
     if (link) link.style.display = visible ? 'flex' : 'none';
   };
 
   if (nameEl && roleEl) {
-    
-    // --- ROLE: ADMIN ---
     if (savedRole === 'Admin') {
-      nameEl.textContent = 'System Administrator'; 
+      nameEl.textContent = 'City DRRM Admin';
       roleEl.textContent = 'Full system access';
-      
+
       if (workspaceSelector) {
         workspaceSelector.innerHTML = `
-          <option>City-Wide Administration</option>
-          <option>Barangay San Miguel</option>
-          <option>Barangay Tibanga</option>
-          <option>Barangay Saray</option>
+          <option value="City-Wide Administration">City-Wide Administration</option>
+          <option value="Barangay San Miguel">Barangay San Miguel</option>
+          <option value="Barangay Tibanga">Barangay Tibanga</option>
+          <option value="Barangay Saray">Barangay Saray</option>
         `;
+        workspaceSelector.value = savedWorkspace;
         workspaceSelector.disabled = false;
         workspaceSelector.style.cursor = 'pointer';
+        workspaceSelector.onchange = (e) => {
+          localStorage.setItem('relay-workspace', e.target.value);
+          window.location.reload();
+        };
       }
-      
-      // Admin sees EVERYTHING
+
       setNav('dashboard.html', true);
       setNav('records.html', true);
       setNav('verify.html', true);
@@ -153,55 +192,52 @@ function updateUserProfile() {
       setNav('evacuation.html', true);
       setNav('revalidation.html', true);
       setNav('reports.html', true);
-      
-      // Show the Manage Users link
-      if (navUsers) navUsers.style.display = 'flex';
 
-    } 
-    // --- ROLE: PUROK OFFICER ---
-    else if (savedRole === 'Purok Officer') {
-      nameEl.textContent = 'Purok Officer'; 
+      if (navUsers) {
+        navUsers.style.display = 'flex';
+      }
+    } else if (savedRole === 'Purok Officer') {
+      nameEl.textContent = `${savedWorkspace.replace(/^Barangay\s+/i, '')} Purok Officer`;
       roleEl.textContent = 'Data collection & updates';
-      
+
       if (workspaceSelector) {
-        workspaceSelector.innerHTML = `<option>${savedWorkspace}</option>`;
+        workspaceSelector.innerHTML = `<option value="${savedWorkspace}">${savedWorkspace}</option>`;
         workspaceSelector.disabled = true;
         workspaceSelector.style.cursor = 'not-allowed';
       }
 
-      // Purok Officers only collect data
       setNav('dashboard.html', false);
       setNav('records.html', true);
       setNav('verify.html', false);
       setNav('preparedness.html', false);
       setNav('evacuation.html', false);
-      setNav('revalidation.html', true); 
+      setNav('revalidation.html', true);
       setNav('reports.html', false);
-      
-      if (navUsers) navUsers.style.display = 'none';
 
-    } 
-    // --- ROLE: BARANGAY OFFICIAL ---
-    else {
-      nameEl.textContent = 'Barangay Official'; 
+      if (navUsers) {
+        navUsers.style.display = 'none';
+      }
+    } else {
+      nameEl.textContent = `${savedWorkspace.replace(/^Barangay\s+/i, '')} Official`;
       roleEl.textContent = 'Review & coordination';
-      
+
       if (workspaceSelector) {
-        workspaceSelector.innerHTML = `<option>${savedWorkspace}</option>`;
+        workspaceSelector.innerHTML = `<option value="${savedWorkspace}">${savedWorkspace}</option>`;
         workspaceSelector.disabled = true;
         workspaceSelector.style.cursor = 'not-allowed';
       }
 
-      // Barangay Officials manage records and verify, AND see evacuation
       setNav('dashboard.html', true);
       setNav('records.html', true);
       setNav('verify.html', true);
       setNav('preparedness.html', true);
-      setNav('evacuation.html', true); 
+      setNav('evacuation.html', true);
       setNav('revalidation.html', true);
       setNav('reports.html', true);
-      
-      if (navUsers) navUsers.style.display = 'none';
+
+      if (navUsers) {
+        navUsers.style.display = 'none';
+      }
     }
   }
 }
@@ -227,8 +263,7 @@ function initNotifications() {
     </div>
   `;
 
-  const topbarRightChildren = Array.from(topbarRight.children);
-  const bellElement = topbarRightChildren.find(el => el.textContent.includes('🔔'));
+  const bellElement = Array.from(topbarRight.children).find(el => el.textContent.includes('🔔'));
   if (bellElement) {
     bellElement.outerHTML = bellHTML;
   }
@@ -247,14 +282,8 @@ function initNotifications() {
 
 function generateNotifications() {
   const isRead = sessionStorage.getItem('notifs-read') === 'true';
-  let all = [];
-  if (typeof households !== 'undefined') {
-    for (const key in households) all.push(households[key]);
-  }
-  const custom = JSON.parse(localStorage.getItem('custom_households')) || {};
-  for (const key in custom) all.push(custom[key]);
-  
-  const verified = all.filter(hh => (localStorage.getItem(`record_${hh.id}`) || "Unverified") === 'Verified');
+  const scoped = typeof households !== 'undefined' ? getScopedHouseholds(households) : [];
+  const verified = scoped.filter(hh => (localStorage.getItem(`record_${hh.id}`) || 'Unverified') === 'Verified');
   const listEl = document.getElementById('notif-list');
   const badge = document.getElementById('notif-badge');
 
@@ -291,7 +320,7 @@ window.addEventListener('storage', (e) => {
     const sessions = JSON.parse(e.newValue) || {};
     const currentSessionId = sessionStorage.getItem('relay-session-id');
     if (currentSessionId && !sessions[currentSessionId]) {
-      alert("⚠️ Your session has been terminated by an administrator or another device.");
+      alert('Your session has been terminated by an administrator or another device.');
       localStorage.removeItem('relay-user');
       localStorage.removeItem('relay-role');
       window.location.href = 'index.html';
@@ -312,11 +341,11 @@ function hideModal(modalId) {
 function saveVerification() {
   const selectedStatus = document.querySelector('input[name="verification"]:checked').value;
   const recordId = localStorage.getItem('selected_household');
-  
+
   localStorage.setItem(`record_${recordId}`, selectedStatus);
-  
+
   if (!navigator.onLine) {
-    let offlineQueue = JSON.parse(localStorage.getItem('offline_queue')) || [];
+    const offlineQueue = JSON.parse(localStorage.getItem('offline_queue')) || [];
     offlineQueue.push({ id: recordId, status: selectedStatus, timestamp: Date.now() });
     localStorage.setItem('offline_queue', JSON.stringify(offlineQueue));
   }
@@ -325,11 +354,14 @@ function saveVerification() {
 }
 
 function initNetworkListener() {
-  let banner = document.createElement('div');
-  banner.id = 'sync-banner';
-  banner.className = 'global-banner';
-  document.body.prepend(banner);
-  
+  let banner = document.getElementById('sync-banner');
+  if (!banner) {
+    banner = document.createElement('div');
+    banner.id = 'sync-banner';
+    banner.className = 'global-banner';
+    document.body.prepend(banner);
+  }
+
   const updateStatus = () => {
     const isOnline = navigator.onLine;
     const queue = JSON.parse(localStorage.getItem('offline_queue')) || [];
@@ -339,33 +371,36 @@ function initNetworkListener() {
       document.body.classList.add('has-banner');
       banner.className = 'global-banner offline';
       banner.innerHTML = `⚠️ <strong>Offline Mode:</strong> You can navigate, but changes are saved locally. ${queue.length > 0 ? `(${queue.length} changes pending)` : ''}`;
-      
+
       if (statusCard) {
         statusCard.innerHTML = `<div class="status-title" style="color: #F59E0B;"><div class="status-dot" style="background-color: #F59E0B;"></div> Offline Mode</div>Saving locally<br>${queue.length} changes pending`;
       }
 
       document.querySelectorAll('button.btn-primary').forEach(btn => {
-        if(btn.innerText.includes('Save') || btn.innerText.includes('Submit') || btn.innerText.includes('Download')) {
+        if (btn.innerText.includes('Save') || btn.innerText.includes('Submit') || btn.innerText.includes('Download')) {
           btn.setAttribute('disabled', 'true');
         }
       });
-
     } else {
       banner.className = 'global-banner online';
-      
+
       if (queue.length > 0) {
         banner.innerHTML = `🔄 <strong>Back online.</strong> Synchronizing ${queue.length} changes...`;
-        if (statusCard) statusCard.innerHTML = `<div class="status-title" style="color: #10B981;"><div class="status-dot"></div> Syncing...</div>Uploading changes<br>Please wait`;
+        if (statusCard) {
+          statusCard.innerHTML = `<div class="status-title" style="color: #10B981;"><div class="status-dot"></div> Syncing...</div>Uploading changes<br>Please wait`;
+        }
 
         setTimeout(() => {
           localStorage.removeItem('offline_queue');
-          banner.innerHTML = `✅ <strong>All changes synced.</strong>`;
+          banner.innerHTML = '✅ <strong>All changes synced.</strong>';
           document.body.classList.remove('has-banner');
-          setTimeout(() => { banner.style.display = 'none'; }, 3000);
-          
+          setTimeout(() => {
+            banner.style.display = 'none';
+          }, 3000);
+
           if (statusCard) {
             const now = new Date();
-            const timeStr = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
+            const timeStr = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
             statusCard.innerHTML = `<div class="status-title"><div class="status-dot"></div> System operational</div>Last synced at ${timeStr}<br>Household records up to date`;
           }
         }, 2000);
@@ -374,10 +409,11 @@ function initNetworkListener() {
         document.body.classList.remove('has-banner');
         if (statusCard) {
           const now = new Date();
-          const timeStr = now.getHours().toString().padStart(2, '0') + ':' + now.getMinutes().toString().padStart(2, '0');
+          const timeStr = `${now.getHours().toString().padStart(2, '0')}:${now.getMinutes().toString().padStart(2, '0')}`;
           statusCard.innerHTML = `<div class="status-title"><div class="status-dot"></div> System operational</div>Last synced at ${timeStr}<br>Household records up to date`;
         }
       }
+
       document.querySelectorAll('button[disabled]').forEach(btn => btn.removeAttribute('disabled'));
     }
   };
