@@ -34,7 +34,11 @@
     </nav>
     <div class="sidebar-footer">
       <div class="status-card"><div class="status-title"><div class="status-dot"></div> System operational</div>Last synced at 09:42<br>Household records up to date</div>
-      <nav class="sidebar-nav" style="margin-top: 12px;"><a href="settings.html"><span class="nav-icon">⚙</span> Settings</a><a href="help.html"><span class="nav-icon">?</span> Help & support</a></nav>
+      <nav class="sidebar-nav" style="margin-top: 12px;">
+        <a href="users.html" id="nav-users" style="display: none;"><span class="nav-icon">👤</span> Manage Users</a>
+        <a href="settings.html"><span class="nav-icon">⚙</span> Settings</a>
+        <a href="help.html"><span class="nav-icon">?</span> Help & support</a>
+      </nav>
     </div>
   </aside>
   <main class="main-content">
@@ -81,15 +85,27 @@
   </main>
   <script src="js/database.js"></script>
   <script>
+    let userRole = localStorage.getItem('relay-role') || 'Barangay Official';
+    let userWorkspace = localStorage.getItem('relay-workspace') || 'Barangay San Miguel';
     let allHouseholds = [], currentTab = 'All';
+
     function loadData() {
       allHouseholds = [];
-      for (const key in households) allHouseholds.push(households[key]);
+      for (const key in households) {
+        if (userRole === 'Admin' || households[key].barangay === userWorkspace.replace('Barangay ', '')) {
+          allHouseholds.push(households[key]);
+        }
+      }
       const custom = JSON.parse(localStorage.getItem('custom_households')) || {};
-      for (const key in custom) allHouseholds.push(custom[key]);
+      for (const key in custom) {
+        if (userRole === 'Admin' || custom[key].barangay === userWorkspace.replace('Barangay ', '')) {
+          allHouseholds.push(custom[key]);
+        }
+      }
       allHouseholds.forEach(hh => { hh.status = localStorage.getItem(`record_${hh.id}`) || "Unverified"; });
       updateTabCounts(); filterTable();
     }
+
     function updateTabCounts() {
       document.getElementById('count-all').textContent = allHouseholds.length;
       document.getElementById('count-verified').textContent = allHouseholds.filter(h => h.status === 'Verified').length;
@@ -97,7 +113,9 @@
       document.getElementById('count-needs').textContent = allHouseholds.filter(h => h.status === 'Needs Correction').length;
       document.getElementById('count-unable').textContent = allHouseholds.filter(h => h.status === 'Unable to Verify').length;
     }
+
     function changeTab(status, el) { currentTab = status; document.querySelectorAll('.tab').forEach(t => t.classList.remove('active')); el.classList.add('active'); filterTable(); }
+
     function filterTable() {
       const query = document.getElementById('search-input').value.toLowerCase();
       const purok = document.getElementById('purok-filter').value;
@@ -109,17 +127,19 @@
       });
       renderTable(filtered);
     }
+
     function renderTable(data) {
       const tbody = document.getElementById('table-body'); tbody.innerHTML = '';
       if (data.length === 0) { tbody.innerHTML = '<tr><td colspan="6" style="text-align:center; padding:20px;">No records found.</td></tr>'; document.getElementById('showing-text').textContent = `Showing 0 of 0 households`; document.getElementById('row-count').textContent = `0 households`; return; }
       data.forEach(hh => {
         let pillClass = "pill-unverified";
         if (hh.status === "Verified") pillClass = "pill-verified"; if (hh.status === "Needs Correction") pillClass = "pill-needs"; if (hh.status === "Unable to Verify") pillClass = "pill-unable";
-        tbody.innerHTML += `<tr data-id="${hh.id}"><td style="padding-left:24px;"><strong>${hh.head} household</strong><br><span style="color:var(--text-muted); font-size:11px;">${hh.id} · ${hh.head}</span></td><td>${hh.purok.split(',')[0]}</td><td>${hh.members.length}</td><td><span class="pill ${pillClass}">${hh.status}</span></td><td>24 Oct 2026</td><td><button class="btn btn-secondary btn-verify-action" style="padding:6px 12px; font-size:12px;">View →</button></td></tr>`;
+        tbody.innerHTML += `<tr data-id="${hh.id}"><td style="padding-left:24px;"><strong>${hh.head} household</strong><br><span style="color:var(--text-muted); font-size:11px;">${hh.id} · ${hh.head}</span></td><td>${hh.purok}</td><td>${hh.members.length}</td><td><span class="pill ${pillClass}">${hh.status}</span></td><td>24 Oct 2026</td><td><button class="btn btn-secondary btn-verify-action" style="padding:6px 12px; font-size:12px;">View →</button></td></tr>`;
       });
       document.getElementById('showing-text').textContent = `Showing 1-${data.length} of ${data.length} households`;
       document.getElementById('row-count').textContent = `${data.length} households`;
     }
+
     document.addEventListener('DOMContentLoaded', loadData);
   </script>
   <script src="js/app.js"></script>
