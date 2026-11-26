@@ -6,8 +6,8 @@
   <title>Relay - Evacuation Tracking</title>
   <link rel="stylesheet" href="css/style.css">
   <style>
-    .evac-summary-grid { display: grid; grid-template-columns: repeat(4, 1fr); gap: 16px; margin-bottom: 20px; }
-    .evac-stat { background: var(--white); border: 1px solid var(--border); border-radius: 8px; padding: 16px 20px; }
+    .evac-summary-grid { display: grid; grid-template-columns: repeat(5, 1fr); gap: 14px; margin-bottom: 20px; }
+    .evac-stat { background: var(--white); border: 1px solid var(--border); border-radius: 8px; padding: 16px 18px; }
     .evac-stat .label { font-size: 11px; text-transform: uppercase; font-weight: 600; color: var(--text-muted); margin-bottom: 6px; }
     .evac-stat .num { font-size: 24px; font-weight: 700; color: var(--text-main); }
     .filters-row { display: flex; gap: 12px; margin-bottom: 20px; flex-wrap: wrap; }
@@ -16,11 +16,14 @@
     .search-input { flex-grow: 1; min-width: 240px; }
     .status-select { padding: 7px 10px; border: 1px solid var(--border); border-radius: 6px; font-family: inherit; font-size: 12px; font-weight: 600; background: var(--white); color: var(--text-main); cursor: pointer; }
     .status-at-home { background: #FEE2E2; color: #991B1B; }
-    .status-evacuated { background: #D1FAE5; color: #065F46; }
     .status-en-route { background: #FEF3C7; color: #92400E; }
+    .status-evacuated { background: #D1FAE5; color: #065F46; }
+    .status-preemptive { background: #E0F2FE; color: #075985; }
+    .status-assisted { background: #EDE9FE; color: #5B21B6; }
     .status-unaccounted { background: #F3F4F6; color: #374151; }
     .save-toast { display: none; position: fixed; bottom: 24px; right: 24px; background: #065F46; color: #FFFFFF; padding: 12px 16px; border-radius: 8px; font-size: 13px; font-weight: 600; box-shadow: 0 8px 20px rgba(0,0,0,0.15); z-index: 2000; }
-    @media (max-width: 900px) { .evac-summary-grid { grid-template-columns: repeat(2, 1fr); } }
+    @media (max-width: 1100px) { .evac-summary-grid { grid-template-columns: repeat(3, 1fr); } }
+    @media (max-width: 700px) { .evac-summary-grid { grid-template-columns: repeat(2, 1fr); } }
   </style>
 </head>
 <body>
@@ -64,6 +67,7 @@
         <div class="evac-stat"><div class="label">At Home</div><div class="num" id="evac-count-home">0</div></div>
         <div class="evac-stat"><div class="label">En Route to Evacuation</div><div class="num" id="evac-count-route">0</div></div>
         <div class="evac-stat"><div class="label">In Evacuation Center</div><div class="num" id="evac-count-center">0</div></div>
+        <div class="evac-stat"><div class="label">Assisted</div><div class="num" id="evac-count-assisted">0</div></div>
         <div class="evac-stat"><div class="label">Unaccounted For</div><div class="num" id="evac-count-unaccounted">0</div></div>
       </div>
 
@@ -153,15 +157,11 @@
     }
 
     function getEvacBadgeClass(status) {
-      if (status === 'In Evacuation Center' || status === 'Pre-emptively Evacuated' || status === 'Assisted') {
-        return 'status-evacuated';
-      }
-      if (status === 'Unaccounted For') {
-        return 'status-unaccounted';
-      }
-      if (status === 'At Home') {
-        return 'status-at-home';
-      }
+      if (status === 'In Evacuation Center') return 'status-evacuated';
+      if (status === 'Pre-emptively Evacuated') return 'status-preemptive';
+      if (status === 'Assisted') return 'status-assisted';
+      if (status === 'Unaccounted For') return 'status-unaccounted';
+      if (status === 'At Home') return 'status-at-home';
       return 'status-en-route';
     }
 
@@ -176,13 +176,15 @@
       let homeCount = 0;
       let routeCount = 0;
       let centerCount = 0;
+      let assistedCount = 0;
       let unaccountedCount = 0;
 
       const rowsData = verified.map(hh => {
         const status = evacMap[hh.id] || localStorage.getItem(`evac_${hh.id}`) || 'At Home';
         if (status === 'At Home') homeCount++;
         else if (status === 'En Route to Evacuation') routeCount++;
-        else if (status === 'In Evacuation Center' || status === 'Pre-emptively Evacuated' || status === 'Assisted') centerCount++;
+        else if (status === 'In Evacuation Center' || status === 'Pre-emptively Evacuated') centerCount++;
+        else if (status === 'Assisted') assistedCount++;
         else if (status === 'Unaccounted For') unaccountedCount++;
 
         const firstMember = Array.isArray(hh.members) && hh.members[0] ? hh.members[0] : { needs: 'None reported' };
@@ -193,6 +195,7 @@
       document.getElementById('evac-count-home').textContent = homeCount;
       document.getElementById('evac-count-route').textContent = routeCount;
       document.getElementById('evac-count-center').textContent = centerCount;
+      document.getElementById('evac-count-assisted').textContent = assistedCount;
       document.getElementById('evac-count-unaccounted').textContent = unaccountedCount;
 
       const query = (document.getElementById('evac-search')?.value || '').trim().toLowerCase();
