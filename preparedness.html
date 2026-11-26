@@ -45,7 +45,7 @@
         <div class="search-bar"><span>🔍</span> Search households, puroks, records...</div>
       </div>
       <div class="topbar-right">
-        <span class="demo-badge">DEMO WORKSPACE</span><span>🔔</span>
+        <span>🔔</span>
         <div class="user-profile"><div class="user-info"><div class="user-name">Loading...</div><div class="user-role">Loading...</div></div></div>
       </div>
     </header>
@@ -112,13 +112,23 @@
   </div>
 
   <script src="js/database.js"></script>
+  <script src="js/app.js"></script>
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
+    function escapePrepHtml(value) {
+      return String(value ?? '')
+        .replace(/&/g, '&')
+        .replace(/</g, '<')
+        .replace(/>/g, '>')
+        .replace(/"/g, '"')
+        .replace(/'/g, ''');
+    }
+
     document.addEventListener('DOMContentLoaded', () => {
-      let all = [];
-      for (const key in households) all.push(households[key]);
-      const custom = JSON.parse(localStorage.getItem('custom_households')) || {};
-      for (const key in custom) all.push(custom[key]);
-      const verified = all.filter(hh => (localStorage.getItem(`record_${hh.id}`) || "Unverified") === 'Verified');
+      const all = typeof getScopedHouseholds === 'function'
+        ? getScopedHouseholds(households)
+        : Object.values(households || {});
+      const verified = all.filter(hh => (localStorage.getItem(`record_${hh.id}`) || 'Unverified') === 'Verified');
       const savedEvacs = JSON.parse(localStorage.getItem('evacuation_statuses')) || {};
 
       document.getElementById('map-count').textContent = `📍 ${verified.length} areas mapped`;
@@ -132,31 +142,44 @@
       if (verified.length === 0) {
         priorityBody.innerHTML = '<tr><td colspan="4" style="text-align:center; padding: 20px;">No verified households yet.</td></tr>';
       } else {
+        priorityBody.innerHTML = '';
         verified.forEach((hh, index) => {
-          const evacStatus = savedEvacs[hh.id] || "At Home";
-          let pillClass = "status-en-route";
-          if (evacStatus === 'Assisted' || evacStatus === 'In Evacuation Center' || evacStatus === 'Pre-emptively Evacuated') pillClass = "status-evacuated";
-          if (evacStatus === 'Unaccounted For') pillClass = "status-unaccounted";
-          if (evacStatus === 'At Home') pillClass = "status-at-home";
-          priorityBody.innerHTML += `<tr><td style="padding-left: 24px;">${String(index + 1).padStart(2, '0')}</td><td><strong>${hh.head} household</strong><br><span style="font-size: 11px; color: var(--text-muted);">${hh.id} · ${hh.purok.split(',')[0]}</span></td><td>${hh.members[0].needs !== 'None' ? hh.members[0].needs : 'None reported'}</td><td><span class="pill ${pillClass}">${evacStatus}</span></td></tr>`;
+          const evacStatus = savedEvacs[hh.id] || 'At Home';
+          let pillClass = 'status-en-route';
+          if (evacStatus === 'Assisted' || evacStatus === 'In Evacuation Center' || evacStatus === 'Pre-emptively Evacuated') pillClass = 'status-evacuated';
+          if (evacStatus === 'Unaccounted For') pillClass = 'status-unaccounted';
+          if (evacStatus === 'At Home') pillClass = 'status-at-home';
+
+          const firstMember = Array.isArray(hh.members) && hh.members[0] ? hh.members[0] : { needs: 'None reported' };
+          const hasNeed = firstMember.needs && firstMember.needs !== 'None' && firstMember.needs !== 'None reported';
+          const needText = hasNeed ? firstMember.needs : 'None reported';
+          const purokShort = String(hh.purok || '').split(',')[0];
+
+          priorityBody.innerHTML += `<tr><td style="padding-left: 24px;">${String(index + 1).padStart(2, '0')}</td><td><strong>${escapePrepHtml(hh.head)} household</strong><br><span style="font-size: 11px; color: var(--text-muted);">${escapePrepHtml(hh.id)} · ${escapePrepHtml(purokShort)}</span></td><td>${escapePrepHtml(needText)}</td><td><span class="pill ${pillClass}">${escapePrepHtml(evacStatus)}</span></td></tr>`;
         });
       }
 
-      var map = L.map('map').setView([8.2280, 124.2452], 15);
-      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
-      var redIcon = L.divIcon({ className: 'custom-marker', html: '<div style="background-color: #8B0000; width: 16px; height: 16px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.4);"></div>', iconSize: [16, 16], iconAnchor: [8, 8] });
-      if (verified.length === 0) {
-        L.marker([8.2280, 124.2452], {icon: redIcon}).addTo(map).bindPopup('No verified households yet.');
-      } else {
-        verified.forEach(hh => {
-          const lat = 8.2280 + (Math.random() - 0.5) * 0.01;
-          const lng = 124.2452 + (Math.random() - 0.5) * 0.01;
-          L.marker([lat, lng], {icon: redIcon}).addTo(map).bindPopup(`<b>${hh.head} household</b><br>${hh.id}`);
+      if (typeof L !== 'undefined') {
+        const map = L.map('map').setView([8.2280, 124.2452], 15);
+        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', { maxZoom: 19 }).addTo(map);
+        const redIcon = L.divIcon({
+          className: 'custom-marker',
+          html: '<div style="background-color: #8B0000; width: 16px; height: 16px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.4);"></div>',
+          iconSize: [16, 16],
+          iconAnchor: [8, 8]
         });
+
+        if (verified.length === 0) {
+          L.marker([8.2280, 124.2452], { icon: redIcon }).addTo(map).bindPopup('No verified households yet.');
+        } else {
+          verified.forEach(hh => {
+            const lat = 8.2280 + (Math.random() - 0.5) * 0.01;
+            const lng = 124.2452 + (Math.random() - 0.5) * 0.01;
+            L.marker([lat, lng], { icon: redIcon }).addTo(map).bindPopup(`<b>${escapePrepHtml(hh.head)} household</b><br>${escapePrepHtml(hh.id)}`);
+          });
+        }
       }
     });
   </script>
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
-  <script src="js/app.js"></script>
 </body>
 </html>
