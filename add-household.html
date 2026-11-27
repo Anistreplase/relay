@@ -325,17 +325,25 @@
             <input type="number" id="modal-member-age" min="0" max="125" required placeholder="">
           </div>
           <div class="form-field">
-            <label for="modal-member-rel">Role / Relationship *</label>
-            <select id="modal-member-rel" required onchange="toggleOtherRoleField()">
-              <option value="">-- Select Role --</option>
-              <option value="Household head">Household head</option>
-              <option value="Spouse">Spouse</option>
-              <option value="Child">Child</option>
-              <option value="Senior">Senior</option>
-              <option value="Member">Member</option>
-              <option value="Others">Others</option>
+            <label for="modal-member-sex">Sex *</label>
+            <select id="modal-member-sex" required>
+              <option value="">-- Select Sex --</option>
+              <option value="Male">Male</option>
+              <option value="Female">Female</option>
             </select>
           </div>
+        </div>
+        <div class="form-field">
+          <label for="modal-member-rel">Role / Relationship *</label>
+          <select id="modal-member-rel" required onchange="toggleOtherRoleField()">
+            <option value="">-- Select Role --</option>
+            <option value="Household head">Household head</option>
+            <option value="Spouse">Spouse</option>
+            <option value="Child">Child</option>
+            <option value="Senior">Senior</option>
+            <option value="Member">Member</option>
+            <option value="Others">Others</option>
+          </select>
         </div>
         <div class="form-field" id="other-role-field-wrap" style="display: none;">
           <label for="modal-member-other-role">Specify role / relationship (e.g. Tenant, Cousin, Boarder) *</label>
@@ -362,12 +370,19 @@
     let pickedLng = null;
     let locationConfirmed = false;
 
-    // Right-side household roster members (no category field)
+    // Right-side household roster members
     let rosterMembers = [];
 
     // Bottom vulnerable household member entries
     let vulnEntries = [
-      { name: '', category: 'None', categoryType: 'None', otherCategory: '' }
+      {
+        name: '',
+        age: '',
+        sex: '',
+        category: 'None',
+        categoryType: 'None',
+        otherCategory: ''
+      }
     ];
 
     function escapeAddHtml(value) {
@@ -406,7 +421,14 @@
     }
 
     function addVulnerableEntry() {
-      vulnEntries.push({ name: '', category: 'None', categoryType: 'None', otherCategory: '' });
+      vulnEntries.push({
+        name: '',
+        age: '',
+        sex: '',
+        category: 'None',
+        categoryType: 'None',
+        otherCategory: ''
+      });
       renderVulnerableEntries();
       renderMembersList();
     }
@@ -421,6 +443,18 @@
     function handleVulnNameInput(index, value) {
       if (!vulnEntries[index]) return;
       vulnEntries[index].name = value;
+      renderMembersList();
+    }
+
+    function handleVulnAgeInput(index, value) {
+      if (!vulnEntries[index]) return;
+      vulnEntries[index].age = value;
+      renderMembersList();
+    }
+
+    function handleVulnSexChange(index, value) {
+      if (!vulnEntries[index]) return;
+      vulnEntries[index].sex = value;
       renderMembersList();
     }
 
@@ -490,6 +524,33 @@
                 </select>
               </div>
             </div>
+            <div class="form-grid" style="margin-bottom: 4px;">
+              <div class="form-field" style="margin-bottom: 8px;">
+                <label for="vuln-age-${idx}">Age (years) *</label>
+                <input
+                  type="number"
+                  id="vuln-age-${idx}"
+                  min="0"
+                  max="125"
+                  ${isFirst ? 'required' : ''}
+                  placeholder=""
+                  value="${escapeAddHtml(entry.age)}"
+                  oninput="handleVulnAgeInput(${idx}, this.value)"
+                >
+              </div>
+              <div class="form-field" style="margin-bottom: 8px;">
+                <label for="vuln-sex-${idx}">Sex *</label>
+                <select
+                  id="vuln-sex-${idx}"
+                  ${isFirst ? 'required' : ''}
+                  onchange="handleVulnSexChange(${idx}, this.value)"
+                >
+                  <option value="" ${!entry.sex ? 'selected' : ''}>-- Select Sex --</option>
+                  <option value="Male" ${entry.sex === 'Male' ? 'selected' : ''}>Male</option>
+                  <option value="Female" ${entry.sex === 'Female' ? 'selected' : ''}>Female</option>
+                </select>
+              </div>
+            </div>
             <div class="form-field" id="vuln-other-wrap-${idx}" style="display: ${isOthers ? 'flex' : 'none'}; margin-bottom: 0;">
               <label for="vuln-other-${idx}">Specify category *</label>
               <input
@@ -515,14 +576,18 @@
         if (!cleanName) return;
         seenNames.add(cleanName.toLowerCase());
         const hasAge = m.age !== '' && m.age !== null && m.age !== undefined && Number.isFinite(Number(m.age));
+        const agePart = hasAge ? `${Number(m.age)} yrs` : 'Age not set';
+        const sexPart = m.sex ? ` · ${m.sex}` : '';
+        const rolePart = ` · ${m.rel || 'Member'}`;
         combined.push({
           source: 'roster',
           rosterIndex: idx,
           name: cleanName,
-          meta: `${hasAge ? `${Number(m.age)} years` : 'Age not set'} · ${m.rel || 'Member'}`,
+          meta: `${agePart}${sexPart}${rolePart}`,
           raw: {
             name: cleanName,
             age: hasAge ? Number(m.age) : null,
+            sex: m.sex || '',
             rel: m.rel || 'Member'
           }
         });
@@ -533,15 +598,19 @@
         if (!cleanName) return;
         if (seenNames.has(cleanName.toLowerCase())) return;
         seenNames.add(cleanName.toLowerCase());
-        const catLabel = v.category && v.category !== 'None' ? ` · ${v.category}` : '';
+        const hasAge = v.age !== '' && v.age !== null && v.age !== undefined && Number.isFinite(Number(v.age));
+        const agePart = hasAge ? `${Number(v.age)} yrs` : 'Age not set';
+        const sexPart = v.sex ? ` · ${v.sex}` : '';
+        const catPart = v.category && v.category !== 'None' ? ` · ${v.category}` : '';
         combined.push({
           source: 'vulnerable',
           vulnIndex: idx,
           name: cleanName,
-          meta: `Vulnerable household member${catLabel}`,
+          meta: `${agePart}${sexPart} · Vulnerable${catPart}`,
           raw: {
             name: cleanName,
-            age: null,
+            age: hasAge ? Number(v.age) : null,
+            sex: v.sex || '',
             rel: 'Vulnerable household member',
             category: v.category || 'None'
           }
@@ -604,6 +673,7 @@
 
       document.getElementById('modal-member-name').value = existing ? (existing.name || '') : '';
       document.getElementById('modal-member-age').value = existing && existing.age !== '' && existing.age !== null && existing.age !== undefined ? String(existing.age) : '';
+      document.getElementById('modal-member-sex').value = existing ? (existing.sex || '') : '';
 
       const relSelect = document.getElementById('modal-member-rel');
       const otherInput = document.getElementById('modal-member-other-role');
@@ -634,6 +704,7 @@
       const name = document.getElementById('modal-member-name').value.trim();
       const ageRaw = document.getElementById('modal-member-age').value.trim();
       const age = ageRaw === '' ? NaN : parseInt(ageRaw, 10);
+      const sex = document.getElementById('modal-member-sex').value;
       const relSelection = document.getElementById('modal-member-rel').value;
       const otherRel = document.getElementById('modal-member-other-role').value.trim();
 
@@ -643,6 +714,10 @@
       }
       if (Number.isNaN(age) || age < 0 || age > 125) {
         showMemberModalError('Please enter a valid age between 0 and 125.');
+        return;
+      }
+      if (!sex) {
+        showMemberModalError('Please select a sex.');
         return;
       }
       if (!relSelection) {
@@ -659,6 +734,7 @@
       const memberObj = {
         name,
         age,
+        sex,
         rel: finalRel,
         relType: relSelection,
         otherRel: relSelection === 'Others' ? otherRel : ''
@@ -909,9 +985,22 @@
         return null;
       }
 
-      const firstVulnName = String(vulnEntries[0]?.name || '').trim();
+      const firstVuln = vulnEntries[0] || {};
+      const firstVulnName = String(firstVuln.name || '').trim();
+      const firstVulnAgeRaw = String(firstVuln.age ?? '').trim();
+      const firstVulnAge = firstVulnAgeRaw === '' ? NaN : parseInt(firstVulnAgeRaw, 10);
+      const firstVulnSex = String(firstVuln.sex || '').trim();
+
       if (!firstVulnName) {
         showFormError('Please enter the vulnerable household member name.');
+        return null;
+      }
+      if (Number.isNaN(firstVulnAge) || firstVulnAge < 0 || firstVulnAge > 125) {
+        showFormError('Please enter a valid age (0–125) for the vulnerable household member.');
+        return null;
+      }
+      if (!firstVulnSex) {
+        showFormError('Please select the sex for the vulnerable household member.');
         return null;
       }
 
@@ -932,8 +1021,13 @@
       const membersPayload = residents.map(r => r.raw);
 
       const primaryVuln = vulnEntries
-        .map(v => ({ name: String(v.name || '').trim(), category: v.category || 'None' }))
-        .find(v => v.name) || { name: firstVulnName, category: 'None' };
+        .map(v => ({
+          name: String(v.name || '').trim(),
+          age: v.age === '' || v.age === null || v.age === undefined || Number.isNaN(Number(v.age)) ? null : Number(v.age),
+          sex: v.sex || '',
+          category: v.category || 'None'
+        }))
+        .find(v => v.name) || { name: firstVulnName, age: firstVulnAge, sex: firstVulnSex, category: 'None' };
 
       const custom = JSON.parse(localStorage.getItem('custom_households')) || {};
       custom[newId] = {
@@ -952,6 +1046,8 @@
           .filter(v => String(v.name || '').trim())
           .map(v => ({
             name: String(v.name || '').trim(),
+            age: v.age === '' || v.age === null || v.age === undefined || Number.isNaN(Number(v.age)) ? null : Number(v.age),
+            sex: v.sex || '',
             category: v.category || 'None'
           })),
         members: membersPayload
@@ -967,7 +1063,7 @@
       const form = document.getElementById('add-hh-form');
       if (form) form.reset();
       rosterMembers = [];
-      vulnEntries = [{ name: '', category: 'None', categoryType: 'None', otherCategory: '' }];
+      vulnEntries = [{ name: '', age: '', sex: '', category: 'None', categoryType: 'None', otherCategory: '' }];
       clearPinLocation();
       const warnEl = document.getElementById('hh-dup-warning');
       if (warnEl) {
