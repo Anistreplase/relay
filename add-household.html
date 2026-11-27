@@ -121,6 +121,27 @@
       border-color: var(--maroon, #8B0000);
       color: var(--maroon, #8B0000);
     }
+    .vuln-section {
+      border-top: 1px solid var(--border);
+      padding-top: 16px;
+      margin-top: 6px;
+    }
+    .vuln-entry-block {
+      background: var(--cream, #FAF8F5);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 14px;
+      margin-bottom: 12px;
+    }
+    .vuln-entry-top {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-muted);
+    }
     .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 12px; }
     .form-field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
     .form-field label { font-size: 12px; font-weight: 600; }
@@ -197,7 +218,7 @@
             <div class="form-grid">
               <div class="form-field">
                 <label for="hh-head">Household head surname / name *</label>
-                <input type="text" id="hh-head" required placeholder="" oninput="syncHeadFromForm(); checkPotentialDuplicatesWhileTyping();">
+                <input type="text" id="hh-head" required placeholder="" oninput="checkPotentialDuplicatesWhileTyping()">
               </div>
               <div class="form-field" id="barangay-field-wrap" style="display: none;">
                 <label for="hh-barangay">Barangay (Required for City-Wide Admin) *</label>
@@ -255,25 +276,14 @@
               </div>
             </div>
 
-            <div class="form-grid" style="margin-bottom: 4px;">
-              <div class="form-field">
-                <label for="member-name">Vulnerable / household member name *</label>
-                <input type="text" id="member-name" required placeholder="" oninput="syncMemberFromInputs()">
-              </div>
-              <div class="form-field">
-                <label for="member-category">Category</label>
-                <select id="member-category" onchange="syncMemberFromInputs()">
-                  <option value="None">None</option>
-                  <option value="Senior Citizen">Senior Citizen</option>
-                  <option value="PWD">PWD</option>
-                  <option value="Chronic Illness">Chronic Illness</option>
-                  <option value="Pregnant">Pregnant</option>
-                  <option value="Child">Child</option>
-                </select>
-              </div>
+            <div class="vuln-section">
+              <div id="vulnerable-members-container"></div>
+              <button type="button" class="btn btn-secondary" style="padding: 8px 14px; font-size: 12px;" onclick="addVulnerableEntry()">
+                + Add another vulnerable member
+              </button>
             </div>
 
-            <div style="display: flex; flex-wrap: wrap; gap: 12px; margin-top: 16px;">
+            <div style="display: flex; flex-wrap: wrap; gap: 12px; margin-top: 20px;">
               <button type="submit" class="btn btn-primary">Save household</button>
               <button type="button" class="btn btn-secondary" onclick="saveAndAddAnotherHousehold()">Add more household</button>
               <a href="records.html" class="btn btn-secondary">Cancel</a>
@@ -285,7 +295,7 @@
               <h2 class="members-title">Household members</h2>
               <span class="required-note">* Required fields</span>
             </div>
-            <p class="members-subtitle" id="members-count-label">0 residents · Household roster</p>
+            <p class="members-subtitle" id="members-count-label">0 residents in this household</p>
 
             <div class="members-list" id="household-members-list"></div>
 
@@ -331,17 +341,6 @@
           <label for="modal-member-other-role">Specify role / relationship (e.g. Tenant, Cousin, Boarder) *</label>
           <input type="text" id="modal-member-other-role" placeholder="">
         </div>
-        <div class="form-field">
-          <label for="modal-member-category">Category</label>
-          <select id="modal-member-category">
-            <option value="None">None</option>
-            <option value="Senior Citizen">Senior Citizen</option>
-            <option value="PWD">PWD</option>
-            <option value="Chronic Illness">Chronic Illness</option>
-            <option value="Pregnant">Pregnant</option>
-            <option value="Child">Child</option>
-          </select>
-        </div>
         <div class="modal-footer" style="margin-top: 14px;">
           <div class="modal-footer-text">Saved with this household record.</div>
           <div class="modal-actions">
@@ -362,8 +361,14 @@
     let pickedLat = null;
     let pickedLng = null;
     let locationConfirmed = false;
+
+    // Right-side household roster members (no category field)
     let rosterMembers = [];
-    let syncedMemberIndex = null;
+
+    // Bottom vulnerable household member entries
+    let vulnEntries = [
+      { name: '', category: 'None', categoryType: 'None', otherCategory: '' }
+    ];
 
     function escapeAddHtml(value) {
       return String(value ?? '')
@@ -400,88 +405,188 @@
       errEl.style.display = 'none';
     }
 
-    function syncHeadFromForm() {
-      const headVal = (document.getElementById('hh-head')?.value || '').trim();
-      const memberInput = document.getElementById('member-name');
-      if (headVal && memberInput && !memberInput.value.trim()) {
-        memberInput.value = headVal;
-        syncMemberFromInputs();
-      }
-    }
-
-    function syncMemberFromInputs() {
-      const nameVal = (document.getElementById('member-name')?.value || '').trim();
-      const catVal = document.getElementById('member-category')?.value || 'None';
-
-      if (!nameVal && syncedMemberIndex === null) {
-        renderMembersList();
-        return;
-      }
-
-      if (syncedMemberIndex === null) {
-        if (!nameVal) return;
-        rosterMembers.unshift({
-          name: nameVal,
-          age: '',
-          rel: 'Member',
-          relType: 'Member',
-          otherRel: '',
-          category: catVal
-        });
-        syncedMemberIndex = 0;
-      } else if (rosterMembers[syncedMemberIndex]) {
-        if (!nameVal && !rosterMembers[syncedMemberIndex].age) {
-          rosterMembers.splice(syncedMemberIndex, 1);
-          syncedMemberIndex = null;
-        } else {
-          rosterMembers[syncedMemberIndex] = {
-            ...rosterMembers[syncedMemberIndex],
-            name: nameVal || rosterMembers[syncedMemberIndex].name,
-            category: catVal
-          };
-        }
-      }
+    function addVulnerableEntry() {
+      vulnEntries.push({ name: '', category: 'None', categoryType: 'None', otherCategory: '' });
+      renderVulnerableEntries();
       renderMembersList();
     }
 
-    function syncInputsFromSyncedMember() {
-      if (syncedMemberIndex === null || !rosterMembers[syncedMemberIndex]) return;
-      const item = rosterMembers[syncedMemberIndex];
-      const nameInput = document.getElementById('member-name');
-      const catSelect = document.getElementById('member-category');
-      if (nameInput) nameInput.value = item.name || '';
-      if (catSelect && item.category) catSelect.value = item.category;
+    function removeVulnerableEntry(index) {
+      if (index === 0 || !vulnEntries[index]) return;
+      vulnEntries.splice(index, 1);
+      renderVulnerableEntries();
+      renderMembersList();
+    }
+
+    function handleVulnNameInput(index, value) {
+      if (!vulnEntries[index]) return;
+      vulnEntries[index].name = value;
+      renderMembersList();
+    }
+
+    function handleVulnCategoryChange(index, value) {
+      if (!vulnEntries[index]) return;
+      vulnEntries[index].categoryType = value;
+      if (value !== 'Others') {
+        vulnEntries[index].otherCategory = '';
+        vulnEntries[index].category = value;
+      } else {
+        vulnEntries[index].category = vulnEntries[index].otherCategory.trim() || 'Others';
+      }
+      renderVulnerableEntries();
+      renderMembersList();
+    }
+
+    function handleVulnOtherCategoryInput(index, value) {
+      if (!vulnEntries[index]) return;
+      vulnEntries[index].otherCategory = value;
+      vulnEntries[index].category = value.trim() || 'Others';
+      renderMembersList();
+    }
+
+    function renderVulnerableEntries() {
+      const container = document.getElementById('vulnerable-members-container');
+      if (!container) return;
+
+      const standardCats = ['None', 'Senior Citizen', 'PWD', 'Chronic Illness', 'Pregnant', 'Child', 'Others'];
+
+      container.innerHTML = vulnEntries.map((entry, idx) => {
+        const isFirst = idx === 0;
+        const isOthers = entry.categoryType === 'Others' || (entry.category && !standardCats.includes(entry.category));
+        const selectVal = isOthers ? 'Others' : (entry.categoryType || entry.category || 'None');
+        const otherVal = isOthers ? (entry.otherCategory || (standardCats.includes(entry.category) ? '' : entry.category)) : '';
+
+        return `
+          <div class="vuln-entry-block">
+            <div class="vuln-entry-top">
+              <span>${isFirst ? 'Vulnerable household member' : `Additional vulnerable member ${idx + 1}`}</span>
+              ${!isFirst ? `<button type="button" class="link-remove-btn" onclick="removeVulnerableEntry(${idx})">Remove</button>` : ''}
+            </div>
+            <div class="form-grid" style="margin-bottom: 4px;">
+              <div class="form-field" style="margin-bottom: 8px;">
+                <label for="vuln-name-${idx}">Vulnerable household member name *</label>
+                <input
+                  type="text"
+                  id="vuln-name-${idx}"
+                  ${isFirst ? 'required' : ''}
+                  placeholder=""
+                  value="${escapeAddHtml(entry.name)}"
+                  oninput="handleVulnNameInput(${idx}, this.value)"
+                >
+              </div>
+              <div class="form-field" style="margin-bottom: 8px;">
+                <label for="vuln-cat-${idx}">Category</label>
+                <select
+                  id="vuln-cat-${idx}"
+                  onchange="handleVulnCategoryChange(${idx}, this.value)"
+                >
+                  <option value="None" ${selectVal === 'None' ? 'selected' : ''}>None</option>
+                  <option value="Senior Citizen" ${selectVal === 'Senior Citizen' ? 'selected' : ''}>Senior Citizen</option>
+                  <option value="PWD" ${selectVal === 'PWD' ? 'selected' : ''}>PWD</option>
+                  <option value="Chronic Illness" ${selectVal === 'Chronic Illness' ? 'selected' : ''}>Chronic Illness</option>
+                  <option value="Pregnant" ${selectVal === 'Pregnant' ? 'selected' : ''}>Pregnant</option>
+                  <option value="Child" ${selectVal === 'Child' ? 'selected' : ''}>Child</option>
+                  <option value="Others" ${selectVal === 'Others' ? 'selected' : ''}>Others</option>
+                </select>
+              </div>
+            </div>
+            <div class="form-field" id="vuln-other-wrap-${idx}" style="display: ${isOthers ? 'flex' : 'none'}; margin-bottom: 0;">
+              <label for="vuln-other-${idx}">Specify category *</label>
+              <input
+                type="text"
+                id="vuln-other-${idx}"
+                ${isOthers ? 'required' : ''}
+                placeholder=""
+                value="${escapeAddHtml(otherVal)}"
+                oninput="handleVulnOtherCategoryInput(${idx}, this.value)"
+              >
+            </div>
+          </div>
+        `;
+      }).join('');
+    }
+
+    function getCombinedHouseholdResidents() {
+      const combined = [];
+      const seenNames = new Set();
+
+      rosterMembers.forEach((m, idx) => {
+        const cleanName = String(m.name || '').trim();
+        if (!cleanName) return;
+        seenNames.add(cleanName.toLowerCase());
+        const hasAge = m.age !== '' && m.age !== null && m.age !== undefined && Number.isFinite(Number(m.age));
+        combined.push({
+          source: 'roster',
+          rosterIndex: idx,
+          name: cleanName,
+          meta: `${hasAge ? `${Number(m.age)} years` : 'Age not set'} · ${m.rel || 'Member'}`,
+          raw: {
+            name: cleanName,
+            age: hasAge ? Number(m.age) : null,
+            rel: m.rel || 'Member'
+          }
+        });
+      });
+
+      vulnEntries.forEach((v, idx) => {
+        const cleanName = String(v.name || '').trim();
+        if (!cleanName) return;
+        if (seenNames.has(cleanName.toLowerCase())) return;
+        seenNames.add(cleanName.toLowerCase());
+        const catLabel = v.category && v.category !== 'None' ? ` · ${v.category}` : '';
+        combined.push({
+          source: 'vulnerable',
+          vulnIndex: idx,
+          name: cleanName,
+          meta: `Vulnerable household member${catLabel}`,
+          raw: {
+            name: cleanName,
+            age: null,
+            rel: 'Vulnerable household member',
+            category: v.category || 'None'
+          }
+        });
+      });
+
+      return combined;
     }
 
     function renderMembersList() {
       const listEl = document.getElementById('household-members-list');
       const countEl = document.getElementById('members-count-label');
-      const total = rosterMembers.length;
+      const residents = getCombinedHouseholdResidents();
+      const total = residents.length;
 
       if (countEl) {
-        countEl.textContent = `${total} ${total === 1 ? 'resident' : 'residents'} · Household roster`;
+        countEl.textContent = `${total} ${total === 1 ? 'resident' : 'residents'} in this household`;
       }
       if (!listEl) return;
 
       if (!total) {
-        listEl.innerHTML = '<div class="member-meta" style="padding: 14px 0;">No household members added yet. Click + Add household member.</div>';
+        listEl.innerHTML = '<div class="member-meta" style="padding: 14px 0;">No household members listed yet.</div>';
         return;
       }
 
-      listEl.innerHTML = rosterMembers.map((m, idx) => {
-        const hasAge = m.age !== '' && m.age !== null && m.age !== undefined && Number.isFinite(Number(m.age));
-        const ageText = hasAge ? `${Number(m.age)} years` : 'Age not set';
-        const roleLabel = m.rel || 'Member';
-        const catLabel = m.category && m.category !== 'None' ? ` · ${m.category}` : '';
+      listEl.innerHTML = residents.map(item => {
+        if (item.source === 'roster') {
+          return `
+            <div class="member-row">
+              <div>
+                <div class="member-name">${escapeAddHtml(item.name)}</div>
+                <div class="member-meta">${escapeAddHtml(item.meta)}</div>
+              </div>
+              <div class="member-actions">
+                <button type="button" class="link-action-btn" onclick="openMemberModal(${item.rosterIndex})">Edit</button>
+                <button type="button" class="link-remove-btn" onclick="removeRosterMember(${item.rosterIndex})">Remove</button>
+              </div>
+            </div>
+          `;
+        }
         return `
           <div class="member-row">
             <div>
-              <div class="member-name">${escapeAddHtml(m.name)}</div>
-              <div class="member-meta">${escapeAddHtml(`${ageText} · ${roleLabel}${catLabel}`)}</div>
-            </div>
-            <div class="member-actions">
-              <button type="button" class="link-action-btn" onclick="openMemberModal(${idx})">Edit</button>
-              <button type="button" class="link-remove-btn" onclick="removeRosterMember(${idx})">Remove</button>
+              <div class="member-name">${escapeAddHtml(item.name)}</div>
+              <div class="member-meta">${escapeAddHtml(item.meta)}</div>
             </div>
           </div>
         `;
@@ -518,9 +623,6 @@
       }
 
       toggleOtherRoleField();
-
-      document.getElementById('modal-member-category').value = existing ? (existing.category || 'None') : 'None';
-
       showModal('modal-member-editor');
     }
 
@@ -534,7 +636,6 @@
       const age = ageRaw === '' ? NaN : parseInt(ageRaw, 10);
       const relSelection = document.getElementById('modal-member-rel').value;
       const otherRel = document.getElementById('modal-member-other-role').value.trim();
-      const category = document.getElementById('modal-member-category').value;
 
       if (!name) {
         showMemberModalError('Please enter the household member full name.');
@@ -555,30 +656,18 @@
       }
 
       const finalRel = relSelection === 'Others' ? otherRel : relSelection;
-      const updatedMember = {
+      const memberObj = {
         name,
         age,
         rel: finalRel,
         relType: relSelection,
-        otherRel: relSelection === 'Others' ? otherRel : '',
-        category
+        otherRel: relSelection === 'Others' ? otherRel : ''
       };
 
       if (idxRaw !== '') {
-        const targetIdx = Number(idxRaw);
-        rosterMembers[targetIdx] = {
-          ...rosterMembers[targetIdx],
-          ...updatedMember
-        };
-        if (targetIdx === syncedMemberIndex) {
-          syncInputsFromSyncedMember();
-        }
+        rosterMembers[Number(idxRaw)] = memberObj;
       } else {
-        rosterMembers.push(updatedMember);
-        if (syncedMemberIndex === null) {
-          syncedMemberIndex = rosterMembers.length - 1;
-          syncInputsFromSyncedMember();
-        }
+        rosterMembers.push(memberObj);
       }
 
       renderMembersList();
@@ -588,11 +677,6 @@
     function removeRosterMember(idx) {
       if (!rosterMembers[idx]) return;
       rosterMembers.splice(idx, 1);
-      if (syncedMemberIndex === idx) {
-        syncedMemberIndex = null;
-      } else if (syncedMemberIndex !== null && idx < syncedMemberIndex) {
-        syncedMemberIndex -= 1;
-      }
       renderMembersList();
     }
 
@@ -779,6 +863,7 @@
         brgyWrap.style.display = 'flex';
         brgySelect.required = true;
       }
+      renderVulnerableEntries();
       renderMembersList();
       initPinPickerMap();
     });
@@ -818,32 +903,37 @@
       const purokShort = document.getElementById('hh-purok').value.trim();
       const address = document.getElementById('hh-address').value.trim();
       const landmark = document.getElementById('hh-landmark')?.value || '';
-      const memberName = document.getElementById('member-name').value.trim();
-      const category = document.getElementById('member-category').value;
 
-      if (!head || !purokShort || !address || !memberName) {
-        showFormError('Please fill out all required household and member fields.');
+      if (!head || !purokShort || !address) {
+        showFormError('Please fill out the household head, purok, and address.');
         return null;
+      }
+
+      const firstVulnName = String(vulnEntries[0]?.name || '').trim();
+      if (!firstVulnName) {
+        showFormError('Please enter the vulnerable household member name.');
+        return null;
+      }
+
+      for (let i = 0; i < vulnEntries.length; i++) {
+        const entry = vulnEntries[i];
+        const cleanName = String(entry.name || '').trim();
+        if (!cleanName && i > 0) continue;
+        if (entry.categoryType === 'Others' && !String(entry.otherCategory || '').trim()) {
+          showFormError(`Please specify the category for vulnerable member ${i + 1}.`);
+          return null;
+        }
       }
 
       const prefix = brgyResult.barangay === 'Tibanga' ? 'TB' : brgyResult.barangay === 'Saray' ? 'SR' : 'SM';
       const newId = `HH-${prefix}-${Math.floor(1000 + Math.random() * 9000)}`;
 
-      let membersPayload = rosterMembers.map(m => ({
-        name: m.name,
-        age: m.age === '' || m.age === null || m.age === undefined ? null : Number(m.age),
-        rel: m.rel || 'Member',
-        category: m.category || 'None'
-      }));
+      const residents = getCombinedHouseholdResidents();
+      const membersPayload = residents.map(r => r.raw);
 
-      if (!membersPayload.length && memberName) {
-        membersPayload.push({
-          name: memberName,
-          age: null,
-          rel: 'Member',
-          category
-        });
-      }
+      const primaryVuln = vulnEntries
+        .map(v => ({ name: String(v.name || '').trim(), category: v.category || 'None' }))
+        .find(v => v.name) || { name: firstVulnName, category: 'None' };
 
       const custom = JSON.parse(localStorage.getItem('custom_households')) || {};
       custom[newId] = {
@@ -856,6 +946,14 @@
         lng: pickedLng,
         landmark: landmark || null,
         locationConfirmed: pickedLat !== null && pickedLng !== null ? locationConfirmed : false,
+        primaryVulnerable: primaryVuln.name,
+        category: primaryVuln.category,
+        vulnerableMembers: vulnEntries
+          .filter(v => String(v.name || '').trim())
+          .map(v => ({
+            name: String(v.name || '').trim(),
+            category: v.category || 'None'
+          })),
         members: membersPayload
       };
 
@@ -869,13 +967,14 @@
       const form = document.getElementById('add-hh-form');
       if (form) form.reset();
       rosterMembers = [];
-      syncedMemberIndex = null;
+      vulnEntries = [{ name: '', category: 'None', categoryType: 'None', otherCategory: '' }];
       clearPinLocation();
       const warnEl = document.getElementById('hh-dup-warning');
       if (warnEl) {
         warnEl.style.display = 'none';
         warnEl.innerHTML = '';
       }
+      renderVulnerableEntries();
       renderMembersList();
       document.getElementById('hh-head')?.focus();
     }
