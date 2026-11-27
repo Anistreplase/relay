@@ -5,26 +5,161 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>Relay - Add Household</title>
   <link rel="stylesheet" href="css/style.css">
-  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+  <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css">
   <style>
-    .form-card { background: var(--white); border: 1px solid var(--border); border-radius: 8px; padding: 24px; max-width: 880px; }
-    .form-grid { display: grid; grid-template-columns: 1fr 1fr; gap: 16px; margin-bottom: 12px; }
-    .form-field { display: flex; flex-direction: column; gap: 6px; margin-bottom: 14px; }
-    .form-field label { font-size: 12px; font-weight: 600; }
-    .form-field input, .form-field select { padding: 10px 12px; border: 1px solid var(--border); border-radius: 6px; font-family: inherit; font-size: 13px; background: var(--white); }
-    .error-msg { color: #991B1B; background: #FEE2E2; border: 1px solid #FCA5A5; padding: 10px 12px; border-radius: 6px; font-size: 12px; margin-bottom: 14px; display: none; }
-    .dup-warning-box { color: #92400E; background: #FEF3C7; border: 1px solid #F59E0B; padding: 12px 14px; border-radius: 6px; font-size: 12px; margin-bottom: 14px; display: none; line-height: 1.5; }
-    .pin-map { height: 280px; width: 100%; border-radius: 8px; border: 1px solid var(--border); background: #e5e5e5; z-index: 1; position: relative; }
-    .pin-map .leaflet-container,
-    .pin-map.leaflet-container {
-      cursor: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='24' height='24' viewBox='0 0 24 24'%3E%3Cpath d='M12 2C8.13 2 5 5.13 5 9c0 5.25 7 13 7 13s7-7.75 7-13c0-3.87-3.13-7-7-7z' fill='%238B0000' stroke='%23FFFFFF' stroke-width='1.75'/%3E%3Ccircle cx='12' cy='9' r='2.5' fill='%23FFFFFF'/%3E%3C/svg%3E") 12 22, crosshair;
+    .form-card {
+      background: var(--white);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 24px;
+      margin-bottom: 20px;
     }
-    .pin-map .leaflet-control-container,
-    .pin-map .leaflet-control-container * {
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 16px;
+    }
+    .form-field {
+      display: flex;
+      flex-direction: column;
+      gap: 6px;
+      margin-bottom: 14px;
+    }
+    .form-field label {
+      font-size: 12px;
+      font-weight: 600;
+      color: var(--text-main);
+    }
+    .form-field input,
+    .form-field select {
+      padding: 10px 12px;
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      font-family: inherit;
+      font-size: 13px;
+      background: var(--white);
+      color: var(--text-main);
+    }
+    .form-field input:focus,
+    .form-field select:focus {
+      outline: none;
+      border-color: var(--maroon);
+    }
+    #relay-map {
+      height: 230px;
+      width: 100%;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+      margin-top: 6px;
+      z-index: 1;
+    }
+    .map-toolbar {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      margin-top: 8px;
+      margin-bottom: 12px;
+      font-size: 12px;
+      color: var(--text-muted);
+      flex-wrap: wrap;
+    }
+    .members-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: flex-start;
+      gap: 12px;
+      margin-bottom: 14px;
+    }
+    .members-title {
+      font-size: 18px;
+      font-weight: 700;
+      color: var(--text-main);
+      margin: 0 0 4px 0;
+    }
+    .members-subtitle {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin: 0;
+    }
+    .members-list {
+      border-top: 1px solid var(--border);
+    }
+    .member-row {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 12px;
+      padding: 14px 0;
+      border-bottom: 1px solid var(--border);
+    }
+    .member-name {
+      font-size: 15px;
+      font-weight: 600;
+      color: var(--text-main);
+    }
+    .member-meta {
+      font-size: 13px;
+      color: var(--text-muted);
+      margin-top: 2px;
+    }
+    .member-actions {
+      display: inline-flex;
+      align-items: center;
+      gap: 12px;
+    }
+    .link-action-btn {
+      background: none;
+      border: none;
+      padding: 4px 6px;
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 600;
+      color: var(--maroon, #7c1d23);
       cursor: pointer;
     }
-    .pin-meta { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px; margin-top: 8px; font-size: 12px; color: var(--text-muted); }
-    .fallback-box { background: var(--cream); border: 1px solid var(--border); border-radius: 8px; padding: 14px 16px; margin-bottom: 16px; }
+    .link-action-btn:hover {
+      text-decoration: underline;
+    }
+    .link-remove-btn {
+      background: none;
+      border: none;
+      padding: 4px 6px;
+      font-family: inherit;
+      font-size: 12px;
+      color: var(--text-muted);
+      cursor: pointer;
+    }
+    .link-remove-btn:hover {
+      color: #991b1b;
+    }
+    .btn-add-member {
+      margin-top: 16px;
+      background: var(--white);
+      color: var(--text-main);
+      border: 1px solid var(--border);
+      border-radius: 6px;
+      padding: 10px 16px;
+      font-family: inherit;
+      font-size: 13px;
+      font-weight: 600;
+      cursor: pointer;
+    }
+    .btn-add-member:hover {
+      border-color: var(--maroon, #7c1d23);
+      color: var(--maroon, #7c1d23);
+    }
+    .submit-bar {
+      display: flex;
+      justify-content: flex-end;
+      gap: 10px;
+      margin-top: 8px;
+    }
+    @media (max-width: 720px) {
+      .form-grid {
+        grid-template-columns: 1fr;
+      }
+    }
   </style>
 </head>
 <body>
@@ -35,134 +170,220 @@
       <a href="dashboard.html"><span class="nav-icon">◈</span> Overview</a>
       <a href="records.html" class="active"><span class="nav-icon">👥</span> Household records</a>
       <a href="verify.html"><span class="nav-icon">✓</span> Verification queue</a>
-      <a href="preparedness.html"><span class="nav-icon">▤</span> Preparedness & offline</a>
+      <a href="preparedness.html"><span class="nav-icon">▤</span> Preparedness &amp; offline</a>
       <a href="evacuation.html"><span class="nav-icon">⏱</span> Evacuation tracking</a>
       <a href="revalidation.html"><span class="nav-icon">↻</span> Revalidation</a>
-      <a href="reports.html"><span class="nav-icon">📄</span> Reports & exports</a>
+      <a href="reports.html"><span class="nav-icon">📄</span> Reports &amp; exports</a>
     </nav>
     <div class="sidebar-footer">
-      <div class="status-card"><div class="status-title"><div class="status-dot"></div> System operational</div>Last synced at 09:42<br>Household records up to date</div>
-      <nav class="sidebar-nav" style="margin-top: 12px;"><a href="settings.html"><span class="nav-icon">⚙</span> Settings</a><a href="help.html"><span class="nav-icon">?</span> Help & support</a></nav>
+      <div class="status-card">
+        <div class="status-title"><div class="status-dot"></div> System operational</div>
+        Last synced at 09:42<br>Household records up to date
+      </div>
+      <nav class="sidebar-nav" style="margin-top: 12px;">
+        <a href="users.html" id="nav-users"><span class="nav-icon">👤</span> Manage Users</a>
+        <a href="settings.html"><span class="nav-icon">⚙</span> Settings</a>
+        <a href="help.html"><span class="nav-icon">?</span> Help &amp; support</a>
+      </nav>
     </div>
   </aside>
+
   <main class="main-content">
     <header class="topbar">
       <div class="topbar-left">
-        <div class="workspace-selector"><select id="workspace-selector" style="border:none; background:transparent; font-weight:600; font-size:14px; cursor:pointer;"><option>Barangay San Miguel</option></select></div>
+        <div class="workspace-selector">
+          <select id="workspace-selector" style="border:none; background:transparent; font-weight:600; font-size:14px; cursor:pointer;">
+            <option>City-Wide Administration</option>
+            <option>Barangay San Miguel</option>
+            <option>Barangay Tibanga</option>
+            <option>Barangay Saray</option>
+          </select>
+        </div>
         <div class="search-bar"><span>🔍</span> Search households, puroks, records...</div>
       </div>
       <div class="topbar-right">
         <span>🔔</span>
-        <div class="user-profile"><div class="user-info"><div class="user-name">Loading...</div><div class="user-role">Loading...</div></div></div>
+        <div class="user-profile">
+          <div class="user-info">
+            <div class="user-name">Loading...</div>
+            <div class="user-role">Loading...</div>
+          </div>
+        </div>
       </div>
     </header>
+
     <div class="page-header">
-      <div><h1>Add household</h1><p>Register a new household record as Unverified for validation.</p></div>
-      <div><a href="records.html" class="btn btn-secondary">Back to records</a></div>
+      <div>
+        <h1>Add household</h1>
+        <p>Register a new household record as Unverified for validation.</p>
+      </div>
+      <div style="display: flex; gap: 10px;">
+        <a href="records.html" class="btn btn-secondary">Back to records</a>
+      </div>
     </div>
+
     <div class="page-body">
-      <form class="form-card" id="add-hh-form" onsubmit="handleAddHousehold(event)">
-        <div id="hh-error" class="error-msg"></div>
-        <div id="hh-dup-warning" class="dup-warning-box"></div>
-        <div class="form-grid">
-          <div class="form-field">
-            <label for="hh-head">Household head surname / name *</label>
-            <input type="text" id="hh-head" required placeholder="e.g. Santos" oninput="checkPotentialDuplicatesWhileTyping()">
-          </div>
-          <div class="form-field" id="barangay-field-wrap" style="display: none;">
-            <label for="hh-barangay">Barangay (Required for City-Wide Admin) *</label>
-            <select id="hh-barangay" onchange="centerPinMapForSelection(); checkPotentialDuplicatesWhileTyping();">
-              <option value="">-- Select Barangay --</option>
-              <option value="San Miguel">San Miguel</option>
-              <option value="Tibanga">Tibanga</option>
-              <option value="Saray">Saray</option>
-            </select>
-          </div>
-        </div>
-        <div class="form-grid">
-          <div class="form-field">
-            <label for="hh-purok">Purok *</label>
-            <select id="hh-purok" required onchange="centerPinMapForSelection(); checkPotentialDuplicatesWhileTyping();">
-              <option value="Purok 1">Purok 1</option>
-              <option value="Purok 2">Purok 2</option>
-              <option value="Purok 3">Purok 3</option>
-              <option value="Purok 4">Purok 4</option>
-              <option value="Purok 5">Purok 5</option>
-            </select>
-          </div>
-          <div class="form-field">
-            <label for="hh-address">Street / Sitio address *</label>
-            <input type="text" id="hh-address" required placeholder="e.g. 14 Riverside Street" oninput="checkPotentialDuplicatesWhileTyping()">
-          </div>
-        </div>
-
-        <div class="form-field">
-          <label>Household location pin (Click map to drop pin)</label>
-          <div id="pin-map" class="pin-map"></div>
-          <div class="pin-meta">
-            <span id="pin-coords-label">Pin: Not yet placed (click map or select landmark below)</span>
-            <button type="button" class="btn btn-secondary" style="padding: 5px 10px; font-size: 12px;" onclick="clearPinLocation()">Clear pin</button>
-          </div>
-        </div>
-
-        <div class="fallback-box">
-          <div class="form-grid" style="margin-bottom: 0;">
-            <div class="form-field" style="margin-bottom: 0;">
-              <label for="hh-landmark">Fallback landmark (if exact coordinates are unavailable)</label>
-              <select id="hh-landmark" onchange="applyLandmarkFallback()">
-                <option value="">-- None / Exact pin placed --</option>
-                <option value="Barangay Hall / Covered Court">Barangay Hall / Covered Court</option>
-                <option value="Purok Chapel / Waiting Shed">Purok Chapel / Waiting Shed</option>
-                <option value="Elementary School / Evacuation Site">Elementary School / Evacuation Site</option>
-                <option value="Main Road / Riverbank Crossing">Main Road / Riverbank Crossing</option>
+      <form id="add-household-form" onsubmit="handleSaveHousehold(event)">
+        <div class="form-card">
+          <div class="form-grid">
+            <div class="form-field">
+              <label for="hh-head-name">Household head surname / name *</label>
+              <input type="text" id="hh-head-name" required placeholder="e.g. Santos" oninput="syncHeadMemberName()">
+            </div>
+            <div class="form-field">
+              <label for="hh-barangay">Barangay (Required for City-Wide Admin) *</label>
+              <select id="hh-barangay" required>
+                <option value="">-- Select Barangay --</option>
+                <option value="Barangay San Miguel">Barangay San Miguel</option>
+                <option value="Barangay Tibanga">Barangay Tibanga</option>
+                <option value="Barangay Saray">Barangay Saray</option>
               </select>
             </div>
-            <div class="form-field" style="margin-bottom: 0;">
-              <label>Location confirmation status</label>
-              <input type="text" id="hh-location-status" readonly value="Unconfirmed" style="background: #F9FAFB;">
+          </div>
+
+          <div class="form-grid">
+            <div class="form-field">
+              <label for="hh-purok">Purok *</label>
+              <input type="text" id="hh-purok" required placeholder="Purok 1">
+            </div>
+            <div class="form-field">
+              <label for="hh-address">Street / Sitio address *</label>
+              <input type="text" id="hh-address" required placeholder="e.g. 14 Riverside Street">
+            </div>
+          </div>
+
+          <div class="form-field">
+            <label>Household location pin (Click map to drop pin)</label>
+            <div id="relay-map"></div>
+            <div class="map-toolbar">
+              <span id="pin-status-label">Pin: Not yet placed (click map or select landmark below)</span>
+              <button type="button" class="btn btn-secondary" style="padding: 5px 10px; font-size: 12px;" onclick="clearMapPin()">Clear pin</button>
+            </div>
+          </div>
+
+          <div class="form-grid">
+            <div class="form-field">
+              <label for="hh-landmark">Fallback landmark (if exact coordinates are unavailable)</label>
+              <select id="hh-landmark" onchange="handleLandmarkChange()">
+                <option value="">-- None / Exact pin placed --</option>
+                <option value="San Miguel Barangay Hall">San Miguel Barangay Hall</option>
+                <option value="Tibanga Covered Court">Tibanga Covered Court</option>
+                <option value="Saray Elementary School">Saray Elementary School</option>
+              </select>
+            </div>
+            <div class="form-field">
+              <label for="hh-location-status">Location confirmation status</label>
+              <input type="text" id="hh-location-status" value="Unconfirmed" readonly>
+            </div>
+          </div>
+
+          <div class="form-grid">
+            <div class="form-field">
+              <label for="hh-primary-vulnerable">Primary vulnerable / household member name *</label>
+              <input type="text" id="hh-primary-vulnerable" placeholder="e.g. Elena Santos">
+            </div>
+            <div class="form-field">
+              <label for="hh-category">Category</label>
+              <select id="hh-category" onchange="syncPrimaryMemberCategory()">
+                <option value="None">None</option>
+                <option value="Senior Citizen">Senior Citizen</option>
+                <option value="PWD">PWD</option>
+                <option value="Pregnant / Lactating">Pregnant / Lactating</option>
+                <option value="Infant / Child">Infant / Child</option>
+              </select>
             </div>
           </div>
         </div>
 
-        <div class="form-grid">
-          <div class="form-field">
-            <label for="member-name">Primary vulnerable / household member name *</label>
-            <input type="text" id="member-name" required placeholder="e.g. Elena Santos">
+        <div class="form-card" id="household-members-card">
+          <div class="members-header">
+            <div>
+              <h2 class="members-title">Household members</h2>
+              <p class="members-subtitle" id="members-count-subtitle">1 resident · Household roster</p>
+            </div>
           </div>
-          <div class="form-field">
-            <label for="member-category">Category</label>
-            <select id="member-category">
-              <option value="None">None</option>
-              <option value="Senior Citizen">Senior Citizen</option>
-              <option value="PWD">PWD</option>
-              <option value="Chronic Illness">Chronic Illness</option>
-              <option value="Pregnant">Pregnant</option>
-              <option value="Child">Child</option>
-            </select>
-          </div>
+
+          <div class="members-list" id="household-members-list"></div>
+
+          <button type="button" class="btn-add-member" onclick="openMemberModal()">
+            + Add household member
+          </button>
         </div>
-        <div class="form-field">
-          <label for="member-needs">Assistance need</label>
-          <input type="text" id="member-needs" placeholder="e.g. Mobility assistance, Maintenance medicine">
-        </div>
-        <div style="display: flex; gap: 12px; margin-top: 16px;">
-          <button type="submit" class="btn btn-primary">Save household</button>
+
+        <div class="submit-bar">
           <a href="records.html" class="btn btn-secondary">Cancel</a>
+          <button type="submit" class="btn btn-primary">Save household record</button>
         </div>
       </form>
     </div>
   </main>
+
+  <div id="modal-household-member" class="modal-overlay">
+    <div class="modal-box" style="max-width: 480px;">
+      <div class="modal-eyebrow">Household Roster</div>
+      <div class="modal-title" id="member-modal-title">Add household member</div>
+      <form id="household-member-form" onsubmit="saveHouseholdMember(event)" style="margin-top: 12px;">
+        <input type="hidden" id="member-edit-index" value="">
+        <div class="form-field">
+          <label for="member-name-input">Full name *</label>
+          <input type="text" id="member-name-input" required placeholder="e.g. Ana Cruz">
+        </div>
+        <div class="form-grid">
+          <div class="form-field">
+            <label for="member-age-input">Age (years) *</label>
+            <input type="number" id="member-age-input" min="0" max="125" required placeholder="e.g. 34">
+          </div>
+          <div class="form-field">
+            <label for="member-role-input">Role / Relationship *</label>
+            <select id="member-role-input">
+              <option value="Household head">Household head</option>
+              <option value="Spouse">Spouse</option>
+              <option value="Child">Child</option>
+              <option value="Senior">Senior</option>
+              <option value="Other relative">Other relative</option>
+            </select>
+          </div>
+        </div>
+        <div class="form-field">
+          <label for="member-category-input">Vulnerability / Need tag</label>
+          <select id="member-category-input">
+            <option value="None">None</option>
+            <option value="Senior Citizen">Senior Citizen</option>
+            <option value="PWD">PWD</option>
+            <option value="Pregnant / Lactating">Pregnant / Lactating</option>
+            <option value="Infant / Child">Infant / Child</option>
+          </select>
+        </div>
+        <div class="modal-footer" style="margin-top: 16px;">
+          <div class="modal-footer-text">Included in this household record.</div>
+          <div class="modal-actions">
+            <button type="button" class="btn btn-secondary" onclick="hideModal('modal-household-member')">Cancel</button>
+            <button type="submit" class="btn btn-primary" id="member-save-btn">Add member</button>
+          </div>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script src="js/database.js"></script>
   <script src="js/app.js"></script>
-  <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
   <script>
-    let pinMap = null;
-    let pinMarker = null;
-    let pickedLat = null;
-    let pickedLng = null;
-    let locationConfirmed = false;
+    let relayMap = null;
+    let relayPinMarker = null;
+    let selectedCoords = null;
+    let householdMembers = [
+      {
+        id: 'MEM-1',
+        name: 'Household Head',
+        age: 34,
+        role: 'Household head',
+        category: 'None',
+        isHead: true
+      }
+    ];
 
-    function escapeAddHtml(value) {
+    function escapeAddHhHtml(value) {
       return String(value ?? '')
         .replace(/&/g, '&amp;')
         .replace(/</g, '&lt;')
@@ -171,245 +392,250 @@
         .replace(/'/g, '&#39;');
     }
 
-    function getEffectiveBarangaySelection() {
-      const role = localStorage.getItem('relay-role') || 'Barangay Official';
-      const workspace = localStorage.getItem('relay-workspace') || 'Barangay San Miguel';
-      const isCityWideAdmin = role === 'Admin' && workspace === 'City-Wide Administration';
-      if (isCityWideAdmin) {
-        return (document.getElementById('hh-barangay')?.value || '').replace(/^Barangay\s+/i, '').trim();
-      }
-      return workspace.replace(/^Barangay\s+/i, '').trim();
-    }
+    function initRelayMap() {
+      if (typeof L === 'undefined' || !document.getElementById('relay-map')) return;
+      relayMap = L.map('relay-map').setView([8.228, 124.2452], 13);
+      L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        attribution: '&copy; OpenStreetMap contributors'
+      }).addTo(relayMap);
 
-    function checkPotentialDuplicatesWhileTyping() {
-      const warnEl = document.getElementById('hh-dup-warning');
-      if (!warnEl) return;
-
-      const headRaw = (document.getElementById('hh-head')?.value || '').trim();
-      const purokRaw = (document.getElementById('hh-purok')?.value || '').trim();
-      const addrRaw = (document.getElementById('hh-address')?.value || '').trim();
-      const brgyRaw = getEffectiveBarangaySelection();
-
-      if (!headRaw || typeof normalizeDupKeyPart !== 'function') {
-        warnEl.style.display = 'none';
-        warnEl.innerHTML = '';
-        return;
-      }
-
-      const pool = typeof getAllActiveHouseholds === 'function' && typeof households !== 'undefined'
-        ? getAllActiveHouseholds(households)
-        : [];
-
-      const targetHead = normalizeDupKeyPart(headRaw);
-      const targetBrgy = normalizeDupKeyPart(brgyRaw);
-      const targetPurok = normalizeDupKeyPart(purokRaw);
-      const targetAddr = normalizeDupKeyPart(addrRaw);
-
-      const matches = pool.filter(other => {
-        if (!other) return false;
-        const otherHead = normalizeDupKeyPart(other.head);
-        const otherBrgy = normalizeDupKeyPart(other.barangay);
-        const otherPurok = normalizeDupKeyPart(other.purok);
-        const otherAddr = normalizeDupKeyPart(other.address);
-
-        if (!targetHead || otherHead !== targetHead) return false;
-        const sameBrgy = !targetBrgy || !otherBrgy || otherBrgy === targetBrgy;
-        const sameLocation =
-          (targetAddr && otherAddr && otherAddr === targetAddr) ||
-          (targetPurok && otherPurok && otherPurok === targetPurok);
-
-        return sameBrgy && sameLocation;
+      relayMap.on('click', function (e) {
+        setMapPin(e.latlng.lat, e.latlng.lng);
       });
-
-      if (matches.length === 0) {
-        warnEl.style.display = 'none';
-        warnEl.innerHTML = '';
-        return;
-      }
-
-      const summary = matches
-        .map(m => `${escapeAddHtml(m.head || 'Household')} (${escapeAddHtml(m.id)} · ${escapeAddHtml(m.purok || m.barangay || '')})`)
-        .join(', ');
-
-      warnEl.style.display = 'block';
-      warnEl.innerHTML = `<strong>Possible duplicate found:</strong> ${summary}. Review existing records if needed, or continue if this is a separate household.`;
     }
 
-    function getBaseCoordsForBarangay(brgyName) {
-      const key = String(brgyName || '').toLowerCase();
-      if (key === 'tibanga') return [8.2345, 124.2368];
-      if (key === 'saray') return [8.2382, 124.2535];
-      return [8.2280, 124.2452];
-    }
-
-    function getPurokOffset(purokVal) {
-      const idx = Math.max(0, ['Purok 1', 'Purok 2', 'Purok 3', 'Purok 4', 'Purok 5'].indexOf(purokVal));
-      const angle = (idx * 72 * Math.PI) / 180;
-      return [Math.sin(angle) * 0.0022, Math.cos(angle) * 0.0022];
-    }
-
-    function setMapPin(lat, lng, confirmed) {
-      pickedLat = Number(lat.toFixed(6));
-      pickedLng = Number(lng.toFixed(6));
-      locationConfirmed = !!confirmed;
-
-      const statusInput = document.getElementById('hh-location-status');
-      const coordsLabel = document.getElementById('pin-coords-label');
-      if (statusInput) {
-        statusInput.value = locationConfirmed ? 'Confirmed pin' : 'Unconfirmed (landmark fallback)';
-      }
-      if (coordsLabel) {
-        coordsLabel.textContent = `Pin: ${pickedLat}, ${pickedLng} (${locationConfirmed ? 'Confirmed' : 'Unconfirmed'})`;
-      }
-
-      if (typeof L !== 'undefined' && pinMap) {
-        const icon = L.divIcon({
-          className: 'custom-marker',
-          html: `<div style="background-color: ${locationConfirmed ? '#8B0000' : '#D97706'}; width: 16px; height: 16px; border-radius: 50%; border: 2px solid white; box-shadow: 0 2px 4px rgba(0,0,0,0.4);"></div>`,
-          iconSize: [16, 16],
-          iconAnchor: [8, 8]
-        });
-
-        if (!pinMarker) {
-          pinMarker = L.marker([pickedLat, pickedLng], { icon }).addTo(pinMap);
+    function setMapPin(lat, lng) {
+      selectedCoords = { lat: Number(lat.toFixed(6)), lng: Number(lng.toFixed(6)) };
+      if (relayMap) {
+        if (relayPinMarker) {
+          relayPinMarker.setLatLng([selectedCoords.lat, selectedCoords.lng]);
         } else {
-          pinMarker.setLatLng([pickedLat, pickedLng]);
-          pinMarker.setIcon(icon);
+          relayPinMarker = L.marker([selectedCoords.lat, selectedCoords.lng]).addTo(relayMap);
         }
-        pinMap.setView([pickedLat, pickedLng], 16);
+      }
+      const statusEl = document.getElementById('pin-status-label');
+      if (statusEl) {
+        statusEl.textContent = `Pin placed: ${selectedCoords.lat}, ${selectedCoords.lng}`;
+      }
+      const locStatus = document.getElementById('hh-location-status');
+      if (locStatus) {
+        locStatus.value = 'Pin placed';
       }
     }
 
-    function clearPinLocation() {
-      pickedLat = null;
-      pickedLng = null;
-      locationConfirmed = false;
-      const landmarkSelect = document.getElementById('hh-landmark');
-      const statusInput = document.getElementById('hh-location-status');
-      const coordsLabel = document.getElementById('pin-coords-label');
-      if (landmarkSelect) landmarkSelect.value = '';
-      if (statusInput) statusInput.value = 'Unconfirmed';
-      if (coordsLabel) coordsLabel.textContent = 'Pin: Not yet placed (click map or select landmark below)';
-      if (pinMarker && pinMap) {
-        pinMap.removeLayer(pinMarker);
-        pinMarker = null;
+    function clearMapPin() {
+      selectedCoords = null;
+      if (relayMap && relayPinMarker) {
+        relayMap.removeLayer(relayPinMarker);
+        relayPinMarker = null;
+      }
+      const statusEl = document.getElementById('pin-status-label');
+      if (statusEl) {
+        statusEl.textContent = 'Pin: Not yet placed (click map or select landmark below)';
+      }
+      const locStatus = document.getElementById('hh-location-status');
+      if (locStatus) {
+        locStatus.value = document.getElementById('hh-landmark')?.value ? 'Landmark fallback' : 'Unconfirmed';
       }
     }
 
-    function applyLandmarkFallback() {
+    function handleLandmarkChange() {
       const landmark = document.getElementById('hh-landmark')?.value || '';
-      if (!landmark) {
-        if (!locationConfirmed) clearPinLocation();
+      const locStatus = document.getElementById('hh-location-status');
+      if (!locStatus) return;
+      if (selectedCoords) {
+        locStatus.value = 'Pin placed';
+      } else if (landmark) {
+        locStatus.value = 'Landmark fallback';
+      } else {
+        locStatus.value = 'Unconfirmed';
+      }
+    }
+
+    function syncHeadMemberName() {
+      const headName = (document.getElementById('hh-head-name')?.value || '').trim();
+      if (!householdMembers.length) return;
+      householdMembers[0].name = headName || 'Household Head';
+      renderHouseholdMembers();
+    }
+
+    function syncPrimaryMemberCategory() {
+      const category = document.getElementById('hh-category')?.value || 'None';
+      if (!householdMembers.length) return;
+      householdMembers[0].category = category;
+      renderHouseholdMembers();
+    }
+
+    function syncInputsFromMembers() {
+      if (!householdMembers.length) return;
+      const headMember = householdMembers.find(m => m.role === 'Household head') || householdMembers[0];
+      const headInput = document.getElementById('hh-head-name');
+      if (headInput && headMember.name && headMember.name !== 'Household Head') {
+        headInput.value = headMember.name;
+      }
+
+      const vulnInput = document.getElementById('hh-primary-vulnerable');
+      const catSelect = document.getElementById('hh-category');
+      const flaggedMember = householdMembers.find(m => m.category && m.category !== 'None');
+      if (vulnInput && flaggedMember) {
+        vulnInput.value = flaggedMember.name;
+      }
+      if (catSelect && flaggedMember) {
+        catSelect.value = flaggedMember.category;
+      }
+    }
+
+    function renderHouseholdMembers() {
+      const listEl = document.getElementById('household-members-list');
+      const subtitleEl = document.getElementById('members-count-subtitle');
+      const count = householdMembers.length;
+
+      if (subtitleEl) {
+        subtitleEl.textContent = `${count} ${count === 1 ? 'resident' : 'residents'} · Household roster`;
+      }
+
+      if (!listEl) return;
+      if (!count) {
+        listEl.innerHTML = '<div class="member-meta" style="padding: 16px 0;">No household members listed yet.</div>';
         return;
       }
-      const brgy = getEffectiveBarangaySelection() || 'San Miguel';
-      const purok = document.getElementById('hh-purok')?.value || 'Purok 1';
 
-      const base = getBaseCoordsForBarangay(brgy);
-      const [dLat, dLng] = getPurokOffset(purok);
-      setMapPin(base[0] + dLat, base[1] + dLng, false);
+      listEl.innerHTML = householdMembers.map((m, idx) => {
+        const ageNum = Number.isFinite(Number(m.age)) ? Number(m.age) : 0;
+        const vulnSuffix = m.category && m.category !== 'None' ? ` · ${m.category}` : '';
+        const removeBtn = idx > 0
+          ? `<button type="button" class="link-remove-btn" onclick="removeHouseholdMember(${idx})">Remove</button>`
+          : '';
+        return `
+          <div class="member-row">
+            <div>
+              <div class="member-name">${escapeAddHhHtml(m.name)}</div>
+              <div class="member-meta">${escapeAddHhHtml(`${ageNum} years · ${m.role || 'Member'}${vulnSuffix}`)}</div>
+            </div>
+            <div class="member-actions">
+              <button type="button" class="link-action-btn" onclick="openMemberModal(${idx})">Edit</button>
+              ${removeBtn}
+            </div>
+          </div>
+        `;
+      }).join('');
     }
 
-    function centerPinMapForSelection() {
-      if (!pinMap) return;
-      const brgy = getEffectiveBarangaySelection() || 'San Miguel';
-      const base = getBaseCoordsForBarangay(brgy);
-      if (!pinMarker) {
-        pinMap.setView(base, 15);
-      }
+    function openMemberModal(index = null) {
+      const isEdit = typeof index === 'number' && householdMembers[index];
+      const existing = isEdit ? householdMembers[index] : null;
+
+      document.getElementById('member-edit-index').value = isEdit ? String(index) : '';
+      document.getElementById('member-modal-title').textContent = isEdit ? 'Edit household member' : 'Add household member';
+      document.getElementById('member-save-btn').textContent = isEdit ? 'Save changes' : 'Add member';
+
+      const defaultHeadName = (document.getElementById('hh-head-name')?.value || '').trim();
+      document.getElementById('member-name-input').value = existing
+        ? existing.name
+        : (householdMembers.length === 1 && defaultHeadName ? '' : '');
+      document.getElementById('member-age-input').value = existing ? String(existing.age ?? 30) : '30';
+      document.getElementById('member-role-input').value = existing ? (existing.role || 'Child') : 'Child';
+      document.getElementById('member-category-input').value = existing ? (existing.category || 'None') : 'None';
+
+      showModal('modal-household-member');
     }
 
-    function initPinPickerMap() {
-      const mapContainer = document.getElementById('pin-map');
-      if (!mapContainer || typeof L === 'undefined') return;
-      const brgy = getEffectiveBarangaySelection() || 'San Miguel';
-      const center = getBaseCoordsForBarangay(brgy);
-
-      if (!pinMap) {
-        pinMap = L.map('pin-map').setView(center, 15);
-        L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
-          attribution: '&copy; OpenStreetMap contributors',
-          maxZoom: 19
-        }).addTo(pinMap);
-
-        pinMap.on('click', (e) => {
-          const landmarkSelect = document.getElementById('hh-landmark');
-          if (landmarkSelect) landmarkSelect.value = '';
-          setMapPin(e.latlng.lat, e.latlng.lng, true);
-        });
-      }
-
-      setTimeout(() => {
-        if (pinMap) pinMap.invalidateSize();
-      }, 150);
-    }
-
-    document.addEventListener('DOMContentLoaded', () => {
-      const role = localStorage.getItem('relay-role') || 'Barangay Official';
-      const workspace = localStorage.getItem('relay-workspace') || 'Barangay San Miguel';
-      const isCityWideAdmin = role === 'Admin' && workspace === 'City-Wide Administration';
-      const brgyWrap = document.getElementById('barangay-field-wrap');
-      const brgySelect = document.getElementById('hh-barangay');
-      if (isCityWideAdmin && brgyWrap && brgySelect) {
-        brgyWrap.style.display = 'flex';
-        brgySelect.required = true;
-      }
-      initPinPickerMap();
-    });
-
-    window.addEventListener('load', initPinPickerMap);
-
-    function showFormError(msg) {
-      const errEl = document.getElementById('hh-error');
-      if (!errEl) return;
-      errEl.textContent = msg;
-      errEl.style.display = 'block';
-    }
-
-    function handleAddHousehold(event) {
+    function saveHouseholdMember(event) {
       event.preventDefault();
-      const errEl = document.getElementById('hh-error');
-      if (errEl) errEl.style.display = 'none';
+      const idxRaw = document.getElementById('member-edit-index').value;
+      const name = document.getElementById('member-name-input').value.trim();
+      const age = parseInt(document.getElementById('member-age-input').value, 10);
+      const role = document.getElementById('member-role-input').value;
+      const category = document.getElementById('member-category-input').value;
 
-      const selectedBrgy = document.getElementById('hh-barangay') ? document.getElementById('hh-barangay').value : '';
-      const brgyResult = resolveHouseholdBarangay(selectedBrgy);
-      if (!brgyResult.ok) {
-        showFormError(brgyResult.error);
-        return;
-      }
+      if (!name || Number.isNaN(age)) return;
 
-      const head = document.getElementById('hh-head').value.trim();
-      const purokShort = document.getElementById('hh-purok').value.trim();
-      const address = document.getElementById('hh-address').value.trim();
-      const landmark = document.getElementById('hh-landmark')?.value || '';
-      const memberName = document.getElementById('member-name').value.trim();
-      const category = document.getElementById('member-category').value;
-      const needs = document.getElementById('member-needs').value.trim() || 'None';
-
-      const prefix = brgyResult.barangay === 'Tibanga' ? 'TB' : brgyResult.barangay === 'Saray' ? 'SR' : 'SM';
-      const newId = `HH-${prefix}-${Math.floor(1000 + Math.random() * 9000)}`;
-
-      const custom = JSON.parse(localStorage.getItem('custom_households')) || {};
-      custom[newId] = {
-        id: newId,
-        head,
-        barangay: brgyResult.barangay,
-        purok: `${purokShort}, Barangay ${brgyResult.barangay}`,
-        address,
-        lat: pickedLat,
-        lng: pickedLng,
-        landmark: landmark || null,
-        locationConfirmed: pickedLat !== null && pickedLng !== null ? locationConfirmed : false,
-        members: [
-          { name: memberName, age: 40, rel: 'Member', category, needs }
-        ]
+      const memberObj = {
+        id: idxRaw !== '' && householdMembers[Number(idxRaw)]
+          ? householdMembers[Number(idxRaw)].id
+          : `MEM-${Date.now()}`,
+        name,
+        age,
+        role,
+        category,
+        isHead: role === 'Household head'
       };
 
-      localStorage.setItem('custom_households', JSON.stringify(custom));
-      localStorage.setItem(`record_${newId}`, 'Unverified');
-      sessionStorage.removeItem('notifs-read');
+      if (idxRaw !== '') {
+        householdMembers[Number(idxRaw)] = memberObj;
+      } else {
+        householdMembers.push(memberObj);
+      }
+
+      syncInputsFromMembers();
+      renderHouseholdMembers();
+      hideModal('modal-household-member');
+    }
+
+    function removeHouseholdMember(index) {
+      if (index <= 0 || !householdMembers[index]) return;
+      householdMembers.splice(index, 1);
+      syncInputsFromMembers();
+      renderHouseholdMembers();
+    }
+
+    function handleSaveHousehold(event) {
+      event.preventDefault();
+      const headName = document.getElementById('hh-head-name').value.trim();
+      const barangay = document.getElementById('hh-barangay').value.trim();
+      const purok = document.getElementById('hh-purok').value.trim();
+      const address = document.getElementById('hh-address').value.trim();
+      const landmark = document.getElementById('hh-landmark').value.trim();
+      const primaryVuln = document.getElementById('hh-primary-vulnerable').value.trim() || headName;
+      const category = document.getElementById('hh-category').value;
+
+      if (!headName || !barangay || !purok || !address) {
+        if (typeof openNoticeModal === 'function') {
+          openNoticeModal('Missing Required Fields', 'Please fill out the household head, barangay, purok, and address.');
+        }
+        return;
+      }
+
+      const membersToSave = householdMembers.map((m, i) =>
+        i === 0 && (!m.name || m.name === 'Household Head')
+          ? { ...m, name: headName }
+          : { ...m }
+      );
+
+      const newRecord = {
+        id: `HH-${Date.now().toString().slice(-5)}`,
+        headName,
+        barangay,
+        purok,
+        address,
+        landmark,
+        coords: selectedCoords,
+        locationStatus: document.getElementById('hh-location-status').value,
+        primaryVulnerable: primaryVuln,
+        category,
+        members: membersToSave,
+        status: 'Unverified',
+        updatedAt: new Date().toISOString()
+      };
+
+      const existingCustom = JSON.parse(localStorage.getItem('custom_households') || '[]');
+      existingCustom.push(newRecord);
+      localStorage.setItem('custom_households', JSON.stringify(existingCustom));
+
+      if (typeof openNoticeModal === 'function') {
+        openNoticeModal(
+          'Household Saved',
+          `${newRecord.headName} (${newRecord.id}) was saved with ${membersToSave.length} member(s) as Unverified.`,
+          'Household Registration'
+        );
+      }
       window.location.href = 'records.html';
     }
+
+    document.addEventListener('DOMContentLoaded', function () {
+      initRelayMap();
+      renderHouseholdMembers();
+    });
   </script>
 </body>
 </html>
