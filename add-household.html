@@ -126,6 +126,7 @@
     .form-field label { font-size: 12px; font-weight: 600; }
     .form-field input, .form-field select { padding: 10px 12px; border: 1px solid var(--border); border-radius: 6px; font-family: inherit; font-size: 13px; background: var(--white); }
     .error-msg { color: #991B1B; background: #FEE2E2; border: 1px solid #FCA5A5; padding: 10px 12px; border-radius: 6px; font-size: 12px; margin-bottom: 14px; display: none; }
+    .success-msg { color: #065F46; background: #D1FAE5; border: 1px solid #6EE7B7; padding: 10px 12px; border-radius: 6px; font-size: 12px; margin-bottom: 14px; display: none; }
     .dup-warning-box { color: #92400E; background: #FEF3C7; border: 1px solid #F59E0B; padding: 12px 14px; border-radius: 6px; font-size: 12px; margin-bottom: 14px; display: none; line-height: 1.5; }
     .pin-map { height: 280px; width: 100%; border-radius: 8px; border: 1px solid var(--border); background: #e5e5e5; z-index: 1; position: relative; }
     .pin-map .leaflet-container,
@@ -191,11 +192,12 @@
         <div class="add-hh-layout">
           <div class="form-card">
             <div id="hh-error" class="error-msg"></div>
+            <div id="hh-success" class="success-msg"></div>
             <div id="hh-dup-warning" class="dup-warning-box"></div>
             <div class="form-grid">
               <div class="form-field">
                 <label for="hh-head">Household head surname / name *</label>
-                <input type="text" id="hh-head" required placeholder="e.g. Santos" oninput="syncHeadFromForm(); checkPotentialDuplicatesWhileTyping();">
+                <input type="text" id="hh-head" required placeholder="" oninput="syncHeadFromForm(); checkPotentialDuplicatesWhileTyping();">
               </div>
               <div class="form-field" id="barangay-field-wrap" style="display: none;">
                 <label for="hh-barangay">Barangay (Required for City-Wide Admin) *</label>
@@ -211,6 +213,7 @@
               <div class="form-field">
                 <label for="hh-purok">Purok *</label>
                 <select id="hh-purok" required onchange="centerPinMapForSelection(); checkPotentialDuplicatesWhileTyping();">
+                  <option value="">-- Select Purok --</option>
                   <option value="Purok 1">Purok 1</option>
                   <option value="Purok 2">Purok 2</option>
                   <option value="Purok 3">Purok 3</option>
@@ -220,7 +223,7 @@
               </div>
               <div class="form-field">
                 <label for="hh-address">Street / Sitio address *</label>
-                <input type="text" id="hh-address" required placeholder="e.g. 14 Riverside Street" oninput="checkPotentialDuplicatesWhileTyping()">
+                <input type="text" id="hh-address" required placeholder="" oninput="checkPotentialDuplicatesWhileTyping()">
               </div>
             </div>
 
@@ -252,14 +255,14 @@
               </div>
             </div>
 
-            <div class="form-grid">
+            <div class="form-grid" style="margin-bottom: 4px;">
               <div class="form-field">
-                <label for="member-name">Primary vulnerable / household member name *</label>
-                <input type="text" id="member-name" required placeholder="e.g. Elena Santos" oninput="syncPrimaryMemberFromInputs()">
+                <label for="member-name">Vulnerable / household member name *</label>
+                <input type="text" id="member-name" required placeholder="" oninput="syncMemberFromInputs()">
               </div>
               <div class="form-field">
                 <label for="member-category">Category</label>
-                <select id="member-category" onchange="syncPrimaryMemberFromInputs()">
+                <select id="member-category" onchange="syncMemberFromInputs()">
                   <option value="None">None</option>
                   <option value="Senior Citizen">Senior Citizen</option>
                   <option value="PWD">PWD</option>
@@ -269,12 +272,10 @@
                 </select>
               </div>
             </div>
-            <div class="form-field">
-              <label for="member-needs">Assistance need</label>
-              <input type="text" id="member-needs" placeholder="e.g. Mobility assistance, Maintenance medicine" oninput="syncPrimaryMemberFromInputs()">
-            </div>
-            <div style="display: flex; gap: 12px; margin-top: 16px;">
+
+            <div style="display: flex; flex-wrap: wrap; gap: 12px; margin-top: 16px;">
               <button type="submit" class="btn btn-primary">Save household</button>
+              <button type="button" class="btn btn-secondary" onclick="saveAndAddAnotherHousehold()">Add more household</button>
               <a href="records.html" class="btn btn-secondary">Cancel</a>
             </div>
           </div>
@@ -284,7 +285,7 @@
               <h2 class="members-title">Household members</h2>
               <span class="required-note">* Required fields</span>
             </div>
-            <p class="members-subtitle" id="members-count-label">1 resident · Household roster</p>
+            <p class="members-subtitle" id="members-count-label">0 residents · Household roster</p>
 
             <div class="members-list" id="household-members-list"></div>
 
@@ -301,27 +302,34 @@
     <div class="modal-box" style="max-width: 460px;">
       <div class="modal-eyebrow">Household Roster</div>
       <div class="modal-title" id="member-modal-title">Add household member</div>
+      <div id="member-modal-error" class="error-msg" style="margin-top: 10px;"></div>
       <form id="member-editor-form" onsubmit="handleMemberEditorSubmit(event)" style="margin-top: 12px;">
         <input type="hidden" id="member-edit-idx" value="">
         <div class="form-field">
           <label for="modal-member-name">Full name *</label>
-          <input type="text" id="modal-member-name" required placeholder="e.g. Ana Cruz">
+          <input type="text" id="modal-member-name" required placeholder="">
         </div>
         <div class="form-grid" style="margin-bottom: 0;">
           <div class="form-field">
             <label for="modal-member-age">Age (years) *</label>
-            <input type="number" id="modal-member-age" min="0" max="125" required placeholder="e.g. 34">
+            <input type="number" id="modal-member-age" min="0" max="125" required placeholder="">
           </div>
           <div class="form-field">
             <label for="modal-member-rel">Role / Relationship *</label>
-            <select id="modal-member-rel">
+            <select id="modal-member-rel" required onchange="toggleOtherRoleField()">
+              <option value="">-- Select Role --</option>
               <option value="Household head">Household head</option>
-              <option value="Member">Member</option>
               <option value="Spouse">Spouse</option>
               <option value="Child">Child</option>
               <option value="Senior">Senior</option>
+              <option value="Member">Member</option>
+              <option value="Others">Others</option>
             </select>
           </div>
+        </div>
+        <div class="form-field" id="other-role-field-wrap" style="display: none;">
+          <label for="modal-member-other-role">Specify role / relationship (e.g. Tenant, Cousin, Boarder) *</label>
+          <input type="text" id="modal-member-other-role" placeholder="">
         </div>
         <div class="form-field">
           <label for="modal-member-category">Category</label>
@@ -333,10 +341,6 @@
             <option value="Pregnant">Pregnant</option>
             <option value="Child">Child</option>
           </select>
-        </div>
-        <div class="form-field">
-          <label for="modal-member-needs">Assistance need</label>
-          <input type="text" id="modal-member-needs" placeholder="e.g. Mobility assistance, Maintenance medicine">
         </div>
         <div class="modal-footer" style="margin-top: 14px;">
           <div class="modal-footer-text">Saved with this household record.</div>
@@ -358,16 +362,8 @@
     let pickedLat = null;
     let pickedLng = null;
     let locationConfirmed = false;
-    let rosterMembers = [
-      {
-        name: 'Primary Member',
-        age: 40,
-        rel: 'Member',
-        category: 'None',
-        needs: 'None',
-        isPrimary: true
-      }
-    ];
+    let rosterMembers = [];
+    let syncedMemberIndex = null;
 
     function escapeAddHtml(value) {
       return String(value ?? '')
@@ -378,55 +374,83 @@
         .replace(/'/g, '&#39;');
     }
 
+    function toggleOtherRoleField() {
+      const relSelect = document.getElementById('modal-member-rel');
+      const wrap = document.getElementById('other-role-field-wrap');
+      const otherInput = document.getElementById('modal-member-other-role');
+      const isOthers = relSelect && relSelect.value === 'Others';
+      if (wrap) wrap.style.display = isOthers ? 'flex' : 'none';
+      if (otherInput) {
+        otherInput.required = !!isOthers;
+        if (!isOthers) otherInput.value = '';
+      }
+    }
+
+    function showMemberModalError(msg) {
+      const errEl = document.getElementById('member-modal-error');
+      if (!errEl) return;
+      errEl.textContent = msg;
+      errEl.style.display = 'block';
+    }
+
+    function clearMemberModalError() {
+      const errEl = document.getElementById('member-modal-error');
+      if (!errEl) return;
+      errEl.textContent = '';
+      errEl.style.display = 'none';
+    }
+
     function syncHeadFromForm() {
       const headVal = (document.getElementById('hh-head')?.value || '').trim();
       const memberInput = document.getElementById('member-name');
       if (headVal && memberInput && !memberInput.value.trim()) {
         memberInput.value = headVal;
-        syncPrimaryMemberFromInputs();
+        syncMemberFromInputs();
       }
     }
 
-    function syncPrimaryMemberFromInputs() {
+    function syncMemberFromInputs() {
       const nameVal = (document.getElementById('member-name')?.value || '').trim();
       const catVal = document.getElementById('member-category')?.value || 'None';
-      const needsVal = (document.getElementById('member-needs')?.value || '').trim() || 'None';
 
-      if (!rosterMembers.length) {
-        rosterMembers.push({
-          name: nameVal || 'Primary Member',
-          age: 40,
+      if (!nameVal && syncedMemberIndex === null) {
+        renderMembersList();
+        return;
+      }
+
+      if (syncedMemberIndex === null) {
+        if (!nameVal) return;
+        rosterMembers.unshift({
+          name: nameVal,
+          age: '',
           rel: 'Member',
-          category: catVal,
-          needs: needsVal,
-          isPrimary: true
+          relType: 'Member',
+          otherRel: '',
+          category: catVal
         });
-      } else {
-        rosterMembers[0] = {
-          ...rosterMembers[0],
-          name: nameVal || 'Primary Member',
-          category: catVal,
-          needs: needsVal
-        };
+        syncedMemberIndex = 0;
+      } else if (rosterMembers[syncedMemberIndex]) {
+        if (!nameVal && !rosterMembers[syncedMemberIndex].age) {
+          rosterMembers.splice(syncedMemberIndex, 1);
+          syncedMemberIndex = null;
+        } else {
+          rosterMembers[syncedMemberIndex] = {
+            ...rosterMembers[syncedMemberIndex],
+            name: nameVal || rosterMembers[syncedMemberIndex].name,
+            category: catVal
+          };
+        }
       }
       renderMembersList();
     }
 
-    function syncInputsFromPrimaryMember() {
-      const primary = rosterMembers[0];
-      if (!primary) return;
+    function syncInputsFromSyncedMember() {
+      if (syncedMemberIndex === null || !rosterMembers[syncedMemberIndex]) return;
+      const item = rosterMembers[syncedMemberIndex];
       const nameInput = document.getElementById('member-name');
       const catSelect = document.getElementById('member-category');
-      const needsInput = document.getElementById('member-needs');
-      if (nameInput && primary.name && primary.name !== 'Primary Member') {
-        nameInput.value = primary.name;
-      }
-      if (catSelect && primary.category) {
-        catSelect.value = primary.category;
-      }
-      if (needsInput) {
-        needsInput.value = primary.needs && primary.needs !== 'None' ? primary.needs : '';
-      }
+      if (nameInput) nameInput.value = item.name || '';
+      if (catSelect && item.category) catSelect.value = item.category;
     }
 
     function renderMembersList() {
@@ -439,22 +463,25 @@
       }
       if (!listEl) return;
 
+      if (!total) {
+        listEl.innerHTML = '<div class="member-meta" style="padding: 14px 0;">No household members added yet. Click + Add household member.</div>';
+        return;
+      }
+
       listEl.innerHTML = rosterMembers.map((m, idx) => {
-        const ageNum = Number.isFinite(Number(m.age)) ? Number(m.age) : 40;
-        const relLabel = m.rel || 'Member';
+        const hasAge = m.age !== '' && m.age !== null && m.age !== undefined && Number.isFinite(Number(m.age));
+        const ageText = hasAge ? `${Number(m.age)} years` : 'Age not set';
+        const roleLabel = m.rel || 'Member';
         const catLabel = m.category && m.category !== 'None' ? ` · ${m.category}` : '';
-        const removeBtn = idx > 0
-          ? `<button type="button" class="link-remove-btn" onclick="removeRosterMember(${idx})">Remove</button>`
-          : '';
         return `
           <div class="member-row">
             <div>
               <div class="member-name">${escapeAddHtml(m.name)}</div>
-              <div class="member-meta">${escapeAddHtml(`${ageNum} years · ${relLabel}${catLabel}`)}</div>
+              <div class="member-meta">${escapeAddHtml(`${ageText} · ${roleLabel}${catLabel}`)}</div>
             </div>
             <div class="member-actions">
               <button type="button" class="link-action-btn" onclick="openMemberModal(${idx})">Edit</button>
-              ${removeBtn}
+              <button type="button" class="link-remove-btn" onclick="removeRosterMember(${idx})">Remove</button>
             </div>
           </div>
         `;
@@ -462,6 +489,7 @@
     }
 
     function openMemberModal(idx = null) {
+      clearMemberModalError();
       const isEdit = typeof idx === 'number' && rosterMembers[idx];
       const existing = isEdit ? rosterMembers[idx] : null;
 
@@ -469,36 +497,88 @@
       document.getElementById('member-modal-title').textContent = isEdit ? 'Edit household member' : 'Add household member';
       document.getElementById('modal-member-save-btn').textContent = isEdit ? 'Save changes' : 'Add member';
 
-      document.getElementById('modal-member-name').value = existing ? existing.name : '';
-      document.getElementById('modal-member-age').value = existing ? String(existing.age ?? 40) : '34';
-      document.getElementById('modal-member-rel').value = existing ? (existing.rel || 'Member') : 'Child';
+      document.getElementById('modal-member-name').value = existing ? (existing.name || '') : '';
+      document.getElementById('modal-member-age').value = existing && existing.age !== '' && existing.age !== null && existing.age !== undefined ? String(existing.age) : '';
+
+      const relSelect = document.getElementById('modal-member-rel');
+      const otherInput = document.getElementById('modal-member-other-role');
+      const knownRoles = ['Household head', 'Spouse', 'Child', 'Senior', 'Member', 'Others'];
+
+      if (existing) {
+        if (existing.relType === 'Others' || (existing.rel && !knownRoles.includes(existing.rel))) {
+          relSelect.value = 'Others';
+          otherInput.value = existing.otherRel || existing.rel || '';
+        } else {
+          relSelect.value = existing.rel || '';
+          otherInput.value = '';
+        }
+      } else {
+        relSelect.value = '';
+        otherInput.value = '';
+      }
+
+      toggleOtherRoleField();
+
       document.getElementById('modal-member-category').value = existing ? (existing.category || 'None') : 'None';
-      document.getElementById('modal-member-needs').value = existing && existing.needs && existing.needs !== 'None' ? existing.needs : '';
 
       showModal('modal-member-editor');
     }
 
     function handleMemberEditorSubmit(event) {
       event.preventDefault();
+      clearMemberModalError();
+
       const idxRaw = document.getElementById('member-edit-idx').value;
       const name = document.getElementById('modal-member-name').value.trim();
-      const age = parseInt(document.getElementById('modal-member-age').value, 10);
-      const rel = document.getElementById('modal-member-rel').value;
+      const ageRaw = document.getElementById('modal-member-age').value.trim();
+      const age = ageRaw === '' ? NaN : parseInt(ageRaw, 10);
+      const relSelection = document.getElementById('modal-member-rel').value;
+      const otherRel = document.getElementById('modal-member-other-role').value.trim();
       const category = document.getElementById('modal-member-category').value;
-      const needs = document.getElementById('modal-member-needs').value.trim() || 'None';
 
-      if (!name || Number.isNaN(age)) return;
+      if (!name) {
+        showMemberModalError('Please enter the household member full name.');
+        return;
+      }
+      if (Number.isNaN(age) || age < 0 || age > 125) {
+        showMemberModalError('Please enter a valid age between 0 and 125.');
+        return;
+      }
+      if (!relSelection) {
+        showMemberModalError('Please select a role or relationship.');
+        return;
+      }
+      if (relSelection === 'Others' && !otherRel) {
+        showMemberModalError('Please specify the role or relationship when Others is selected.');
+        document.getElementById('modal-member-other-role').focus();
+        return;
+      }
 
-      const updatedMember = { name, age, rel, category, needs };
+      const finalRel = relSelection === 'Others' ? otherRel : relSelection;
+      const updatedMember = {
+        name,
+        age,
+        rel: finalRel,
+        relType: relSelection,
+        otherRel: relSelection === 'Others' ? otherRel : '',
+        category
+      };
 
       if (idxRaw !== '') {
         const targetIdx = Number(idxRaw);
-        rosterMembers[targetIdx] = updatedMember;
-        if (targetIdx === 0) {
-          syncInputsFromPrimaryMember();
+        rosterMembers[targetIdx] = {
+          ...rosterMembers[targetIdx],
+          ...updatedMember
+        };
+        if (targetIdx === syncedMemberIndex) {
+          syncInputsFromSyncedMember();
         }
       } else {
         rosterMembers.push(updatedMember);
+        if (syncedMemberIndex === null) {
+          syncedMemberIndex = rosterMembers.length - 1;
+          syncInputsFromSyncedMember();
+        }
       }
 
       renderMembersList();
@@ -506,8 +586,13 @@
     }
 
     function removeRosterMember(idx) {
-      if (idx <= 0 || !rosterMembers[idx]) return;
+      if (!rosterMembers[idx]) return;
       rosterMembers.splice(idx, 1);
+      if (syncedMemberIndex === idx) {
+        syncedMemberIndex = null;
+      } else if (syncedMemberIndex !== null && idx < syncedMemberIndex) {
+        syncedMemberIndex -= 1;
+      }
       renderMembersList();
     }
 
@@ -702,13 +787,23 @@
 
     function showFormError(msg) {
       const errEl = document.getElementById('hh-error');
+      const okEl = document.getElementById('hh-success');
+      if (okEl) okEl.style.display = 'none';
       if (!errEl) return;
       errEl.textContent = msg;
       errEl.style.display = 'block';
     }
 
-    function handleAddHousehold(event) {
-      event.preventDefault();
+    function showFormSuccess(msg) {
+      const errEl = document.getElementById('hh-error');
+      const okEl = document.getElementById('hh-success');
+      if (errEl) errEl.style.display = 'none';
+      if (!okEl) return;
+      okEl.textContent = msg;
+      okEl.style.display = 'block';
+    }
+
+    function persistHouseholdRecord() {
       const errEl = document.getElementById('hh-error');
       if (errEl) errEl.style.display = 'none';
 
@@ -716,7 +811,7 @@
       const brgyResult = resolveHouseholdBarangay(selectedBrgy);
       if (!brgyResult.ok) {
         showFormError(brgyResult.error);
-        return;
+        return null;
       }
 
       const head = document.getElementById('hh-head').value.trim();
@@ -725,29 +820,30 @@
       const landmark = document.getElementById('hh-landmark')?.value || '';
       const memberName = document.getElementById('member-name').value.trim();
       const category = document.getElementById('member-category').value;
-      const needs = document.getElementById('member-needs').value.trim() || 'None';
+
+      if (!head || !purokShort || !address || !memberName) {
+        showFormError('Please fill out all required household and member fields.');
+        return null;
+      }
 
       const prefix = brgyResult.barangay === 'Tibanga' ? 'TB' : brgyResult.barangay === 'Saray' ? 'SR' : 'SM';
       const newId = `HH-${prefix}-${Math.floor(1000 + Math.random() * 9000)}`;
 
-      const membersPayload = rosterMembers.map((m, i) => {
-        if (i === 0) {
-          return {
-            name: memberName || m.name || head,
-            age: Number.isFinite(Number(m.age)) ? Number(m.age) : 40,
-            rel: m.rel || 'Member',
-            category,
-            needs
-          };
-        }
-        return {
-          name: m.name,
-          age: Number.isFinite(Number(m.age)) ? Number(m.age) : 30,
-          rel: m.rel || 'Member',
-          category: m.category || 'None',
-          needs: m.needs || 'None'
-        };
-      });
+      let membersPayload = rosterMembers.map(m => ({
+        name: m.name,
+        age: m.age === '' || m.age === null || m.age === undefined ? null : Number(m.age),
+        rel: m.rel || 'Member',
+        category: m.category || 'None'
+      }));
+
+      if (!membersPayload.length && memberName) {
+        membersPayload.push({
+          name: memberName,
+          age: null,
+          rel: 'Member',
+          category
+        });
+      }
 
       const custom = JSON.parse(localStorage.getItem('custom_households')) || {};
       custom[newId] = {
@@ -766,6 +862,35 @@
       localStorage.setItem('custom_households', JSON.stringify(custom));
       localStorage.setItem(`record_${newId}`, 'Unverified');
       sessionStorage.removeItem('notifs-read');
+      return { newId, head };
+    }
+
+    function resetFormForAnotherHousehold() {
+      const form = document.getElementById('add-hh-form');
+      if (form) form.reset();
+      rosterMembers = [];
+      syncedMemberIndex = null;
+      clearPinLocation();
+      const warnEl = document.getElementById('hh-dup-warning');
+      if (warnEl) {
+        warnEl.style.display = 'none';
+        warnEl.innerHTML = '';
+      }
+      renderMembersList();
+      document.getElementById('hh-head')?.focus();
+    }
+
+    function saveAndAddAnotherHousehold() {
+      const saved = persistHouseholdRecord();
+      if (!saved) return;
+      resetFormForAnotherHousehold();
+      showFormSuccess(`Saved ${saved.head} (${saved.newId}). You can now enter another household.`);
+    }
+
+    function handleAddHousehold(event) {
+      event.preventDefault();
+      const saved = persistHouseholdRecord();
+      if (!saved) return;
       window.location.href = 'records.html';
     }
   </script>
